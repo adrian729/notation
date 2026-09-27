@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Notation, applyIntent, parsePitch } from '@polyhymnia/notation-react';
 import type { MnxDocument, NotationIntent, NoteId, Pitch, PreviewNote } from '@polyhymnia/notation-react';
-import { midiOfPitch, playNotes } from './audio.js';
+import { melodic } from '@polyhymnia/audio';
+import { createSound } from '../sound.js';
 import score from '../scores/exercise-dictation.mnx.json';
 
 const GIVEN_ID: NoteId = 'd1';
@@ -26,6 +27,10 @@ export function Dictation() {
   const [preview, setPreview] = useState<PreviewNote | null>(null);
   const [checked, setChecked] = useState(false);
 
+  const [sound] = useState(createSound);
+
+  useEffect(() => sound.stop, [sound]);
+
   const states = useMemo<Readonly<Record<NoteId, string>>>(() => {
     const result: Record<NoteId, string> = { [GIVEN_ID]: 'given' };
     if (checked) {
@@ -42,14 +47,8 @@ export function Dictation() {
   }, [checked, entered]);
 
   const play = useCallback(() => {
-    playNotes(
-      MELODY.map((pitch, i) => ({
-        midi: midiOfPitch(parsePitch(pitch)),
-        startSeconds: i * 0.5,
-        durationSeconds: 0.45,
-      })),
-    );
-  }, []);
+    sound.playEvents(melodic(MELODY, { noteDuration: 0.45, gap: 0.05 }));
+  }, [sound]);
 
   const reset = useCallback(() => {
     setDoc(score as MnxDocument);

@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Notation, parsePitch } from '@polyhymnia/notation-react';
-import type { MnxDocument, NotationIntent, NoteId } from '@polyhymnia/notation-react';
-import { midiOfPitch, playNotes } from './audio.js';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Notation } from '@polyhymnia/notation-react';
+import type { MnxDocument, NotationHandle, NotationIntent, NoteId } from '@polyhymnia/notation-react';
+import { melodic } from '@polyhymnia/audio';
+import { createSound, midiOfId } from '../sound.js';
 import score from '../scores/exercise-error-detection.mnx.json';
 
 const NOTES: readonly { id: NoteId; pitch: string }[] = [
@@ -19,6 +20,11 @@ const PROMPT = 'Play sounds a version with two wrong notes. Select every note yo
 export function ErrorDetection() {
   const [selection, setSelection] = useState<readonly NoteId[]>([]);
   const [checked, setChecked] = useState(false);
+  const handleRef = useRef<NotationHandle>(null);
+
+  const [sound] = useState(createSound);
+
+  useEffect(() => sound.stop, [sound]);
 
   const { states, feedback } = useMemo(() => {
     if (!checked) return { states: {} as Readonly<Record<NoteId, string>>, feedback: PROMPT };
@@ -48,21 +54,16 @@ export function ErrorDetection() {
   }, [checked, selection]);
 
   const play = useCallback(() => {
-    playNotes(
-      VARIANT.map((pitch, i) => ({
-        midi: midiOfPitch(parsePitch(pitch)),
-        startSeconds: i * 0.5,
-        durationSeconds: 0.45,
-      })),
-    );
-  }, []);
+    sound.playEvents(melodic(VARIANT, { noteDuration: 0.45, gap: 0.05 }));
+  }, [sound]);
 
   const onIntent = useCallback((intent: NotationIntent) => {
     if (intent.type !== 'activate' || intent.target.kind !== 'element') return;
     const id = intent.target.id;
+    sound.playNote(midiOfId(handleRef.current?.getTimeMap(), id, intent.target.pitch), 0.35);
     setSelection((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
     setChecked(false);
-  }, []);
+  }, [sound]);
 
   return (
     <section className="exercise">
@@ -76,7 +77,7 @@ export function ErrorDetection() {
         <button type="button" onClick={() => setChecked(true)}>Check</button>
         <button type="button" onClick={() => { setSelection([]); setChecked(false); }}>Reset</button>
       </div>
-      <Notation score={score as MnxDocument}>
+      <Notation score={score as MnxDocument} ref={handleRef}>
         <Notation.Interaction targets={['element']} onIntent={onIntent} />
         <Notation.Marks states={states} selection={selection} />
       </Notation>

@@ -21,7 +21,7 @@ Integration only — no isolated-function unit tests. Every test enters through 
 | 0 — Skeleton | Workspace split, DOM-excluded model/engine tsconfigs, font build script (subset → rename → metadata filter). `<Staff>` renders 5 lines + clef at fixed position. | Compiles; fails on any `document` reference in `notation-model` or `notation-engine`. | 1 day |
 | 1 — Answer-entry primitives — **done** | Data model, `Rational`, single measure/voice, noteheads/accidentals/ledger/stems/flags/rests/dots. Fixed-width spacing (no justify yet). Rescoped from click-to-insert to exercise primitives (`AGENTS.md`, `interaction.md`): `hitTest` + slots + `applyIntent({type:'setPitches'})`, targeting ear-training answer entry, not a sheet editor. Golden-file tests. | Reveal any 1–4 note chord/interval; resolve a slot/element hit and answer a dictation exercise. | 3–4 days |
 | 2 — Real scores | Key/time signatures, barlines, multi-measure, spring/rod spacing + justify, greedy breaking. Timemap export, `mode:'notes'`. | 8-measure melody in any key lays out and highlights note-by-note against the audio engine. | 4–5 days |
-| 3 — Rhythm | Beat grouping, beam geometry + secondaries + hooks, single-level tuplets, `mode:'cursor'` (WAAPI + rAF, deferred — see "Deferred / TODO"). | Rhythmic dictation displays. | 4–5 days |
+| 3 — Rhythm | Beat grouping, beam geometry + secondaries + hooks, single-level tuplets, `mode:'cursor'` (done; app drives it via `setPlaybackTick`, no animation in the package). | Rhythmic dictation displays. | 4–5 days |
 | 4 — Polish — **mostly done** | Ties (barline + system-break) — done, slurs — done, cautionary accidentals — done, 2 voices — done, accidental stacking — done. Mid-score clef changes (E4: font glyphs done, layout pending) and end-of-system courtesy clef/key/time (E5) not done yet — see "Deferred / TODO". | Full test corpus renders correctly, both themes, 3 sizes. | 4–5 days |
 | 5 — Extraction-ready | Public surfaces + README, `sideEffects:false`, exported CSS theme. `applyIntent` done (`setPitches`); undo deferred — a generic history of doc states + group fences + selection restore, not per-intent inverses (see "Deferred / TODO"). `npm pack` smoke test into a throwaway app, Playwright visual baseline. | `npm pack` → install into an empty app → renders. | 2 days |
 
@@ -63,7 +63,6 @@ Integration only — no isolated-function unit tests. Every test enters through 
 ## Open questions
 
 - **OFL rename obligation** (`font.md`): our reading of OFL-FAQ 2.6, not legal advice. Google Fonts serves subsets under original names — live interpretive gap in the ecosystem. Get qualified review if it matters commercially.
-- **WAAPI transform on SVG `<g>` in Safari** (`playback.md`): should work, needs a five-minute smoke test if the cursor mode is revived (see "Deferred / TODO").
 - **Rest-glyph vertical anchor** (`engraving.md`): assumed self-anchored to one y per duration; confirm against Bravura's actual glyph metadata — if false, needs a per-duration offset table.
 - **Spacing/beam constants** (K=0.55, BASE=3.2sp, MAX_SLOPE=0.25, rise-cap=2.5sp) are engraving-practice defaults, not measured against this app's output. Tune against the gallery.
 - **No comparison to abcjs/VexFlow output quality exists yet.** The side-by-side harness (Testing, above) is specifically to find out early, while there's still time to reconsider.
@@ -72,7 +71,6 @@ Integration only — no isolated-function unit tests. Every test enters through 
 
 ## Deferred / TODO
 
-- **Cursor playback mode** (`mode:'cursor'`, `playback.md`): code stays in place; if revived, it must stay position-driven (no clock of its own) and needs a Safari WAAPI smoke test before shipping.
 - **Undo history**: deferred. Needs a generic history of doc states + group fences + selection restore, not per-intent inverses.
 - **`setRhythm` intent**: not planned. Rhythm-dictation apps rebuild MNX themselves using `point.tick` (`interaction.md`) rather than editing rhythm in place.
 - **Editor features**: drag-to-change-pitch, an on-canvas duration palette, free multi-voice entry, measure/meter/key/clef edits, copy/paste — out of scope, interaction targets ear-training exercises, not a sheet editor (`interaction.md` "Deferred editor features").
@@ -91,4 +89,3 @@ Integration only — no isolated-function unit tests. Every test enters through 
 - **Knuth-Plass line breaking**: not done; greedy only, measures indivisible.
 - **`applyIntent`/`elementIds` addressing**: only part 0, staff 1, first 2 sequences.
 - **`EditIntent`**: one variant (`setPitches`).
-- **`[data-pn-cursor]` CSS and `animateCursor` (`Notation.tsx`)**: belong to the deferred cursor mode.

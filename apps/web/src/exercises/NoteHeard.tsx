@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
-import { Notation, parsePitch } from '@polyhymnia/notation-react';
-import type { MnxDocument, NotationIntent, NoteId } from '@polyhymnia/notation-react';
-import { midiOfPitch, playNotes } from './audio.js';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Notation } from '@polyhymnia/notation-react';
+import type { MnxDocument, NotationHandle, NotationIntent, NoteId } from '@polyhymnia/notation-react';
+import { createSound, midiOfId } from '../sound.js';
 import score from '../scores/exercise-note-heard.mnx.json';
 
 const NOTES: readonly { id: NoteId; pitch: string }[] = [
@@ -14,15 +14,20 @@ const NOTES: readonly { id: NoteId; pitch: string }[] = [
 
 const PROMPT = 'Press "Play", then click the note you heard.';
 
-function playPitch(pitch: string, durationSeconds = 0.6): void {
-  playNotes([{ midi: midiOfPitch(parsePitch(pitch)), startSeconds: 0, durationSeconds }]);
-}
-
 export function NoteHeard() {
   const [picked, setPicked] = useState<NoteId | null>(null);
   const [states, setStates] = useState<Readonly<Record<NoteId, string>>>({});
   const [hoverToHear, setHoverToHear] = useState(false);
   const [message, setMessage] = useState(PROMPT);
+  const handleRef = useRef<NotationHandle>(null);
+
+  const [sound] = useState(createSound);
+
+  useEffect(() => sound.stop, [sound]);
+
+  const playId = useCallback((id: NoteId, duration?: number) => {
+    sound.playNote(midiOfId(handleRef.current?.getTimeMap(), id, NOTES.find((n) => n.id === id)?.pitch), duration);
+  }, [sound]);
 
   const play = useCallback(() => {
     if (picked === null) {
@@ -30,12 +35,12 @@ export function NoteHeard() {
       setPicked(note.id);
       setStates({});
       setMessage('Which note did you hear?');
-      playPitch(note.pitch);
+      playId(note.id);
       return;
     }
     const note = NOTES.find((n) => n.id === picked);
-    if (note) playPitch(note.pitch);
-  }, [picked]);
+    if (note) playId(note.id);
+  }, [picked, playId]);
 
   const next = useCallback(() => {
     const pool = NOTES.filter((n) => n.id !== picked);
@@ -43,15 +48,13 @@ export function NoteHeard() {
     setPicked(note.id);
     setStates({});
     setMessage('Which note did you hear?');
-    playPitch(note.pitch);
-  }, [picked]);
+    playId(note.id);
+  }, [picked, playId]);
 
   const onIntent = useCallback(
     (intent: NotationIntent) => {
       if (intent.type === 'hover') {
-        if (hoverToHear && intent.target?.kind === 'element' && intent.target.pitch) {
-          playNotes([{ midi: midiOfPitch(intent.target.pitch), startSeconds: 0, durationSeconds: 0.35 }]);
-        }
+        if (hoverToHear && intent.target?.kind === 'element') playId(intent.target.id, 0.35);
         return;
       }
       if (intent.target.kind !== 'element' || picked === null) return;
@@ -65,7 +68,7 @@ export function NoteHeard() {
         setMessage(`Incorrect — that was ${pitch}.`);
       }
     },
-    [hoverToHear, picked],
+    [hoverToHear, picked, playId],
   );
 
   return (
@@ -84,7 +87,7 @@ export function NoteHeard() {
           Hover to hear
         </label>
       </div>
-      <Notation score={score as MnxDocument}>
+      <Notation score={score as MnxDocument} ref={handleRef}>
         <Notation.Interaction targets={['element']} onIntent={onIntent} />
         <Notation.Marks states={states} />
       </Notation>

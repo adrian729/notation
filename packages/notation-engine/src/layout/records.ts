@@ -197,3 +197,15 @@ export function decomposeLength(length: Rational): NoteValueSpec[] {
   }
   return out;
 }
+
+export interface MeasureFlow {
+  repeatStart: boolean;
+  repeatEnd?: number;
+  ending?: { numbers: readonly number[]; duration: number };
+  segno?: number;
+  fine?: number;
+  jump?: { type: 'segno' | 'dsalfine'; offset: number };
+  invalid?: string;
+}
+
+export type MeasureFlows = readonly MeasureFlow[];

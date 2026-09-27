@@ -23,6 +23,8 @@ import {
   type Dots,
   type DurationBase,
   type KeySpec,
+  type MeasureFlow,
+  type MeasureFlows,
   type NormalizedBeam,
   type NoteId,
   type NoteValueSpec,
@@ -107,6 +109,7 @@ export interface NormalizedScore {
   id: string;
   divisions: number;
   tempo: TempoMap;
+  flow: MeasureFlows;
   staves: readonly NormalizedStaff[];
   beams: readonly NormalizedBeam[];
   ties: readonly NormalizedTie[];
@@ -173,6 +176,7 @@ export function normalize(doc: MnxDocument, options?: NotationOptions): Normaliz
     id: 'score',
     divisions,
     tempo: [],
+    flow: [],
     staves: [],
     beams: [],
     ties: [],
@@ -340,6 +344,7 @@ export function normalize(doc: MnxDocument, options?: NotationOptions): Normaliz
   resolveSlurs(reader);
   applySystemBreaks(source, globals, measures, reader);
   const tempo = resolveTempo(globals, measures, divisions, reader);
+  const flow = resolveFlow(globals, divisions);
   diagnostics.push(...ids.diagnostics);
   const beams = resolveBeams(source, partMeasures, measures, reader, options);
 
@@ -347,6 +352,7 @@ export function normalize(doc: MnxDocument, options?: NotationOptions): Normaliz
     id: idOf(source),
     divisions,
     tempo,
+    flow,
     staves: [
       {
         index: 0,
@@ -983,6 +989,42 @@ function resolveTempo(
     if (measure) start = R.add(start, measure.capacity);
   });
   return tempo;
+}
+
+function resolveFlow(globals: readonly unknown[], divisions: number): MeasureFlows {
+  return globals.map((raw) => {
+    const g = asObject(raw) ?? {};
+    const flow: { -readonly [K in keyof MeasureFlow]: MeasureFlow[K] } = { repeatStart: g.repeatStart !== undefined };
+    const offsetOf = (value: unknown): number | undefined => {
+      const fraction = fractionOf(asObject(asObject(value)?.location)?.fraction);
+      return fraction === undefined ? undefined : R.toTicks(fraction, divisions);
+    };
+    if (g.repeatEnd !== undefined) {
+      const times = asObject(g.repeatEnd)?.times;
+      flow.repeatEnd = typeof times === 'number' && Number.isInteger(times) && times >= 2 ? times : 2;
+    }
+    const ending = asObject(g.ending);
+    if (ending) {
+      const numbers = asArray(ending.numbers).filter((n): n is number => typeof n === 'number');
+      if (numbers.length > 0 && typeof ending.duration === 'number') {
+        flow.ending = { numbers, duration: ending.duration };
+      }
+    }
+    const segno = offsetOf(g.segno);
+    if (segno !== undefined) flow.segno = segno;
+    const fine = offsetOf(g.fine);
+    if (fine !== undefined) flow.fine = fine;
+    const jump = asObject(g.jump);
+    if (jump) {
+      const offset = offsetOf(jump);
+      if ((jump.type === 'segno' || jump.type === 'dsalfine') && offset !== undefined) {
+        flow.jump = { type: jump.type, offset };
+      } else {
+        flow.invalid = 'jump';
+      }
+    }
+    return flow;
+  });
 }
 
 function fractionOf(value: unknown): Rational | undefined {

@@ -46,6 +46,7 @@ export function layoutScore(doc: MnxDocument, options?: NotationOptions): Layout
       justified,
       temporal: timed,
       tempo: normalized.tempo,
+      flow: normalized.flow,
       divisions: normalized.divisions,
       diagnostics,
       beams: beamed,

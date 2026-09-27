@@ -38,7 +38,7 @@ In scope — full engraving, not a reduced subset:
 | Multi-measure | Any count, greedy system breaking | Done |
 | Multi-voice | 2 voices per staff | Done |
 | Interaction | Hit-testing, slots, `applyIntent({type:'setPitches'})` — ear-training answer entry, not a sheet editor (editor features deferred, `interaction.md`) | Done for exercise use |
-| Playback position | Discrete highlight (`mode:'notes'`) + exported timemap; continuous cursor (`mode:'cursor'`) deferred | Discrete done; cursor deferred |
+| Playback position | Discrete highlight (`mode:'notes'`) + exported timemap; continuous cursor (`mode:'cursor'`, app-driven via `setPlaybackTick`) | Done |
 | Accessibility | aria-label per note, text alternative | Done |
 | Theming | CSS custom properties | Done |
 

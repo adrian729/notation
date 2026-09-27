@@ -25,6 +25,7 @@ export type {
   Duration,
   DurationBase,
   KeySpec,
+  MeasureFlow,
   NormalizedBeam,
   NoteId,
   NoteValueSpec,
@@ -101,6 +102,7 @@ export type {
 } from './layout/types.js';
 
 export { buildTimeMap, DEFAULT_TEMPO_BPM } from './query/timemap.js';
+export type { PlaySegment } from './query/playorder.js';
 export type { MeasureTime, TempoOverride, TimeMap, TimeMapEntry } from './query/timemap.js';
 
 export { hitTest, HIT_STAFF_MARGIN } from './query/hitTest.js';

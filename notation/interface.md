@@ -35,7 +35,7 @@ Renders the `<svg>`, computes layout (`useMemo`, keyed on `score` identity), pro
 </Notation>
 ```
 
-- `Notation.Interaction` props = `NotationInteractionProps` and `Notation.Marks` props = `NotationMarksProps` (both `interaction.md`). `Notation.Playback` props = `{ view: PlaybackView }` (`playback.md`) — implemented for `mode:'notes'`/`'off'`; `mode:'cursor'` is a no-op (deferred), `mode:'manual'` is left untouched (driven only via `handle.setPlaybackTick`).
+- `Notation.Interaction` props = `NotationInteractionProps` and `Notation.Marks` props = `NotationMarksProps` (both `interaction.md`). `Notation.Playback` props = `{ view: PlaybackView }` (`playback.md`) — implemented for `mode:'notes'`/`'cursor'`/`'off'`; `mode:'cursor'` draws the playback cursor (`playback.md`), takes an optional `position` (default tick 0) and optional `highlightActive`; `mode:'manual'` declares nothing (only `handle.setPlaybackTick` writes highlights).
 - Render nothing themselves. `<Notation>` extracts their props via direct-child introspection (`React.Children`) — single render pass, no context round-trip. Must be direct children, same constraint as `<select><option>`.
 - One of each meaningful; duplicate = last wins.
 - Compound over flat props: pay only for what's used (no interaction code in the tree for a read-only reveal); a new behavior is a new child, not a bigger prop object.
@@ -48,13 +48,12 @@ interface NotationHandle {
   getTimeMap(): TimeMap;
   hitTest(p: { x: number; y: number }, opts?: HitOptions): HitResult | null;
   setPlaybackTick(tick: number): void;
-  animateCursor(span: unknown): never;            // deferred — mode:'cursor' is not built
   exportSVG(): string;
   focus(id: NoteId): void;                        // NoteId — a plain string, mnx.md's ID rule
 }
 ```
 
-Implemented in `notation-react`: `getLayout`, `getTimeMap`, `exportSVG`, `setPlaybackTick` (drives `mode:'notes'` highlighting from `timemap.activeAt(tick)`, imperatively, no re-render), `hitTest` (delegates to the engine's `hitTest` over the current layout), `focus` (focuses the element `<g>` by id via the same ref map `setPlaybackTick` uses; no-op if the id has no on-screen element). `animateCursor` still throws — `mode:'cursor'` is deferred (`roadmap.md`).
+Implemented in `notation-react`: `getLayout`, `getTimeMap`, `exportSVG`, `setPlaybackTick` (drives note highlighting from `timemap.activeAt(tick)` and, when `mode:'cursor'` is mounted, moves the cursor via `timemap.positionAtTick(tick)`; imperatively, no re-render, no clock: the app calls it each frame; the last imperative tick survives parent re-renders until layout or mode changes; ignored in `notes` and `off` modes), `hitTest` (delegates to the engine's `hitTest` over the current layout), `focus` (focuses the element `<g>` by id via the same ref map `setPlaybackTick` uses; no-op if the id has no on-screen element).
 
 ## Options
 

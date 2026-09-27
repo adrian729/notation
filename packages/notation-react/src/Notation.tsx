@@ -1,4 +1,4 @@
-import { Children, isValidElement, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { Children, isValidElement, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
 import type {
   CSSProperties,
   JSX,
@@ -30,8 +30,7 @@ export type PlaybackView =
   | { mode: 'notes'; activeIds: readonly string[] }
   | {
       mode: 'cursor';
-      position: { tick: number } | { seconds: number };
-      follow?: 'none' | 'scroll';
+      position?: { tick: number } | { seconds: number };
       highlightActive?: boolean;
     }
   | { mode: 'manual' };
@@ -50,7 +49,6 @@ export interface NotationHandle {
   exportSVG(): string;
   hitTest(point: { x: number; y: number }, opts?: Parameters<typeof hitTest>[2]): HitResult | null;
   setPlaybackTick(tick: number): void;
-  animateCursor(span: unknown): never;
   focus(id: NoteId): void;
 }
 
@@ -65,6 +63,7 @@ export interface NotationProps {
 }
 
 const GLYPH_FONT_SIZE = 4;
+const CURSOR_WIDTH = 0.3;
 
 export function Notation({
   score,
@@ -78,9 +77,13 @@ export function Notation({
   const layout = useMemo(() => layoutScore(score, options), [score, options]);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const elementRefs = useRef(new Map<string, SVGGElement>());
+  const cursorRef = useRef<SVGGElement | null>(null);
   const lastHoverRef = useRef<string | null>(null);
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
   const playbackView = extractPlaybackView(children);
+  const imperativeTickRef = useRef<number | null>(null);
+  const viewRef = useRef<PlaybackView | undefined>(playbackView);
+  viewRef.current = playbackView;
   const interaction = extractInteraction(children);
   const marks = extractMarks(children);
   const targets = interaction?.targets ?? EMPTY_TARGETS;
@@ -89,9 +92,23 @@ export function Notation({
     onLayout?.(layout);
   }, [layout, onLayout]);
 
-  useEffect(() => {
-    if (playbackView?.mode === 'notes') setPlaying(elementRefs.current, new Set(playbackView.activeIds));
-    else if (playbackView === undefined || playbackView.mode === 'off') setPlaying(elementRefs.current, EMPTY_IDS);
+  const playbackMode = playbackView?.mode;
+
+  useLayoutEffect(() => {
+    imperativeTickRef.current = null;
+  }, [layout, playbackMode]);
+
+  useLayoutEffect(() => {
+    const view = playbackView;
+    const tick = imperativeTickRef.current;
+    if (view?.mode === 'notes') setPlaying(elementRefs.current, new Set(view.activeIds));
+    else if (view?.mode === 'off') setPlaying(elementRefs.current, EMPTY_IDS);
+    else if (view?.mode === 'cursor') {
+      const at = tick ?? declaredTick(layout.timemap, view.position);
+      placeCursor(cursorRef.current, layout.timemap, at);
+      setPlaying(elementRefs.current, view.highlightActive ? new Set(layout.timemap.activeAt(at)) : EMPTY_IDS);
+    } else if (tick !== null) setPlaying(elementRefs.current, new Set(layout.timemap.activeAt(tick)));
+    else if (view === undefined) setPlaying(elementRefs.current, EMPTY_IDS);
   }, [playbackView, layout]);
 
   useEffect(() => {
@@ -115,8 +132,13 @@ export function Notation({
       getTimeMap: () => layout.timemap,
       exportSVG: () => serialize(svgRef.current),
       hitTest: (point, opts) => hitTest(layout, point, opts),
-      setPlaybackTick: (tick) => setPlaying(elementRefs.current, new Set(layout.timemap.activeAt(tick))),
-      animateCursor: () => notYet('animateCursor'),
+      setPlaybackTick: (tick) => {
+        const view = viewRef.current;
+        if (view?.mode === 'notes' || view?.mode === 'off') return;
+        imperativeTickRef.current = tick;
+        if (view?.mode === 'cursor') placeCursor(cursorRef.current, layout.timemap, tick);
+        if (view?.mode !== 'cursor' || view.highlightActive) setPlaying(elementRefs.current, new Set(layout.timemap.activeAt(tick)));
+      },
       focus: (id) => elementRefs.current.get(id)?.focus(),
     }),
     [layout],
@@ -232,6 +254,9 @@ export function Notation({
           ),
         )}
       </g>
+      {playbackView?.mode === 'cursor' && (
+        <CursorGroup groupRef={cursorRef} timemap={layout.timemap} position={playbackView.position} />
+      )}
       {marks?.preview != null && <PreviewGroup layout={layout} preview={marks.preview} />}
       {children}
     </svg>
@@ -242,6 +267,40 @@ export namespace Notation {
   export const Playback = PlaybackChild;
   export const Interaction = InteractionChild;
   export const Marks = MarksChild;
+}
+
+function declaredTick(timemap: TimeMap, position: { tick: number } | { seconds: number } | undefined): number {
+  if (!position) return 0;
+  return 'tick' in position ? position.tick : timemap.writtenTickAtSeconds(position.seconds);
+}
+
+function CursorGroup({
+  groupRef,
+  timemap,
+  position,
+}: {
+  groupRef: Ref<SVGGElement>;
+  timemap: TimeMap;
+  position: { tick: number } | { seconds: number } | undefined;
+}): JSX.Element {
+  const pos = timemap.positionAtTick(declaredTick(timemap, position));
+  return (
+    <g
+      ref={groupRef}
+      data-pn="cursor"
+      data-pn-cursor=""
+      data-pn-system={pos ? pos.systemIndex : undefined}
+      pointerEvents="none"
+      visibility={pos ? 'visible' : 'hidden'}
+    >
+      <rect
+        width={CURSOR_WIDTH}
+        x={pos ? pos.x - CURSOR_WIDTH / 2 : undefined}
+        y={pos?.yTop}
+        height={pos ? pos.yBottom - pos.yTop : undefined}
+      />
+    </g>
+  );
 }
 
 function PreviewGroup({ layout, preview }: { layout: LayoutResult; preview: NonNullable<NotationMarksProps['preview']> }): JSX.Element {
@@ -392,8 +451,17 @@ function serialize(svg: SVGSVGElement | null): string {
   return new XMLSerializer().serializeToString(clone);
 }
 
-function notYet(method: string): never {
-  throw new Error(
-    `NotationHandle.${method}() is not implemented yet — see roadmap.md Phase 3+`,
-  );
+function placeCursor(group: SVGGElement | null, timemap: TimeMap, tick: number): void {
+  if (!group) return;
+  const pos = timemap.positionAtTick(tick);
+  const rect = group.firstElementChild;
+  if (!pos || !rect) {
+    group.setAttribute('visibility', 'hidden');
+    return;
+  }
+  rect.setAttribute('x', String(pos.x - CURSOR_WIDTH / 2));
+  rect.setAttribute('y', String(pos.yTop));
+  rect.setAttribute('height', String(pos.yBottom - pos.yTop));
+  group.setAttribute('data-pn-system', String(pos.systemIndex));
+  group.setAttribute('visibility', 'visible');
 }

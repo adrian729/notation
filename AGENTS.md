@@ -1,15 +1,31 @@
 # Modules
-- Each package (`notation-model`, `notation-engine`, `notation-react`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-font` is a font build pipeline (not yet a pnpm workspace package) whose outputs are synced into engine/react assets.
-- Dependency direction only: model ← engine ← react; tools may use model + engine. Never import upward or sideways.
+- Each package (`notation-model`, `notation-engine`, `notation-react`, `audio`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-font` is a font build pipeline (not yet a pnpm workspace package) whose outputs are synced into engine/react assets.
+- Dependency direction only: model ← engine ← {react, audio}; tools may use model + engine. Never import upward or sideways.
 - Cross-package imports go through the package name and entry points declared in its `package.json` `exports`, never relative paths or deep `src/` paths. Every cross-package import must be declared in that package's `package.json`.
 - `notation-model` and `notation-engine`: no DOM, no React, no Node APIs (`lib` excludes DOM). Renderer-specific code lives only in a renderer package (`notation-react`, future others).
 - New concern that doesn't fit an existing package's role → new package, not a folder inside another.
 - `apps/*` consume packages only through their public exports; no app code inside packages.
 
+# App
+- `apps/app` (`@polyhymnia/app`) is the ear-training product SPA: Vite + React 19 + TypeScript, Tailwind CSS v4 (`@tailwindcss/vite`, CSS-first, no `tailwind.config.js`), shadcn/ui, TanStack Router (file-based, `routeTree.gen.ts` committed).
+- shadcn components live in `apps/app/src/components/ui`, generated via the shadcn CLI (`--cwd apps/app`), not hand-written.
+- Class merging uses the npm `cn` package (`src/lib/utils.ts` = `export { cn } from "cn"`), never `clsx`/`tailwind-merge`.
+- Colors: Catppuccin (Latte light, Mocha dark), primary = pink. `primary` is for fills (exact Latte/Mocha pink); pink text, links, rings and notation highlights use `primary-strong` (AA-safe on light backgrounds). Scales in `apps/app/src/styles/palette.css`, semantic shadcn tokens + notation `--pn-*` mapping in `apps/app/src/styles/theme.css`. Use semantic tokens or palette scales, never raw color values. Never pure black or white (`white`/`black` are remapped to Latte base / Mocha crust).
+- `apps/web` (`@polyhymnia/web`) is the notation demo/playground, not the product app.
+
+# Audio
+- `audio` imports model (runtime ok) and engine (types only), never react. Direction `model ← engine ← {react, audio}`.
+- `.` entry: no DOM, no Web Audio; only `./webaudio` touches `AudioContext`.
+- No rAF, `setTimeout` or `setInterval` in audio. The app owns the UI clock.
+- Sound derives only from `TimeMap` (`entries`, `tickToSeconds`, `playOrder`, `writtenTickAtSeconds`); audio never reads MNX documents.
+- Third-party audio libs or samples only behind `Instrument`, pinned, own entry; ask before installing.
+- `NoteEvent.id` is an MNX id; quiz data stays in the app.
+- Audio docs: `notation/audio.md`.
+
 # Interaction (answer entry)
 - Built: hit-testing, insertion slots, `applyIntent` (`notation/interaction.md`). Design every new feature so interaction keeps working on it; never take a shortcut interaction would have to undo.
 - Targets ear-training exercises (dictation, click-what-you-heard, error detection), not a sheet editor; editor features (drag pitch, palette, free multi-voice entry, measure/meter edits, copy/paste) are deferred, different scope.
-- Notation packages never produce sound and never run clocks/timers/rAF/animations-as-time; the app owns time and passes position, notation only shows.
+- `notation-*` packages never produce sound and never run clocks/timers/rAF/animations-as-time; the app owns time and passes position, notation only shows.
 - Every drawn element keeps its MNX/positional id and a hitbox in `LayoutResult`; ids stay stable when an edited document is re-laid out.
 - Derived notation (beams, tuplet brackets, accidentals, padding rests) is recomputed from MNX on each layout or produced by a pure MNX → MNX function; no state that exists only after rendering.
 

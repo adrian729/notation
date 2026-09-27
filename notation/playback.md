@@ -30,7 +30,11 @@ interface TimeMap {
   positionAtTick(tick: number): { systemIndex: number; x: number; yTop: number; yBottom: number } | null;
   activeAt(tick: number): readonly NoteId[];    // written spans — a tie continuation lights on its own, not the tie head
   byId(id: NoteId): TimeMapEntry | undefined;   // tie-merged entries — sound still spans the whole tie
+  playOrder(): readonly PlaySegment[];                                   // unrolled repeats/voltas/jumps, tempo-independent
+  writtenTickAt(playedTick: number): number;                             // unrolled tick -> written tick (cursor, highlight)
+  writtenTickAtSeconds(seconds: number, tempo?: TempoOverride): number;  // unrolled seconds -> written tick
 }
+interface PlaySegment { fromTick: number; toTick: number; playedStartTick: number }   // written ticks, in play order
 ```
 
 Reachable via `onLayout(layout)` (declarative) or `handle.getTimeMap()` (imperative pull).
@@ -41,10 +45,16 @@ Scheduling — notation time → audio time, no musical arithmetic in the audio 
 
 ```ts
 const tm = layout.timemap; const t0 = ctx.currentTime + LEAD_IN;
-for (const e of tm.entries) {
-  if (e.kind === 'rest') continue;
-  const start = t0 + tm.tickToSeconds(e.tick), end = t0 + tm.tickToSeconds(e.tick + e.durationTicks);
-  for (const midi of e.midiNotes ?? [e.midi!]) sampler.start({ note: midi, time: start, duration: end - start });
+let elapsed = 0;
+for (const seg of tm.playOrder()) {
+  const at = (tick: number) => tm.tickToSeconds(tick) - tm.tickToSeconds(seg.fromTick);
+  for (const e of tm.entries) {
+    if (e.kind === 'rest' || e.tick < seg.fromTick || e.tick >= seg.toTick) continue;
+    const end = Math.min(e.tick + e.durationTicks, seg.toTick);
+    const start = t0 + elapsed + at(e.tick);
+    for (const midi of e.midiNotes ?? [e.midi!]) sampler.start({ note: midi, time: start, duration: at(end) - at(e.tick) });
+  }
+  elapsed += at(seg.toTick);
 }
 ```
 
@@ -52,13 +62,21 @@ Reporting — audio time → notation time, driven by the *audible* clock:
 
 ```ts
 function frame() {
-  const tick = tm.secondsToTick(ctx.currentTime - t0);
+  const tick = tm.writtenTickAtSeconds(ctx.currentTime - t0);
   handle.setPlaybackTick(tick);
   raf = requestAnimationFrame(frame);
 }
 ```
 
 **Latency contract:** the position fed to the component MUST derive from `audioContext.currentTime`, never the scheduler's lookahead pointer. Web Audio lookahead queues 100–200ms ahead; driving the cursor from "what was last queued" makes it visibly run ahead of the sound. `tickToSeconds(0)` = when the first note actually sounds; lead-in is the caller's problem, not the component's.
+
+## Repeats and jumps
+
+Layout stays in written order; nothing is duplicated or moved. `timemap.playOrder()` lists the written-tick segments an audio layer plays, in order, with repeats, voltas (`ending`) and jumps (`segno` / `dsalfine` with `segno` and `fine`) unrolled and contiguous runs merged; a score with no such constructs yields one segment. A repeat plays `max(times, highest ending number in the ending group at that repeat)` passes, so `1, 2, 3` endings play three times. Each segment carries `playedStartTick`, its start on the unrolled timeline. Schedule by iterating segments and offsetting by the summed durations of earlier segments (see the snippet above); map the audible clock back with `writtenTickAtSeconds` (or `writtenTickAt` for ticks) and feed the result to `activeAt` / `positionAtTick`.
+
+Sound generation from this contract lives in `packages/audio` (`audio.md`).
+
+Tie-merged entries can straddle a segment boundary (a note tied across a repeat barline is one entry). Audio must clip: schedule an entry in a segment only when its start is in `[fromTick, toTick)` and clamp its duration to `toTick`. Tempo lookups use written ticks, so tempo changes inside a repeated section apply on every pass, and a tempo mark in a later measure does not carry back into an earlier one on a backward jump. After a jump, repeats and endings are not taken again. A `segno` or `fine` without a jump, and an `ending` without `numbers`, are ignored (written order, no diagnostic). Written order plus an `mnx-unsupported` diagnostic is the fallback for: nested repeats, endings combined with jumps, multiple jumps (or multiple segnos/fines alongside a jump), a jump without a preceding segno, a `dsalfine` without a following fine, a mid-measure jump, an invalid jump, and a repeat structure too long to unroll.
 
 ## Tempo
 
@@ -82,32 +100,18 @@ Both conversions take an optional `TempoOverride` second argument: a single cons
 type PlaybackView =
   | { mode: 'off' }
   | { mode: 'notes'; activeIds: readonly NoteId[] }
-  | { mode: 'cursor'; position: {tick:number}|{seconds:number}; follow?: 'none'|'scroll'; highlightActive?: boolean }
-  | { mode: 'manual' };   // driven entirely via the imperative handle
+  | { mode: 'cursor'; position?: {tick:number}|{seconds:number}; highlightActive?: boolean }
+  | { mode: 'manual' };   // no declared output; only handle.setPlaybackTick writes highlights
 ```
 
-`notes` is the common case — a `Set` membership check written imperatively onto each element's `<g>` ref, `data-pn-playing="true"` on matches. Costs nothing (a chord-ID quiz playing four notes is the whole feature). Implemented (`notation-react`, plan `phase3-rhythm.md` step 7a): `<Notation.Playback view={{mode:'notes', activeIds}} />` for the declarative case, or `handle.setPlaybackTick(tick)` to derive the same highlight from `timemap.activeAt(tick)` without a `Playback` child. `activeAt` looks up each written note/chord's own span, not the tie-merged `entries` (`## Timemap` above) — so a tied continuation lights when playback reaches it, and the tie start unlights; `byId` still resolves to the merged entry, so anything scheduling sound off it keeps hearing one note across the tie. `cursor` is continuous playback; `highlightActive: true` derives `activeIds` from `timemap.activeAt(tick)` so the caller never maintains both — deferred, currently a no-op in `<Notation.Playback>` (doesn't throw). With a practice tempo, the app converts its elapsed time with `timemap.secondsToTick(seconds, tempo)` and passes the resulting `activeAt` ids in `notes` mode.
+`notes` is the common case — a `Set` membership check written imperatively onto each element's `<g>` ref, `data-pn-playing="true"` on matches. Costs nothing (a chord-ID quiz playing four notes is the whole feature). Implemented (`notation-react`, plan `phase3-rhythm.md` step 7a): `<Notation.Playback view={{mode:'notes', activeIds}} />` for the declarative case, or `handle.setPlaybackTick(tick)` to derive the same highlight from `timemap.activeAt(tick)` without a `Playback` child. `activeAt` looks up each written note/chord's own span, not the tie-merged `entries` (`## Timemap` above) — so a tied continuation lights when playback reaches it, and the tie start unlights; `byId` still resolves to the merged entry, so anything scheduling sound off it keeps hearing one note across the tie. `cursor` is continuous playback: `<Notation.Playback view={{mode:'cursor', position}} />` renders the cursor at `timemap.positionAtTick(tick)` (`position` is optional and defaults to tick 0, so imperative-only driving works; `{seconds}` is converted with `timemap.writtenTickAtSeconds`, correct with repeats); `highlightActive: true` also derives the `data-pn-playing` set from `timemap.activeAt(tick)`. Scroll-follow is not built; the app scrolls itself using `positionAtTick`. With a practice tempo, the app converts its elapsed time with `timemap.secondsToTick(seconds, tempo)` and passes the resulting `activeAt` ids in `notes` mode.
 
 `positionAtTick` interpolates piecewise-linearly between column x positions, timed so the cursor reaches column *i* exactly when it sounds — NOT time-proportional, since spacing follows the power law in `engraving.md` and proportional motion would drift off the noteheads for mixed durations.
 
 ## 60fps cursor without re-rendering the score
 
-A `setState`-driven cursor at 60fps re-renders the whole score 60×/sec — unacceptable, and it would undo the whole point of a declarative renderer. Three mechanisms, in order of preference:
-
-1. **WAAPI** (preferred) — the audio engine knows a scheduled span's wall-clock start/duration, so the cursor gets **zero per-frame JS**:
-   ```ts
-   interface CursorSpan { fromTick: number; toTick: number; startTimeMs: number; durationMs: number }
-   handle.animateCursor({ fromTick, toTick, startTimeMs, durationMs } satisfies CursorSpan);
-   // internally: cursorGroup.animate(keyframes, { duration, easing: 'linear', fill: 'forwards' })
-   // keyframes built from timemap column x's, offset = normalized time — reproduces the
-   // piecewise-linear motion above in one Animation object
-   ```
-   Survives tab throttling, pauseable/seekable via `Animation.currentTime`. Relies on `transform: translateX()` on an SVG `<g>` (SVG2/CSS-transforms) — well-supported in current Chrome/Firefox/Safari but smoke-test Safari before committing (`roadmap.md`). A revived cursor must be driven by app-supplied position, not internal animation timing: `startTimeMs`/`durationMs` are presentation only, the app's clock (derived from `audioContext.currentTime`, per the latency contract above) stays the single source of truth, and pause, seek and tempo changes arrive as new app-supplied positions or spans — the component never reads its own animation back as a position source.
-2. **rAF + a single attribute write** via ref — for seeking/scrubbing, or an engine that doesn't know spans in advance. No React render.
-3. **The declarative `position` prop** — tests, SSR, low-frequency updates. Always correct, never the hot path.
-
-None of these create/remove/reparent DOM nodes: the cursor `<g>` is created and keyed by React; imperative code only writes a transform on it. No StrictMode double-effect hazard, because there's nothing created to duplicate. The `architecture.md` rule still holds — nothing creates/removes/reparents nodes outside the reconciler; writing a transform attribute on a React-owned node isn't an exception to it.
+The app owns time and calls `handle.setPlaybackTick(tick)` each frame (from its own rAF, derived from `audioContext.currentTime` per the latency contract above). The handle writes the cursor rect's `x`/`y`/`height` and `data-pn-system` directly on the React-owned `<g data-pn-cursor>`, plus `data-pn-playing` on elements. No React render, no node creation, so no StrictMode hazard and the `architecture.md` rule holds. The notation package runs no clock and no animation (no WAAPI, no rAF, no `animateCursor`). The declarative `position` prop is the initial and low-frequency position: the first render places the cursor synchronously from `positionAtTick` (so `renderToString` emits `x`/`y`/`height`), and placement is a layout effect, so no stale frame after re-layout. Once `setPlaybackTick` has been called, that tick wins over `position` across parent re-renders (hover/select re-renders do not move a paused cursor) until the score/layout or the mode changes. Highlights follow one rule: written by `setPlaybackTick` or declared position only for `mode:'cursor'` with `highlightActive`, for `manual`/no `Playback` child, and by `activeIds` in `notes` mode (which ignores `setPlaybackTick`). The cursor is pure output of layout + tick: it is not in `LayoutResult`, has no hitbox, and does not affect ids or layout. It is hidden when `positionAtTick` returns null (empty score).
 
 ## Presentation
 
-CSS only. The component emits `<g data-pn-cursor><rect/></g>` spanning the staff height — it doesn't decide line vs. band vs. glow vs. off (not built yet, deferred). `mode:'notes'` only sets `data-pn-playing` — styling is entirely the app's call (`architecture.md` theming contract).
+CSS only. The component emits `<g data-pn="cursor" data-pn-cursor><rect/></g>` spanning the system's staff height (0.3 sp wide, `visibility="hidden"` until positioned); `packages/notation-react/styles/notation.css` gives it `--pn-cursor` / `--pn-cursor-opacity`, and the app can restyle via `[data-pn-cursor]`. `mode:'notes'` only sets `data-pn-playing` — styling is entirely the app's call (`architecture.md` theming contract).

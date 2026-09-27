@@ -29,6 +29,12 @@
 .pn-notation [data-pn='staff-line'] {
   color: var(--pn-staff, #999);
 }
+.pn-notation [data-pn='element'] {
+  outline: none;
+}
+.pn-notation [data-pn='element']:focus-visible {
+  color: var(--pn-focus, #0969da);
+}
 .pn-notation [data-pn-selected] {
   color: var(--pn-selected, #0969da);
 }

@@ -5,6 +5,7 @@ import {
   describePitch,
   type Duration,
   type DurationBase,
+  type MeasureFlows,
   type NoteId,
   type TempoMap,
   type TimeSpec,
@@ -13,6 +14,7 @@ import type { NotationOptions } from '../options.js';
 import type { BeamsResult } from './beams.js';
 import type { CurvesResult } from './curves.js';
 import type { TupletsResult } from './tuplets.js';
+import { resolvePlayOrder } from '../query/playorder.js';
 import { buildTimeMap, type MeasureTime, type Placement } from '../query/timemap.js';
 import { buildMeasureBox } from '../query/measures.js';
 import { measureSlots } from '../query/slots.js';
@@ -48,6 +50,7 @@ export interface EmitInput {
   justified: JustifiedScore;
   temporal: TemporalScore;
   tempo: TempoMap;
+  flow: MeasureFlows;
   divisions: number;
   diagnostics: readonly Diagnostic[];
   beams: BeamsResult;
@@ -155,6 +158,7 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
     Math.max(0, systems.length - 1) * systemGap +
     bottomMargin;
 
+  const playOrder = resolvePlayOrder(input.flow, measureTimes);
   const timemap = buildTimeMap({
     divisions: input.divisions,
     tempo: input.tempo,
@@ -162,6 +166,7 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
     placement,
     measures: measureTimes,
     systems,
+    playOrder: playOrder.segments,
   });
 
   return {
@@ -175,7 +180,7 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
     slots,
     measures,
     timemap,
-    diagnostics: input.diagnostics,
+    diagnostics: [...input.diagnostics, ...playOrder.diagnostics],
   };
 }
 

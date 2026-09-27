@@ -2,6 +2,7 @@ import { Rational as R } from '@polyhymnia/notation-model';
 import { midiOf, noteValueSpecLength, type NoteId, type NoteValueSpec, type TempoEvent, type TempoMap } from '../layout/records.js';
 import type { TemporalElement } from '../layout/temporal.js';
 import type { SystemBox } from '../layout/types.js';
+import type { PlaySegment } from './playorder.js';
 
 export interface TimeMapEntry {
   ids: readonly NoteId[];
@@ -40,6 +41,9 @@ export interface TimeMap {
   ): { systemIndex: number; x: number; yTop: number; yBottom: number } | null;
   activeAt(tick: number): readonly NoteId[];
   byId(id: NoteId): TimeMapEntry | undefined;
+  playOrder(): readonly PlaySegment[];
+  writtenTickAt(playedTick: number): number;
+  writtenTickAtSeconds(seconds: number, tempo?: TempoOverride): number;
 }
 
 export interface Placement {
@@ -55,6 +59,7 @@ export interface TimeMapInput {
   placement: ReadonlyMap<NoteId, Placement>;
   measures: readonly MeasureTime[];
   systems: readonly SystemBox[];
+  playOrder?: readonly PlaySegment[];
 }
 
 export const DEFAULT_TEMPO_BPM = 120;
@@ -66,6 +71,15 @@ export function buildTimeMap(input: TimeMapInput): TimeMap {
   const segments = buildTempoSegments(input.tempo, input.divisions);
   const measures = [...input.measures].sort((a, b) => a.startTick - b.startTick);
   const byTick = onsets(entries);
+  const byIdMap = new Map<NoteId, TimeMapEntry>();
+  for (const entry of entries) {
+    for (const id of entry.ids) if (!byIdMap.has(id)) byIdMap.set(id, entry);
+  }
+  const playSegments: readonly PlaySegment[] =
+    input.playOrder ??
+    (measures.length === 0
+      ? []
+      : [{ fromTick: measures[0]!.startTick, toTick: measures[measures.length - 1]!.endTick, playedStartTick: 0 }]);
 
   const segmentsFor = (tempo?: TempoOverride): readonly TempoSegment[] =>
     tempo === undefined ? segments : buildTempoSegments([{ tick: 0, ...tempo }], input.divisions);
@@ -144,7 +158,30 @@ export function buildTimeMap(input: TimeMapInput): TimeMap {
       return ids;
     },
     byId(id) {
-      return entries.find((entry) => entry.ids.includes(id));
+      return byIdMap.get(id);
+    },
+    playOrder() {
+      return playSegments;
+    },
+    writtenTickAt(playedTick) {
+      if (playSegments.length === 0) return Math.max(0, playedTick);
+      let segment = playSegments[0]!;
+      for (const candidate of playSegments) {
+        if (candidate.playedStartTick <= playedTick) segment = candidate;
+        else break;
+      }
+      const offset = Math.max(0, playedTick - segment.playedStartTick);
+      return segment.fromTick + Math.min(offset, segment.toTick - segment.fromTick);
+    },
+    writtenTickAtSeconds(seconds, tempo) {
+      if (playSegments.length === 0) return secondsToTick(seconds, tempo);
+      let remaining = Math.max(0, seconds);
+      for (const segment of playSegments) {
+        const length = tickToSeconds(segment.toTick, tempo) - tickToSeconds(segment.fromTick, tempo);
+        if (remaining < length) return secondsToTick(tickToSeconds(segment.fromTick, tempo) + remaining, tempo);
+        remaining -= length;
+      }
+      return playSegments[playSegments.length - 1]!.toTick;
     },
   };
 }

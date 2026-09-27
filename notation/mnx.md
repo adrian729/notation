@@ -51,7 +51,7 @@ Note values: `breve`, `whole`, `half`, `quarter`, `eighth`, `16th`, `32nd`, `64t
 - Grace notes, multi-note tremolo (its time is left blank via a `space`), lyrics, dynamics, ottavas, arpeggios/non-arpeggios, staff configs, measure repeats
 - `slur.lineType` other than `'solid'` (drawn solid); `slur.sideEnd` differing from `slur.side` (the start side is used for the whole curve)
 - `tuplet.showValue` (only the actual count is drawn, per `showNumber`/`options.tuplets.showRatio`)
-- `ending`, `jump`, `segno`, `fine`, `fermata` (global or per-event), multimeasure rests
+- `ending`, `jump`, `segno`, `fine` (honored for playback order via `timemap.playOrder()`, but not drawn), `fermata` (global or per-event), multimeasure rests
 - A measure's `number` override (ignored — measures are numbered positionally)
 - `note.written`/`note.perform` (sounding pitch is drawn instead; perform hints are ignored)
 - Cross-staff notes/events/tuplets (laid out on staff 1 regardless)

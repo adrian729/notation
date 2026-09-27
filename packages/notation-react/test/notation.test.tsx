@@ -1,4 +1,5 @@
 import { createRef } from 'react';
+import type { JSX } from 'react';
 import { render, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { layoutScore } from '@polyhymnia/notation-engine';
@@ -117,7 +118,6 @@ describe('NotationHandle', () => {
     expect(svg).toContain('http://www.w3.org/2000/svg');
 
     expect(handle.hitTest({ x: -1000, y: -1000 })).toBeNull();
-    expect(() => handle.animateCursor(null)).toThrow(/roadmap/);
     expect(() => handle.focus('n1')).not.toThrow();
     expect(() => handle.setPlaybackTick(0)).not.toThrow();
   });
@@ -277,4 +277,58 @@ describe('presets', () => {
     expect(fittingMeter(QUARTER, 1)).toEqual({ count: 1, unit: 4 });
   });
 
+});
+
+describe('playback cursor', () => {
+  const NARROW = { widthSp: 20 };
+
+  it('draws the cursor at positionAtTick on the right system, moves via handle, absent when off', () => {
+    const ref = createRef<NotationHandle>();
+    const { container, rerender } = render(
+      <Notation score={simpleScore()} options={NARROW} ref={ref}>
+        <Notation.Playback view={{ mode: 'cursor', position: { tick: 0 } }} />
+      </Notation>,
+    );
+    const handle = ref.current!;
+    const layout = handle.getLayout();
+    expect(layout.systems.length).toBeGreaterThan(1);
+    const rect = (): Element => container.querySelector('[data-pn-cursor] rect')!;
+    const group = (): Element => container.querySelector('[data-pn-cursor]')!;
+
+    const last = layout.timemap.entries[layout.timemap.entries.length - 1]!;
+    const first = layout.timemap.positionAtTick(0)!;
+    expect(group().getAttribute('data-pn-system')).toBe(String(first.systemIndex));
+
+    handle.setPlaybackTick(last.tick);
+    const pos = layout.timemap.positionAtTick(last.tick)!;
+    expect(pos.systemIndex).toBe(layout.systems.length - 1);
+    expect(group().getAttribute('data-pn-system')).toBe(String(pos.systemIndex));
+    expect(Number(rect().getAttribute('x'))).toBeLessThan(pos.x);
+    expect(Number(rect().getAttribute('x')) + Number(rect().getAttribute('width') ?? 0.3) / 2).toBeCloseTo(pos.x);
+    expect(Number(rect().getAttribute('y'))).toBeCloseTo(pos.yTop);
+    expect(Number(rect().getAttribute('height'))).toBeCloseTo(pos.yBottom - pos.yTop);
+
+    rerender(
+      <Notation score={simpleScore()} options={NARROW} ref={ref}>
+        <Notation.Playback view={{ mode: 'off' }} />
+      </Notation>,
+    );
+    expect(container.querySelector('[data-pn-cursor]')).toBeNull();
+  });
+
+  it('keeps the imperatively driven cursor across parent re-renders with an inline view', () => {
+    const ref = createRef<NotationHandle>();
+    const score = simpleScore();
+    const tree = (): JSX.Element => (
+      <Notation score={score} options={NARROW} ref={ref}>
+        <Notation.Playback view={{ mode: 'cursor' }} />
+      </Notation>
+    );
+    const { container, rerender } = render(tree());
+    const last = ref.current!.getLayout().timemap.entries.at(-1)!;
+    ref.current!.setPlaybackTick(last.tick);
+    const x = container.querySelector('[data-pn-cursor] rect')!.getAttribute('x');
+    rerender(tree());
+    expect(container.querySelector('[data-pn-cursor] rect')!.getAttribute('x')).toBe(x);
+  });
 });
