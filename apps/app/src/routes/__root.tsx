@@ -12,7 +12,7 @@ function SiteHeader() {
     <header className="border-b px-6 py-3">
       <Link
         to="/"
-        className="inline-flex items-center gap-2.5 rounded-sm text-lg font-semibold outline-none transition-colors hover:text-primary-strong focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="inline-flex items-center gap-2.5 rounded-sm text-lg font-semibold text-teal-800 outline-none transition-colors hover:text-teal-600 focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <img src={LOGO_URL} alt="" className="size-8" />
         Polyhymnia

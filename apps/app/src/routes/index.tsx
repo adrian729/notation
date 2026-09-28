@@ -18,8 +18,8 @@ function HomePage() {
     <div className="mx-auto flex max-w-2xl flex-col gap-12 px-6 py-24">
       <div className="flex flex-col items-center gap-3 text-center">
         <img src={LOGO_URL} alt="" className="mb-3 size-32" />
-        <h1 className="text-4xl font-semibold tracking-tight">Polyhymnia</h1>
-        <p className="text-lg text-muted-foreground">
+        <h1 className="text-4xl font-semibold tracking-tight text-teal-800">Polyhymnia</h1>
+        <p className="text-lg text-teal-600">
           Train your ear, one phrase at a time.
         </p>
       </div>
