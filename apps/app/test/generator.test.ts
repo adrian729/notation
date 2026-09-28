@@ -38,13 +38,13 @@ describe('generateQuestion invariants', () => {
       const low = midiOfToken(options.range.low);
       const high = midiOfToken(options.range.high);
       const rng = mulberry32(toneRelationship.length * 1000 + 7);
+      const answers = new Set<string>();
 
       for (let i = 0; i < 200; i++) {
         const q = generateQuestion(options, rng);
         const specA = intervalById(q.a.size);
         const specB = intervalById(q.b.size);
 
-        expect(specA.semitones).not.toBe(specB.semitones);
         expect(options.intervals).toContain(q.a.size);
         expect(options.intervals).toContain(q.b.size);
 
@@ -74,10 +74,12 @@ describe('generateQuestion invariants', () => {
           expect(Math.abs(aRoot - bRoot)).toBeLessThanOrEqual(4);
         }
 
-        const correctSpec = q.correct === 'A' ? specA : specB;
-        const otherSpec = q.correct === 'A' ? specB : specA;
-        expect(correctSpec.semitones).toBeGreaterThan(otherSpec.semitones);
+        const expected =
+          specA.semitones === specB.semitones ? 'same' : specA.semitones > specB.semitones ? 'A' : 'B';
+        expect(q.correct).toBe(expected);
+        answers.add(q.correct);
       }
+      expect(answers).toEqual(new Set(['A', 'B', 'same']));
     });
   }
 

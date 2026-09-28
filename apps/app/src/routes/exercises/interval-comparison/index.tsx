@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { CircleHelp, SlidersHorizontal } from 'lucide-react';
+import { CircleCheck, CircleHelp, SlidersHorizontal } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -47,7 +47,7 @@ function WorkshopPage() {
             </PopoverContent>
           </Popover>
         </div>
-        <p className="text-muted-foreground">Which interval is larger? No theory needed — the recommended first exercise.</p>
+        <p className="text-muted-foreground">Which interval is larger, or are they the same? No theory needed — the recommended first exercise.</p>
       </div>
 
       <Button asChild variant="outline" className="self-start">
@@ -104,12 +104,15 @@ function WorkshopPage() {
                     to="/exercises/interval-comparison/lesson/$lessonId"
                     params={{ lessonId: lesson.id }}
                     className={cn(
-                      'flex flex-col items-start gap-1 rounded-lg border px-3 py-2 text-sm hover:bg-muted',
-                      result?.passed && 'border-success',
+                      'flex flex-col items-start gap-1 rounded-lg border px-3 py-2 text-sm',
+                      result?.passed ? 'border-success bg-success/25 hover:bg-success/40' : 'hover:bg-muted',
                     )}
                   >
-                    <span className="font-medium">{lesson.title}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      {lesson.title}
+                      {result?.passed && <CircleCheck className="size-4 text-success-strong" aria-hidden />}
+                    </span>
+                    <span className={cn('text-xs', result?.passed ? 'font-medium text-success-strong' : 'text-muted-foreground')}>
                       {result ? `Best: ${result.bestPercent}%${result.passed ? ' — passed' : ''}` : 'Not attempted'}
                     </span>
                   </Link>

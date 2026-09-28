@@ -22,11 +22,13 @@ export interface IntervalTones {
   name: string;
 }
 
+export type Answer = 'A' | 'B' | 'same';
+
 export interface Question {
   mode: PlayingMode;
   a: IntervalTones;
   b: IntervalTones;
-  correct: 'A' | 'B';
+  correct: Answer;
   clef: 'treble' | 'bass';
 }
 
@@ -101,15 +103,8 @@ function randomInt(rng: Rng, minInclusive: number, maxInclusive: number): number
   return minInclusive + Math.floor(rng() * (maxInclusive - minInclusive + 1));
 }
 
-function pickTwoSizes(intervals: readonly IntervalId[], rng: Rng): [IntervalId, IntervalId] {
-  const pairs: [IntervalId, IntervalId][] = [];
-  for (let i = 0; i < intervals.length; i++) {
-    for (let j = i + 1; j < intervals.length; j++) {
-      pairs.push([intervals[i]!, intervals[j]!]);
-    }
-  }
-  const [x, y] = pairs[Math.floor(rng() * pairs.length)]!;
-  return rng() < 0.5 ? [x, y] : [y, x];
+function pickSize(intervals: readonly IntervalId[], rng: Rng): IntervalId {
+  return intervals[Math.floor(rng() * intervals.length)]!;
 }
 
 export interface LastQuestionSignature {
@@ -138,7 +133,8 @@ export function generateQuestion(
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const mode = options.playingModes[Math.floor(rng() * options.playingModes.length)]!;
-    const [sizeA, sizeB] = pickTwoSizes(options.intervals, rng);
+    const sizeA = pickSize(options.intervals, rng);
+    const sizeB = pickSize(options.intervals, rng);
     if (last && sameSignature({ mode, sizeA, sizeB }, last) && attempt < MAX_ATTEMPTS - 1) continue;
 
     const specA = intervalById(sizeA);
@@ -208,7 +204,8 @@ function finishQuestion(
 ): Question {
   const specA = intervalById(sizeA);
   const specB = intervalById(sizeB);
-  const correct: 'A' | 'B' = specA.semitones > specB.semitones ? 'A' : 'B';
+  const correct: Answer =
+    specA.semitones === specB.semitones ? 'same' : specA.semitones > specB.semitones ? 'A' : 'B';
   const tones = [pitchMidi(a.root), pitchMidi(a.other), pitchMidi(b.root), pitchMidi(b.other)].sort(
     (x, y) => x - y,
   );
@@ -243,7 +240,9 @@ export function validateExerciseOptions(raw: Partial<ExerciseOptions>): Validati
   const base = validateOptions(raw);
   if (!base.valid) return base;
   const options = normalizeOptions(raw);
-  if (!canGenerateQuestion(options)) {
+  const widest = Math.max(...options.intervals.map((id) => intervalById(id).semitones));
+  const span = midiOfToken(options.range.high) - midiOfToken(options.range.low);
+  if (widest > span || !canGenerateQuestion(options)) {
     return { valid: false, errors: [...base.errors, 'Range too narrow for the selected intervals.'] };
   }
   return base;

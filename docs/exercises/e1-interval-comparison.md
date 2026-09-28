@@ -14,13 +14,13 @@ Implementation: `apps/app/src/exercises/interval-comparison/` (pure logic) and `
 
 ## Shows
 
-- Before answering: the instruction "Which interval is larger?", the **A** and **B** buttons, **Play question**, and in lessons the progress bar. No staff [EM: the staff only shows the tones after answering and is never an input].
-- A and B are disabled until the question has started playing [ours].
+- Before answering: the instruction "Which interval is larger, or are they the same?", the **A**, **Same** and **B** buttons, **Play question**, and in lessons the progress bar. No staff [EM: the staff only shows the tones after answering and is never an input].
+- The answer buttons are disabled until the question has started playing [ours].
 
 ## Answer
 
 - Press **A** or **B** (mouse, touch, or keys `A` / `B`) [EM: "Choose A with the mouse or on the keyboard"].
-- Binary only; there is no "equal" answer [EM]. Pairs of equal size are never generated [ours; EarMaster never mentions ties].
+- Press **Same** (key `S`) when A and B are the same size [ours; EarMaster's answer is binary and it never generates ties].
 - One answer per question; it is evaluated immediately [EM F15].
 - Anything that ends the question (answering, **Finish** in endless mode, or leaving) stops the sound immediately; **Play question** can replay it afterwards [ours].
 
@@ -45,7 +45,7 @@ The custom exercise screen explains every option inline, reusing the lesson help
 ## Question choice
 
 - Mode: uniform among the enabled modes [EM].
-- Sizes: two different semitone sizes from the enabled set, uniform over pairs; which one is A is random, so A and B are each correct about half the time; the exact same pair and order never repeats back to back [ours].
+- Sizes: A and B are each drawn uniformly and independently from the enabled set, so they may be the same size (probability 1 ÷ the number of enabled sizes); the exact same pair and order never repeats back to back [ours].
 - Roots, by tone relationship. The **first tone** is the tone played first: the lower tone for ascending and harmonic, the upper tone for descending [EM: "melodic down … the top tone in common"].
   - Common first tone: A and B share their first tone [EM].
   - Common first or second tone: A and B share either their first tone or their second tone, 50/50 [ours; EarMaster names the lesson but does not define it].
@@ -57,7 +57,7 @@ The custom exercise screen explains every option inline, reusing the lesson help
 ## Feedback / scoring
 
 - After answering, the chosen button turns green if right or red if wrong; the correct button is always green [EM F16].
-- The instruction line says "Correct: B was larger" or "Wrong: A was larger" [ours wording].
+- The instruction line says "Correct: B was larger", "Wrong: A was larger" or "Correct: A and B were the same size" [ours wording].
 - Reveal: both intervals on their own staff, stacked (A above B) at a large, fixed size, labelled **A** and **B** with their name and direction (e.g. "Major 3rd, ascending"). Clef: treble unless the question's middle tone lies below C4, then bass [EM shows tones; labels and names ours].
 - Play question still works after answering. **Next question** (`Enter`) continues [EM behaviour; EarMaster labels it "New question"].
 - Question score: right or wrong. Lesson or session score: right answers ÷ questions asked, as a percentage [EM F15].
@@ -86,5 +86,5 @@ Workshop: 20 modules = 5 interval families × 4 tone relationships, each with an
 ## Notes
 
 - Needs no theory, so it is the recommended first exercise [EM].
-- Keyboard: `A`, `B` answer; `Space` plays the question; `Enter` goes to the next question once answered [ours; EarMaster's F5/F6/F7/F8 shortcuts do not suit a browser].
+- Keyboard: `A`, `S` (same), `B` answer; `Space` plays the question; `Enter` goes to the next question once answered [ours; EarMaster's F5/F6/F7/F8 shortcuts do not suit a browser].
 - Harmonic seconds must render with side-by-side noteheads; if they don't, that is a `notation-engine` gap to report, not something to work around in the app.

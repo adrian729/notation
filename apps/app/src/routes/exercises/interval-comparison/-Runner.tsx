@@ -15,6 +15,7 @@ import {
   recordAnswer,
   recordLessonResult,
   scoreOf,
+  type Answer,
   type ExerciseOptions,
   type LastQuestionSignature,
   type LessonFlowState,
@@ -36,12 +37,12 @@ interface RunnerState {
   question: Question | null;
   lastSignature: LastQuestionSignature | undefined;
   phase: Phase;
-  selected: 'A' | 'B' | null;
+  selected: Answer | null;
   playCount: number;
 }
 
 type Action =
-  | { type: 'answer'; choice: 'A' | 'B' }
+  | { type: 'answer'; choice: Answer }
   | { type: 'next'; options: ExerciseOptions }
   | { type: 'restart'; options: ExerciseOptions }
   | { type: 'retryGeneration'; options: ExerciseOptions }
@@ -250,7 +251,7 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
   }, [state.question, play, sound]);
 
   const answer = useCallback(
-    (choice: 'A' | 'B') => {
+    (choice: Answer) => {
       if (state.phase !== 'playing') return;
       dispatch({ type: 'answer', choice });
     },
@@ -305,6 +306,9 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
       } else if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();
         answer('B');
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        answer('same');
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -332,6 +336,7 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
 
   const question = state.question!;
   const correct = question.correct;
+  const verdict = correct === 'same' ? 'A and B were the same size' : `${correct} was larger`;
 
   if (state.phase === 'summary') {
     const percent = Math.round(scoreOf(state.flow.answered) * 100);
@@ -427,9 +432,9 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
       <p className="text-center text-base font-medium" role="status">
         {answeredYet
           ? state.selected === correct
-            ? `Correct: ${correct} was larger`
-            : `Wrong: ${correct} was larger`
-          : 'Which interval is larger?'}
+            ? `Correct: ${verdict}`
+            : `Wrong: ${verdict}`
+          : 'Which interval is larger, or are they the same?'}
       </p>
 
       {blocked && (
@@ -438,22 +443,23 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        {(['A', 'B'] as const).map((choice) => (
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        {(['A', 'same', 'B'] as const).map((choice) => (
           <button
             key={choice}
             type="button"
             disabled={!answeredYet && !started}
             onClick={() => answer(choice)}
             className={cn(
-              'flex h-24 items-center justify-center rounded-xl border-2 text-3xl font-bold outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+              'flex h-24 items-center justify-center rounded-xl border-2 font-bold outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+              choice === 'same' ? 'text-xl' : 'text-3xl',
               !answeredYet && 'border-border bg-card hover:bg-muted',
               answeredYet && choice === correct && 'border-success bg-success text-success-foreground',
               answeredYet && choice !== correct && choice === state.selected && 'border-destructive bg-destructive/20 text-destructive',
               answeredYet && choice !== correct && choice !== state.selected && 'border-border bg-card opacity-60',
             )}
           >
-            {choice}
+            {choice === 'same' ? 'Same' : choice}
           </button>
         ))}
       </div>

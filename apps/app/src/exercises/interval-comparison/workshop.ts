@@ -54,7 +54,7 @@ export const FAMILY_TITLE: Record<IntervalFamilyId, string> = {
 };
 
 export const TASK_HELP =
-  'You hear two intervals, A then B. Choose the larger one: the one whose two notes are further apart.';
+  'You hear two intervals, A then B. Choose the larger one (the one whose two notes are further apart), or Same if they are the same size.';
 
 export const FAMILY_HELP: Record<IntervalFamilyId, string> = {
   perfect:
@@ -117,7 +117,7 @@ export interface OverviewSection {
 export const OVERVIEW_HELP: readonly OverviewSection[] = [
   {
     heading: 'How it works',
-    intro: `${TASK_HELP} Answer with the A or B button, or the A and B keys. Afterwards you see both intervals on the staff and can listen to them again.`,
+    intro: `${TASK_HELP} Answer with the A, Same or B button, or the A, S and B keys. Afterwards you see both intervals on the staff and can listen to them again.`,
     items: [],
   },
   {

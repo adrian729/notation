@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { LOGO_URL } from '@/lib/logo';
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -15,7 +16,8 @@ export const Route = createFileRoute('/')({
 function HomePage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-12 px-6 py-24">
-      <div className="flex flex-col gap-3 text-center">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <img src={LOGO_URL} alt="" className="mb-3 size-32" />
         <h1 className="text-4xl font-semibold tracking-tight">Polyhymnia</h1>
         <p className="text-lg text-muted-foreground">
           Train your ear, one phrase at a time.
@@ -29,7 +31,8 @@ function HomePage() {
           <CardHeader>
             <CardTitle className="text-lg">Interval Comparison</CardTitle>
             <CardDescription>
-              Hear two intervals and choose the larger one. No theory needed —
+              Hear two intervals and tell which is larger, or whether they are
+              the same. No theory needed —
               the recommended first exercise.
             </CardDescription>
           </CardHeader>
