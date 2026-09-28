@@ -1,8 +1,9 @@
-export const BASE_QUESTION_COUNT = 10;
+import type { Question } from './generator.js';
+
 export const PASS_THRESHOLD = 0.8;
-export const SUPPLEMENTARY_COUNT = 5;
 
 export interface AnsweredQuestion {
+  question: Question;
   correct: boolean;
 }
 
@@ -10,41 +11,31 @@ export interface LessonFlowState {
   answered: AnsweredQuestion[];
   targetCount: number;
   finished: boolean;
-  supplementApplied: boolean;
   endless: boolean;
+  graded: boolean;
 }
 
-export function createLessonFlow(options: { questionCount: number | 'endless' }): LessonFlowState {
+export function createLessonFlow(options: { questionCount: number | 'endless'; graded?: boolean }): LessonFlowState {
   const endless = options.questionCount === 'endless';
   return {
     answered: [],
     targetCount: endless ? Infinity : (options.questionCount as number),
     finished: false,
-    supplementApplied: false,
     endless,
+    graded: options.graded ?? false,
   };
 }
 
-export function recordAnswer(state: LessonFlowState, correct: boolean): LessonFlowState {
+export function recordAnswer(state: LessonFlowState, question: Question, correct: boolean): LessonFlowState {
   if (state.finished) return state;
-  const answered = [...state.answered, { correct }];
-  let { targetCount, supplementApplied } = state;
+  const answered = [...state.answered, { question, correct }];
+  const finished = !state.endless && answered.length >= state.targetCount;
+  return { ...state, answered, finished };
+}
 
-  if (
-    !state.endless &&
-    !supplementApplied &&
-    answered.length === BASE_QUESTION_COUNT &&
-    targetCount === BASE_QUESTION_COUNT
-  ) {
-    const score = scoreOf(answered);
-    if (score < PASS_THRESHOLD) {
-      targetCount = BASE_QUESTION_COUNT + SUPPLEMENTARY_COUNT;
-      supplementApplied = true;
-    }
-  }
-
-  const finished = !state.endless && answered.length >= targetCount;
-  return { ...state, answered, targetCount, supplementApplied, finished };
+export function finishFlow(state: LessonFlowState): LessonFlowState {
+  if (!state.endless || state.finished) return state;
+  return { ...state, finished: true };
 }
 
 export function scoreOf(answered: readonly AnsweredQuestion[]): number {
@@ -54,7 +45,7 @@ export function scoreOf(answered: readonly AnsweredQuestion[]): number {
 }
 
 export function passedLesson(state: LessonFlowState): boolean {
-  return !state.endless && state.finished && scoreOf(state.answered) >= PASS_THRESHOLD;
+  return !state.endless && state.graded && state.finished && scoreOf(state.answered) >= PASS_THRESHOLD;
 }
 
 export function progressSegments(state: LessonFlowState): ('upcoming' | 'right' | 'wrong')[] {

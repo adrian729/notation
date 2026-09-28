@@ -5,7 +5,7 @@
 ## Entries
 
 - `@polyhymnia/audio` (pure, no DOM, no Web Audio): `NoteEvent`, `Clip`, `eventsFromTimeMap`, `midiOfPitch`, `midiToFrequency`, `melodic`, `harmonic`, `shift`, `concat`, `transpose`, `Instrument`, and types `EventsOptions`, `PitchLike`.
-- `@polyhymnia/audio/webaudio` (DOM lib): `synthInstrument`, `createPlayer`, `createAudioContext`, `unlockAudio`, and types `Player`, `Playback`, `PlayResult`.
+- `@polyhymnia/audio/webaudio` (DOM lib): `synthInstrument`, `createPlayer`, `createAudioContext`, `unlockAudio`, `createSharedPlayer`, `defaultInstrument`, and types `Player`, `Playback`, `PlayResult`.
 
 ## Events and clips
 
@@ -31,6 +31,8 @@ Times are seconds from clip start. `midi` may be fractional; `id` is an MNX note
 - Everything is scheduled up front; there is no look-ahead.
 
 `synthInstrument(ctx, { out })` is oscillators plus ADSR through a master gain and compressor; `stopAll` ramps sounding voices out in about 25 ms and silences not-yet-started voices immediately. Attack and decay shrink for notes shorter than 0.11 s. `createAudioContext()` is a singleton (sets `audioSession` to `playback` where available); `unlockAudio(ctx?)` resumes it (when not running) on `pointerdown`, `pointerup`, `click`, `touchend` and `keydown` until the returned remover is called. `createAudioContext()` recreates the context if the shared one is closed and throws if `AudioContext` is missing.
+
+`createSharedPlayer(makeInstrument?)` is the one-liner an app's own `createSound()` wraps: it calls `createAudioContext()` (already a singleton, so callers never need their own context cache) and builds a `Player` against it with `makeInstrument` (default: `defaultInstrument`, i.e. `synthInstrument(ctx, { out: ctx.destination })`). Each `createSound()` call still keeps its own lazily-created `Player` — so independent owners don't stop each other's playback — while sharing the one underlying `AudioContext`.
 
 ## Extension seam
 

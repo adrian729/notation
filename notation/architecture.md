@@ -22,7 +22,7 @@ packages/
       index.ts              # layoutScore(doc: MnxDocument, options)
     src/query/               hitTest.ts slots.ts measures.ts preview.ts timemap.ts playorder.ts
     assets/                   polyhymnia-notation.woff2 OFL.txt NOTICE.txt   (exported as `./assets/*`)
-    test/                     fixtures/ (MNX JSON), __golden__/ (golden.test.ts snapshots), __snapshots__/, conformance.test.ts, schema.test.ts, mnx-mapping.test.ts, golden.test.ts, layout.test.ts, pipeline.test.ts, interaction.test.ts, fullness.test.ts, rational.test.ts, mnx.ts (test helper)
+    test/                     fixtures/ (MNX JSON), __golden__/ (golden.test.ts snapshots), __snapshots__/, conformance.test.ts, schema.test.ts, mnx-mapping.test.ts, golden.test.ts, layout.test.ts, pipeline.test.ts, interaction.test.ts, fullness.test.ts, rational.test.ts, key-clef-corpus.test.ts, playorder.test.ts, mnx.ts (test helper)
   notation-react/            # depends on notation-model + notation-engine; peer: react ^19
     src/  Notation.tsx  Interaction.tsx  Marks.tsx  index.ts
     src/presets/               ChordReveal.tsx  IntervalReveal.tsx  ScaleReveal.tsx  mnxBuild.ts  shared.ts  index.ts  (build MNX internally)

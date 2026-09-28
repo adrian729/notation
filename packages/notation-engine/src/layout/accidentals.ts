@@ -4,7 +4,8 @@ import type { Diagnostic } from '@polyhymnia/notation-model';
 import type { NoteId, Pitch } from './records.js';
 import { accidentalGlyph, keyAlterations } from './staff.js';
 import type { NormalizedScore } from './normalize.js';
-import type { TemporalElement, TemporalScore } from './temporal.js';
+import { elementsByStaffMeasureKey, indexElementsByStaffMeasure } from './temporal.js';
+import type { TemporalScore } from './temporal.js';
 
 export interface ResolvedAccidental {
   alter: -2 | -1 | 0 | 1 | 2;
@@ -32,16 +33,17 @@ export function accidentals(
 
   const byNote = new Map<NoteId, ResolvedAccidental>();
   const diagnostics: Diagnostic[] = [];
+  const elementIndex = indexElementsByStaffMeasure(score);
 
   for (const staff of normalized.staves) {
-    const openTies = new Map<string, boolean>();
+    const openTies = new Set<string>();
     let carriedAlterations = new Map<string, number>();
 
     for (const measure of staff.measures) {
       const key = keyAlterations(measure.key);
       const state = new Map<string, number>();
       const writtenHere = new Map<string, number>();
-      const elements = measureElements(score, staff.index, measure.index);
+      const elements = elementIndex.get(elementsByStaffMeasureKey(staff.index, measure.index)) ?? [];
 
       for (const el of elements) {
         for (const note of el.notes) {
@@ -87,7 +89,7 @@ export function accidentals(
           else writtenHere.delete(slot);
           carriedAlterations.delete(slot);
 
-          if (note.tie === 'start' || note.tie === 'continue') openTies.set(tieSlot, written);
+          if (note.tie === 'start' || note.tie === 'continue') openTies.add(tieSlot);
           else openTies.delete(tieSlot);
         }
       }
@@ -112,15 +114,5 @@ export function accidentalOf(
 
 function tieKey(p: Pitch): string {
   return `${p.step}:${p.alter}:${p.octave}`;
-}
-
-function measureElements(
-  score: TemporalScore,
-  staffIndex: number,
-  measureIndex: number,
-): readonly TemporalElement[] {
-  return score.elements
-    .filter((e) => e.staffIndex === staffIndex && e.measureIndex === measureIndex)
-    .sort((a, b) => a.tick - b.tick || a.voice - b.voice);
 }
 

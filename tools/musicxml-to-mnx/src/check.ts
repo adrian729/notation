@@ -1,14 +1,12 @@
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import Ajv2020, { type ErrorObject } from 'ajv/dist/2020.js';
 import { layoutScore, type LayoutResult } from '@polyhymnia/notation-engine';
 import { readMnx, type Diagnostic } from '@polyhymnia/notation-model';
 
-const SCHEMA_PATH = fileURLToPath(
-  new URL('../../../packages/notation-model/schema/mnx-schema.json', import.meta.url),
-);
+const SCHEMA_PATH = createRequire(import.meta.url).resolve('@polyhymnia/notation-model/schema');
 
-export const UNSUPPORTED_ALLOWLIST: readonly string[] = [];
+export const UNSUPPORTED_ALLOWLIST: readonly string[] = ['part name'];
 
 function isAllowedUnsupported(diagnostic: Diagnostic): boolean {
   if (diagnostic.code !== 'mnx-unsupported') return false;

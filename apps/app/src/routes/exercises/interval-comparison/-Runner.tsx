@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { IntervalReveal } from '@polyhymnia/notation-react/presets';
+import { TimerOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { createSound, unlockSound } from '@/lib/sound';
@@ -7,7 +8,9 @@ import {
   AUTO_NEXT_DELAY_MS,
   buildQuestionEvents,
   createLessonFlow,
+  finishFlow,
   generateQuestion,
+  passedLesson,
   progressSegments,
   recordAnswer,
   recordLessonResult,
@@ -26,12 +29,12 @@ interface RunnerProps {
   onNextLesson?: () => void;
 }
 
-type Phase = 'playing' | 'answered' | 'summary';
+type Phase = 'playing' | 'answered' | 'summary' | 'error';
 
 interface RunnerState {
   flow: LessonFlowState;
-  question: Question;
-  lastSignature: LastQuestionSignature;
+  question: Question | null;
+  lastSignature: LastQuestionSignature | undefined;
   phase: Phase;
   selected: 'A' | 'B' | null;
   playCount: number;
@@ -40,37 +43,125 @@ interface RunnerState {
 type Action =
   | { type: 'answer'; choice: 'A' | 'B' }
   | { type: 'next'; options: ExerciseOptions }
-  | { type: 'restart'; options: ExerciseOptions };
+  | { type: 'restart'; options: ExerciseOptions }
+  | { type: 'retryGeneration'; options: ExerciseOptions }
+  | { type: 'finish' };
+
+function IntervalPair({ question }: { question: Question }) {
+  return (
+    <div className="flex w-full flex-col items-center gap-4 [&_.pn-notation]:h-auto [&_.pn-notation]:w-full">
+      {(['a', 'b'] as const).map((key) => {
+        const tone = question[key];
+        return (
+          <div key={key} className="flex w-full max-w-[30rem] flex-col items-center gap-1">
+            <span className="text-base font-medium text-muted-foreground">
+              {key.toUpperCase()} — {tone.name}
+            </span>
+            <IntervalReveal
+              className="pn-notation"
+              from={tone.from}
+              to={tone.to}
+              clef={question.clef}
+              mode={question.mode === 'harmonic' ? 'harmonic' : 'melodic'}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function LazyIntervalPair({ question }: { question: Question }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (visible) return;
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) setVisible(true);
+      },
+      { rootMargin: '300px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [visible]);
+
+  if (visible) return <IntervalPair question={question} />;
+  return (
+    <div ref={ref} className="flex w-full flex-col items-center gap-4">
+      <div className="aspect-[3/1] w-full max-w-[30rem] rounded-md bg-muted" />
+      <div className="aspect-[3/1] w-full max-w-[30rem] rounded-md bg-muted" />
+    </div>
+  );
+}
 
 function nextQuestionState(options: ExerciseOptions, flow: LessonFlowState, last?: LastQuestionSignature) {
   const question = generateQuestion(options, Math.random, last);
   return { question, signature: { mode: question.mode, sizeA: question.a.size, sizeB: question.b.size } };
 }
 
-function reducer(state: RunnerState, action: Action, options: ExerciseOptions): RunnerState {
+function tryNextQuestionState(options: ExerciseOptions, flow: LessonFlowState, last?: LastQuestionSignature) {
+  try {
+    return { ok: true as const, ...nextQuestionState(options, flow, last) };
+  } catch {
+    return { ok: false as const };
+  }
+}
+
+function reducer(state: RunnerState, action: Action, options: ExerciseOptions, lessonId: string | undefined): RunnerState {
   switch (action.type) {
     case 'answer': {
-      if (state.phase !== 'playing') return state;
+      if (state.phase !== 'playing' || !state.question) return state;
       const correct = action.choice === state.question.correct;
-      const flow = recordAnswer(state.flow, correct);
+      const flow = recordAnswer(state.flow, state.question, correct);
       return { ...state, flow, phase: flow.finished ? 'summary' : 'answered', selected: action.choice };
     }
     case 'next': {
       if (state.phase !== 'answered' || state.flow.finished) return state;
-      const { question, signature } = nextQuestionState(action.options, state.flow, state.lastSignature);
+      const result = tryNextQuestionState(action.options, state.flow, state.lastSignature);
+      if (!result.ok) return { ...state, phase: 'error' };
       return {
         ...state,
-        question,
-        lastSignature: signature,
+        question: result.question,
+        lastSignature: result.signature,
         phase: 'playing',
         selected: null,
         playCount: state.playCount + 1,
       };
     }
+    case 'finish': {
+      const flow = finishFlow(state.flow);
+      if (flow === state.flow) return state;
+      return { ...state, flow, phase: 'summary' };
+    }
     case 'restart': {
-      const flow = createLessonFlow({ questionCount: action.options.questionCount });
-      const { question, signature } = nextQuestionState(action.options, flow);
-      return { flow, question, lastSignature: signature, phase: 'playing', selected: null, playCount: state.playCount + 1 };
+      const flow = createLessonFlow({ questionCount: action.options.questionCount, graded: !!lessonId });
+      const result = tryNextQuestionState(action.options, flow);
+      if (!result.ok) return { ...state, flow, question: null, phase: 'error', playCount: state.playCount + 1 };
+      return {
+        flow,
+        question: result.question,
+        lastSignature: result.signature,
+        phase: 'playing',
+        selected: null,
+        playCount: state.playCount + 1,
+      };
+    }
+    case 'retryGeneration': {
+      if (state.phase !== 'error') return state;
+      const result = tryNextQuestionState(action.options, state.flow, state.lastSignature);
+      if (!result.ok) return state;
+      return {
+        ...state,
+        question: result.question,
+        lastSignature: result.signature,
+        phase: 'playing',
+        selected: null,
+        playCount: state.playCount + 1,
+      };
     }
     default:
       return state;
@@ -81,15 +172,29 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
   const [sound] = useState(createSound);
   const [blocked, setBlocked] = useState(false);
   const [started, setStarted] = useState(false);
+  const [replaySignal, setReplaySignal] = useState(0);
+  const [autoPaused, setAutoPaused] = useState(false);
   const persistedRef = useRef(false);
+  const playButtonRef = useRef<HTMLButtonElement>(null);
+  const newQuestionRef = useRef<HTMLButtonElement>(null);
 
   const [state, dispatch] = useReducer(
-    (s: RunnerState, a: Action) => reducer(s, a, options),
+    (s: RunnerState, a: Action) => reducer(s, a, options, lessonId),
     undefined,
     () => {
-      const flow = createLessonFlow({ questionCount: options.questionCount });
-      const { question, signature } = nextQuestionState(options, flow);
-      return { flow, question, lastSignature: signature, phase: 'playing' as Phase, selected: null, playCount: 0 };
+      const flow = createLessonFlow({ questionCount: options.questionCount, graded: !!lessonId });
+      const result = tryNextQuestionState(options, flow);
+      if (!result.ok) {
+        return { flow, question: null, lastSignature: undefined, phase: 'error' as Phase, selected: null, playCount: 0 };
+      }
+      return {
+        flow,
+        question: result.question,
+        lastSignature: result.signature,
+        phase: 'playing' as Phase,
+        selected: null,
+        playCount: 0,
+      };
     },
   );
 
@@ -101,13 +206,13 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
     if (state.phase !== 'summary' || !lessonId || persistedRef.current) return;
     persistedRef.current = true;
     const percent = Math.round(scoreOf(state.flow.answered) * 100);
-    recordLessonResult(lessonId, percent, percent >= 80);
-  }, [state.phase, state.flow.answered, lessonId]);
+    recordLessonResult(lessonId, percent, passedLesson(state.flow));
+  }, [state.phase, state.flow, lessonId]);
 
-  useEffect(() => sound.stop, [sound]);
   useEffect(() => unlockSound(), []);
 
   const play = useCallback(() => {
+    if (!state.question) return;
     setBlocked(false);
     setStarted(true);
     const playback = sound.playEvents(buildQuestionEvents(state.question, options.tempo));
@@ -116,13 +221,33 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
     });
   }, [sound, state.question, options.tempo]);
 
-  const playedForQuestion = useRef<Question | null>(null);
-  useEffect(() => {
-    if (playedForQuestion.current === state.question) return;
-    playedForQuestion.current = state.question;
-    setStarted(false);
+  const replay = useCallback(() => {
+    if (state.phase === 'answered') setReplaySignal((n) => n + 1);
     play();
-  }, [state.question, play]);
+  }, [state.phase, play]);
+
+  const replayQuestion = useCallback(
+    (q: Question) => {
+      sound.stop();
+      setBlocked(false);
+      const playback = sound.playEvents(buildQuestionEvents(q, options.tempo));
+      void playback.finished.then((result) => {
+        if (result === 'blocked') setBlocked(true);
+      });
+    },
+    [sound, options.tempo],
+  );
+
+  useEffect(() => {
+    if (!state.question) return;
+    setStarted(false);
+    setAutoPaused(false);
+    play();
+    playButtonRef.current?.focus();
+    return () => {
+      sound.stop();
+    };
+  }, [state.question, play, sound]);
 
   const answer = useCallback(
     (choice: 'A' | 'B') => {
@@ -132,54 +257,92 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
     [state.phase],
   );
 
+  useEffect(() => {
+    if (state.phase === 'answered' && !state.flow.finished) {
+      newQuestionRef.current?.focus();
+    }
+  }, [state.phase, state.flow.finished]);
+
+  useEffect(() => {
+    if (state.phase !== 'playing') sound.stop();
+  }, [state.phase, sound]);
+
   const goNext = useCallback(() => {
     if (state.phase !== 'answered' || state.flow.finished) return;
     dispatch({ type: 'next', options });
   }, [state.phase, state.flow.finished, options]);
 
-  useEffect(() => {
-    if (state.phase !== 'answered' || !options.autoNext || state.selected !== state.question.correct) return;
-    const id = window.setTimeout(goNext, AUTO_NEXT_DELAY_MS);
-    return () => window.clearTimeout(id);
-  }, [state.phase, options.autoNext, state.selected, state.question.correct, goNext]);
+  const autoNextArmed =
+    state.phase === 'answered' &&
+    !state.flow.finished &&
+    options.autoNext &&
+    !autoPaused &&
+    state.selected === state.question?.correct;
 
   useEffect(() => {
-    const isTyping = (el: EventTarget | null) =>
+    if (!autoNextArmed) return;
+    const id = window.setTimeout(goNext, AUTO_NEXT_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, [autoNextArmed, goNext, replaySignal]);
+
+  useEffect(() => {
+    const isTextInput = (el: EventTarget | null) =>
       el instanceof HTMLElement && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+    const isInteractiveControl = (el: EventTarget | null) =>
+      el instanceof HTMLElement && !!el.closest('button, a, select, input, textarea, [contenteditable], [role="button"]');
     const onKeyDown = (e: KeyboardEvent) => {
-      if (isTyping(e.target)) return;
-      if (e.key === ' ') {
+      if (e.key === ' ' || e.key === 'Enter') {
+        if (isInteractiveControl(e.target)) return;
         e.preventDefault();
-        play();
-      } else if (e.key === 'a' || e.key === 'A') {
+        if (e.key === ' ') replay();
+        else goNext();
+        return;
+      }
+      if (isTextInput(e.target)) return;
+      if (e.key === 'a' || e.key === 'A') {
         e.preventDefault();
         answer('A');
       } else if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();
         answer('B');
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        goNext();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [play, answer, goNext]);
+  }, [replay, answer, goNext]);
 
   const segments = useMemo(() => progressSegments(state.flow), [state.flow]);
   const answeredYet = state.phase !== 'playing';
-  const correct = state.question.correct;
+
+  if (state.phase === 'error') {
+    return (
+      <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-16 text-center">
+        <p className="text-base font-medium" role="status">
+          Couldn&apos;t create a question.
+        </p>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={onBack}>
+            Back
+          </Button>
+          <Button onClick={() => dispatch({ type: 'retryGeneration', options })}>Try again</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const question = state.question!;
+  const correct = question.correct;
 
   if (state.phase === 'summary') {
     const percent = Math.round(scoreOf(state.flow.answered) * 100);
-    const passed = !state.flow.endless && percent >= 80;
+    const passed = passedLesson(state.flow);
     return (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-6 px-4 py-16 text-center">
+      <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 px-4 py-16 text-center">
         <h2 className="text-2xl font-semibold">{title} — done</h2>
         <p className="text-lg">
           Score: <span className="font-semibold">{percent}%</span>
-          {!state.flow.endless && (
-            <span className={cn('ml-2 font-medium', passed ? 'text-green-700 dark:text-green-300' : 'text-destructive')}>
+          {state.flow.graded && (
+            <span className={cn('ml-2 font-medium', passed ? 'text-success-strong' : 'text-destructive')}>
               {passed ? 'Passed' : 'Not passed'}
             </span>
           )}
@@ -203,18 +366,45 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
             </Button>
           )}
         </div>
+        <div className="flex w-full flex-col gap-3 text-left">
+          {state.flow.answered.map((a, i) => (
+            <div
+              key={i}
+              className={cn(
+                'flex flex-col gap-3 rounded-lg border-2 p-4',
+                a.correct ? 'border-success bg-success/10' : 'border-destructive bg-destructive/10',
+              )}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Question {i + 1} · {a.correct ? 'Correct' : 'Wrong'}
+                </span>
+                <Button size="sm" variant="outline" onClick={() => replayQuestion(a.question)}>
+                  Replay
+                </Button>
+              </div>
+              <LazyIntervalPair question={a.question} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-6 px-4 py-8">
+    <div className={cn('mx-auto flex flex-col gap-6 px-4 py-8', answeredYet ? 'max-w-2xl' : 'max-w-lg')}>
       <div className="flex items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={onBack}>
           Back
         </Button>
         <h2 className="text-lg font-medium">{title}</h2>
-        <div className="w-12" />
+        {state.flow.endless ? (
+          <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'finish' })}>
+            Finish
+          </Button>
+        ) : (
+          <div className="w-12" />
+        )}
       </div>
 
       {!state.flow.endless && (
@@ -225,9 +415,9 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
               className={cn(
                 'h-2 flex-1 rounded-full',
                 seg === 'upcoming' && 'bg-muted',
-                seg === 'right' && 'bg-green-400 dark:bg-green-200',
+                seg === 'right' && 'bg-success',
                 seg === 'wrong' && 'bg-destructive',
-                i === state.flow.answered.length && seg === 'upcoming' && 'bg-blue-400',
+                state.phase === 'playing' && i === state.flow.answered.length && 'bg-primary',
               )}
             />
           ))}
@@ -243,7 +433,9 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
       </p>
 
       {blocked && (
-        <p className="text-center text-sm text-muted-foreground">Tap Play question to enable sound.</p>
+        <p className="text-center text-sm text-muted-foreground" role="status">
+          Tap Play question to enable sound.
+        </p>
       )}
 
       <div className="grid grid-cols-2 gap-4">
@@ -254,11 +446,9 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
             disabled={!answeredYet && !started}
             onClick={() => answer(choice)}
             className={cn(
-              'flex h-24 items-center justify-center rounded-xl border-2 text-3xl font-bold transition-colors',
+              'flex h-24 items-center justify-center rounded-xl border-2 text-3xl font-bold outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
               !answeredYet && 'border-border bg-card hover:bg-muted',
-              answeredYet &&
-                choice === correct &&
-                'border-green-400 bg-green-400 text-black dark:bg-green-200 dark:text-black',
+              answeredYet && choice === correct && 'border-success bg-success text-success-foreground',
               answeredYet && choice !== correct && choice === state.selected && 'border-destructive bg-destructive/20 text-destructive',
               answeredYet && choice !== correct && choice !== state.selected && 'border-border bg-card opacity-60',
             )}
@@ -269,36 +459,34 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
       </div>
 
       <div className="flex justify-center gap-3">
-        <Button variant="outline" onClick={play}>
+        <Button ref={playButtonRef} variant="outline" onClick={replay}>
           Play question
         </Button>
-        {answeredYet && <Button onClick={goNext}>New question</Button>}
+        {answeredYet && (
+          <Button ref={newQuestionRef} onClick={goNext}>
+            Next question
+          </Button>
+        )}
+        {autoNextArmed && (
+          <Button
+            variant="outline"
+            className="relative overflow-hidden"
+            aria-label="Stay on this question"
+            onClick={() => setAutoPaused(true)}
+          >
+            <TimerOff />
+            Stay
+            <span
+              key={replaySignal}
+              aria-hidden
+              className="absolute inset-x-0 bottom-0 h-0.5 origin-left animate-countdown bg-primary-strong"
+              style={{ animationDuration: `${AUTO_NEXT_DELAY_MS}ms` }}
+            />
+          </Button>
+        )}
       </div>
 
-      {answeredYet && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-sm font-medium text-muted-foreground">A — {state.question.a.name}</span>
-            <IntervalReveal
-              className="pn-notation"
-              from={state.question.a.from}
-              to={state.question.a.to}
-              clef={state.question.clef}
-              mode={state.question.mode === 'harmonic' ? 'harmonic' : 'melodic'}
-            />
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-sm font-medium text-muted-foreground">B — {state.question.b.name}</span>
-            <IntervalReveal
-              className="pn-notation"
-              from={state.question.b.from}
-              to={state.question.b.to}
-              clef={state.question.clef}
-              mode={state.question.mode === 'harmonic' ? 'harmonic' : 'melodic'}
-            />
-          </div>
-        </div>
-      )}
+      {answeredYet && <IntervalPair question={question} />}
     </div>
   );
 }

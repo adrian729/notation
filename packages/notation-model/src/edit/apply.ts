@@ -87,22 +87,25 @@ function setPitches(doc: MnxDocument, eventId: string, pitches: readonly Pitch[]
     return { doc, changed: [], diagnostics: [] };
   }
 
-  const staleIds = new Set<string>();
+  const staleTieIds = new Set<string>();
   const changed: string[] = [eventId];
+
+  const oldNoteIds = oldNotes.map((note, k) =>
+    typeof note.id === 'string'
+      ? note.id
+      : ids.idAt({
+          measureIndex: found.measureIndex,
+          sequenceIndex: found.sequenceIndex,
+          path: found.path,
+          note: k,
+        }),
+  );
 
   oldNotes.forEach((note, k) => {
     const kept = k < pitches.length && pitchKey(note.pitch) === pitchKey(pitches[k]);
     if (kept) return;
-    const oldId =
-      typeof note.id === 'string'
-        ? note.id
-        : ids.idAt({
-            measureIndex: found.measureIndex,
-            sequenceIndex: found.sequenceIndex,
-            path: found.path,
-            note: k,
-          });
-    if (oldId) staleIds.add(oldId);
+    const oldId = oldNoteIds[k];
+    if (oldId) staleTieIds.add(oldId);
   });
 
   const newNotes = pitches.map((pitch, k) => {
@@ -110,14 +113,13 @@ function setPitches(doc: MnxDocument, eventId: string, pitches: readonly Pitch[]
     const samePitch = old !== undefined && pitchKey(old.pitch) === pitchKey(pitch);
     if (pitches.length === 1) {
       if (oldNotes.length === 1 && samePitch) return old;
-      const carryId = oldNotes.length === 1 && old && typeof old.id === 'string' ? old.id : undefined;
-      return carryId ? { id: carryId, pitch } : { pitch };
+      return old ? { ...old, pitch } : { pitch };
     }
     const carryId = old && typeof old.id === 'string' ? old.id : undefined;
-    if (carryId) return samePitch ? old : { id: carryId, pitch };
+    if (carryId) return samePitch ? old : { ...old, pitch };
     const id = ids.mint(`${eventId}.n${k}`);
     changed.push(id);
-    return { id, pitch };
+    return old ? { ...old, id, pitch } : { id, pitch };
   });
 
   const { notes: _oldNotes, rest: _oldRest, ...rest } = event;
@@ -128,11 +130,11 @@ function setPitches(doc: MnxDocument, eventId: string, pitches: readonly Pitch[]
   const part = asObject(doc.parts[0]);
   if (!part || !Array.isArray(part.measures)) return { doc, changed: [], diagnostics: missing(eventId) };
   let substituted = false;
-  const newMeasures: unknown[] = [];
+  const rawMeasures: unknown[] = [];
   for (let mi = 0; mi < part.measures.length; mi += 1) {
     const pm: unknown = part.measures[mi];
     if (mi !== found.measureIndex) {
-      newMeasures.push(cleanupPartMeasure(pm, staleIds));
+      rawMeasures.push(pm);
       continue;
     }
     const measure = asObject(pm);
@@ -150,10 +152,21 @@ function setPitches(doc: MnxDocument, eventId: string, pitches: readonly Pitch[]
       substituted = true;
       sequences.push({ ...sequence, content });
     }
-    newMeasures.push(cleanupPartMeasure({ ...measure, sequences }, staleIds));
+    rawMeasures.push({ ...measure, sequences });
   }
   if (!substituted) return { doc, changed: [], diagnostics: missing(eventId) };
 
+  const rawDoc: MnxDocument = {
+    ...doc,
+    parts: doc.parts.map((p, i) => (i === 0 ? { ...part, measures: rawMeasures } : p)),
+  } as MnxDocument;
+  const rawIds = elementIds(rawDoc);
+  const slurGoneIds = new Set<string>();
+  for (const id of oldNoteIds) {
+    if (id && !rawIds.nodeOf(id)) slurGoneIds.add(id);
+  }
+
+  const newMeasures = rawMeasures.map((pm) => cleanupPartMeasure(pm, staleTieIds, slurGoneIds));
   const newDoc: MnxDocument = { ...doc, parts: doc.parts.map((p, i) => (i === 0 ? { ...part, measures: newMeasures } : p)) } as MnxDocument;
   return { doc: newDoc, changed, diagnostics: [] };
 }

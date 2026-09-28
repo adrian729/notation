@@ -1,4 +1,4 @@
-name: Deploy app + demo to GitHub Pages
+name: Deploy app to GitHub Pages
 
 on:
   push:
@@ -28,20 +28,31 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm --filter @polyhymnia/app typecheck
+      - run: pnpm --filter @polyhymnia/web typecheck
       - run: pnpm --filter @polyhymnia/app build
         env:
           PAGES_BASE: /${{ github.event.repository.name }}/
-      - run: pnpm --filter @polyhymnia/web build
-        env:
-          PAGES_BASE: /${{ github.event.repository.name }}/demo/
-      - run: cp -r apps/web/dist apps/app/dist/demo
-      - run: pnpm typecheck
-      - run: pnpm --filter @polyhymnia/app typecheck
-      - run: pnpm --filter @polyhymnia/app test -- --reporter=dot
-      - run: pnpm test -- --reporter=dot
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/app/dist
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test -- --reporter=dot
+      - run: pnpm --filter @polyhymnia/app test -- --reporter=dot
 
   deploy:
     needs: build

@@ -102,6 +102,30 @@ describe('<Notation>', () => {
     expect(groups[0]!.getAttribute('aria-label')).toBe('C 4, quarter note, measure 1');
   });
 
+  it('keeps an element\'s DOM node stable when an earlier event shifts its position', () => {
+    const noteA: Event = { id: 'note-a', duration: QUARTER, notes: [{ pitch: parsePitch('C4') }] };
+    const noteB: Event = { id: 'note-b', duration: QUARTER, notes: [{ pitch: parsePitch('E4') }] };
+    const noteC: Event = { id: 'note-c', duration: QUARTER, notes: [{ pitch: parsePitch('G4') }] };
+    const restFill = restEvent(HALF);
+    const measureShell = { clefs: [{ clef: { sign: 'G' as const, staffPosition: -2 } }] };
+    const before: MnxDocument = {
+      mnx: { version: 1 },
+      global: { measures: [{ time: { count: 4, unit: 4 } }] },
+      parts: [{ measures: [{ ...measureShell, sequences: [{ content: [noteA, noteB, restFill] }] }] }],
+    };
+    const after: MnxDocument = {
+      mnx: { version: 1 },
+      global: { measures: [{ time: { count: 4, unit: 4 } }] },
+      parts: [{ measures: [{ ...measureShell, sequences: [{ content: [noteC, noteA, noteB] }] }] }],
+    };
+
+    const { container, rerender } = render(<Notation score={before} />);
+    const before_a = container.querySelector('g[data-pn="element"][data-pn-el="note-a"]')!;
+    rerender(<Notation score={after} />);
+    const after_a = container.querySelector('g[data-pn="element"][data-pn-el="note-a"]')!;
+    expect(after_a).toBe(before_a);
+  });
+
 });
 
 describe('NotationHandle', () => {

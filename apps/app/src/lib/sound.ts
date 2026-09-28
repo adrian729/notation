@@ -1,13 +1,6 @@
-import { createAudioContext, createPlayer, synthInstrument, unlockAudio } from '@polyhymnia/audio/webaudio';
-import type { Playback } from '@polyhymnia/audio/webaudio';
+import { createAudioContext, createSharedPlayer, unlockAudio } from '@polyhymnia/audio/webaudio';
+import type { Playback, Player } from '@polyhymnia/audio/webaudio';
 import type { NoteEvent } from '@polyhymnia/audio';
-
-let ctx: AudioContext | undefined;
-
-function sharedContext(): AudioContext {
-  ctx ??= createAudioContext();
-  return ctx;
-}
 
 export interface Sound {
   playEvents(events: readonly NoteEvent[], lead?: number): Playback;
@@ -15,23 +8,14 @@ export interface Sound {
 }
 
 export function createSound(): Sound {
-  let player: ReturnType<typeof createPlayer> | undefined;
-  const get = () => {
-    if (!player) {
-      const c = sharedContext();
-      player = createPlayer(c, synthInstrument(c, { out: c.destination }));
-    }
-    return player;
-  };
+  let player: Player | undefined;
+  const get = () => (player ??= createSharedPlayer());
   return {
-    playEvents: (events, lead) => {
-      player?.stop();
-      return get().play(events, lead === undefined ? undefined : { lead });
-    },
+    playEvents: (events, lead) => get().play(events, lead === undefined ? undefined : { lead }),
     stop: () => player?.stop(),
   };
 }
 
 export function unlockSound(): () => void {
-  return unlockAudio(sharedContext());
+  return unlockAudio(createAudioContext());
 }

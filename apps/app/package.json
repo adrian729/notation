@@ -18,7 +18,7 @@
     "@tanstack/react-router": "^1.170.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
-    "lucide-react": "^0.545.0",
+    "lucide-react": "^1.48.0",
     "radix-ui": "^1.6.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

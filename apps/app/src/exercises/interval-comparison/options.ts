@@ -4,7 +4,7 @@ import { tokenMidi } from './spelling.js';
 export type PlayingMode = 'asc' | 'desc' | 'harmonic';
 export type ToneRelationship = 'common-first' | 'common-either' | 'nearby' | 'no-common';
 export type Tempo = 'slow' | 'medium' | 'fast';
-export type QuestionCount = 10 | 20 | 30 | 'endless';
+export type QuestionCount = number | 'endless';
 
 export interface RangeOption {
   low: string;
@@ -28,6 +28,8 @@ export const TEMPO_NOTE_DURATION: Record<Tempo, number> = {
 };
 
 export const AUTO_NEXT_DELAY_MS = 1500;
+export const QUESTION_COUNT_MIN = 1;
+export const QUESTION_COUNT_MAX = 200;
 
 export const DEFAULT_OPTIONS: ExerciseOptions = {
   intervals: INTERVAL_FAMILIES.simple,
@@ -47,7 +49,6 @@ const TONE_RELATIONSHIPS: readonly ToneRelationship[] = [
   'no-common',
 ];
 const TEMPOS: readonly Tempo[] = ['slow', 'medium', 'fast'];
-const QUESTION_COUNTS: readonly QuestionCount[] = [10, 20, 30, 'endless'];
 const ALL_INTERVAL_IDS = new Set<IntervalId>(
   Object.values(INTERVAL_FAMILIES).flat() as IntervalId[],
 );
@@ -67,8 +68,13 @@ export function validateOptions(options: Partial<ExerciseOptions>): ValidationRe
     errors.push('Select a tone relationship.');
   }
   if (!options.tempo || !TEMPOS.includes(options.tempo)) errors.push('Select a tempo.');
-  if (options.questionCount === undefined || !QUESTION_COUNTS.includes(options.questionCount)) {
+  if (options.questionCount === undefined) {
     errors.push('Select a question count.');
+  } else if (options.questionCount !== 'endless') {
+    const count = options.questionCount;
+    if (!Number.isInteger(count) || count < QUESTION_COUNT_MIN || count > QUESTION_COUNT_MAX) {
+      errors.push(`Question count must be a whole number between ${QUESTION_COUNT_MIN} and ${QUESTION_COUNT_MAX}, or endless.`);
+    }
   }
   const range = options.range;
   if (!range || !range.low || !range.high) {
@@ -97,10 +103,14 @@ export function normalizeOptions(options: Partial<ExerciseOptions>): ExerciseOpt
       ? merged.toneRelationship
       : DEFAULT_OPTIONS.toneRelationship,
     tempo: TEMPOS.includes(merged.tempo) ? merged.tempo : DEFAULT_OPTIONS.tempo,
-    questionCount: QUESTION_COUNTS.includes(merged.questionCount)
-      ? merged.questionCount
-      : DEFAULT_OPTIONS.questionCount,
+    questionCount: normalizeQuestionCount(merged.questionCount),
   };
 }
 
-export { PLAYING_MODES, TONE_RELATIONSHIPS, TEMPOS, QUESTION_COUNTS };
+function normalizeQuestionCount(count: QuestionCount): QuestionCount {
+  if (count === 'endless') return count;
+  if (!Number.isFinite(count)) return DEFAULT_OPTIONS.questionCount;
+  return Math.min(QUESTION_COUNT_MAX, Math.max(QUESTION_COUNT_MIN, Math.round(count)));
+}
+
+export { PLAYING_MODES, TONE_RELATIONSHIPS, TEMPOS, normalizeQuestionCount };

@@ -80,6 +80,7 @@ export function Notation({
   const cursorRef = useRef<SVGGElement | null>(null);
   const lastHoverRef = useRef<string | null>(null);
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPointerEventRef = useRef<MouseEvent | null>(null);
   const playbackView = extractPlaybackView(children);
   const imperativeTickRef = useRef<number | null>(null);
   const viewRef = useRef<PlaybackView | undefined>(playbackView);
@@ -122,7 +123,10 @@ export function Notation({
     const point = pointer && svgRef.current ? clientToLayoutPoint(svgRef.current, pointer.x, pointer.y) : null;
     const hit = point ? hitTest(layout, point, resolveHitOptions(interaction, options)) : null;
     lastHoverRef.current = hit ? hitIdentity(hit) : null;
-    interaction.onIntent({ type: 'hover', target: hit }, { layout, nativeEvent: new MouseEvent('pointermove') });
+    interaction.onIntent(
+      { type: 'hover', target: hit },
+      { layout, nativeEvent: lastPointerEventRef.current ?? new MouseEvent('pointermove') },
+    );
   }, [layout]);
 
   useImperativeHandle(
@@ -157,6 +161,7 @@ export function Notation({
   const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>): void => {
     if (!interaction?.onIntent || targets.length === 0 || !svgRef.current) return;
     lastPointerRef.current = { x: event.clientX, y: event.clientY };
+    lastPointerEventRef.current = event.nativeEvent;
     const point = clientToLayoutPoint(svgRef.current, event.clientX, event.clientY);
     const hit = point ? hitTest(layout, point, resolveHitOptions(interaction, options)) : null;
     const identity = hit ? hitIdentity(hit) : null;
@@ -238,7 +243,7 @@ export function Notation({
             group.glyphs.map((g, j) => <Glyph key={`g${i}-${j}`} glyph={g} />)
           ) : (
             <g
-              key={`g${i}`}
+              key={group.el}
               ref={elementRef(elementRefs.current, group.el)}
               role={isElementKeyboardTarget(group.el) ? 'button' : 'img'}
               tabIndex={isElementKeyboardTarget(group.el) ? 0 : undefined}

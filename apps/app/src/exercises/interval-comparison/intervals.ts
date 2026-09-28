@@ -33,7 +33,7 @@ export const INTERVAL_SIZES: readonly IntervalSize[] = [
   { id: 'M13', semitones: 21, degreeOptions: [13], compound: true },
   { id: 'm14', semitones: 22, degreeOptions: [14], compound: true },
   { id: 'M14', semitones: 23, degreeOptions: [14], compound: true },
-  { id: 'P15', semitones: 24, degreeOptions: [15], compound: false },
+  { id: 'P15', semitones: 24, degreeOptions: [15], compound: true },
 ];
 
 const BY_ID = new Map(INTERVAL_SIZES.map((size) => [size.id, size]));
@@ -88,4 +88,11 @@ const DEGREE_QUALITY_NAME: Record<string, string> = {
 
 export function intervalDisplayName(degree: number, quality: 'm' | 'M' | 'P' | 'A' | 'd'): string {
   return DEGREE_QUALITY_NAME[`${degree}${quality}`] ?? `${degree}${quality}`;
+}
+
+export function intervalIdDisplayName(id: IntervalId): string {
+  if (id === 'TT') return 'Tritone';
+  const spec = intervalById(id);
+  const quality = id[0] as 'm' | 'M' | 'P' | 'A';
+  return intervalDisplayName(spec.degreeOptions[0]!, quality);
 }

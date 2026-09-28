@@ -44,6 +44,7 @@ Only durations < quarter beam; a rest never joins an auto-beamed group (explicit
 | 5/8 | `[3,2]` | |
 | 7/8 | `[2,2,3]` | |
 | other odd `n`/8 | 3s then a final 2 | e.g. 11/8 → `[3,3,3,2]` |
+| `n`/16, `n`/32, `n`/64, `n`/128 | same shape as `n`/8 above, but in that meter's own unit (sixteenths, thirty-seconds, …), never eighths | e.g. 5/16 → `[3,2]` sixteenths, 6/16 → `[3,3]` sixteenths |
 
 Non-plain content (any 16th/32nd/64th, or a dotted note, present in the measure) always uses the *unmerged* per-beat sizes (the "else" column above, or one group per beat for the other meters) — "16ths and mixed rhythms: per beat, never merged." Tuplet content is never mixed with plain notes in the same group — a beam breaks entering/leaving/switching a `tuplet`, and inside one, only the rest/quarter-or-longer breaks apply, not the beat-boundary check (there's no outer beat inside a tuplet's own written-time bubble). A pickup measure's boundaries are anchored to the *end* of the bar (`pickupOffset` = full bar length − the voice's own content length), not the start.
 
@@ -202,8 +203,9 @@ for each note in time order:
   written = policy resolution:
     'never' -> none | 'always' -> yes | 'cautionary' -> yes, parenthesized if options.accidentals.parenthesizeCautionary
     'auto'  -> yes iff note.alter != effectiveAlter(step, octave)
-  tie-stop whose tie-start carried an accidental in the previous measure -> suppress (no
-    repeat across a barline, even though the pitch continues)
+  tie-stop into a note held from a previous measure -> suppress, always (no repeat across
+    a barline — the tie carries the alteration, whether or not the tie-start's accidental
+    was itself written)
   update state[step:octave] = note.alter after emitting
 ```
 

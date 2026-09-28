@@ -72,8 +72,10 @@ function effectiveBoundaries(
   events: readonly BeamableEvent[],
   pickupOffset: Rational,
 ): readonly Rational[] {
-  const microBoundaries = cumulativePositions(microGrouping(meter));
-  const mergedBoundaries = cumulativePositions(beatGroupingFor(meter, options).sizes);
+  const micro = microGrouping(meter);
+  const merged = beatGroupingFor(meter, options);
+  const microBoundaries = cumulativePositions(micro.sizes, micro.unit);
+  const mergedBoundaries = cumulativePositions(merged.sizes, merged.unit);
 
   let onset = pickupOffset;
   const onsets = events.map((event) => {
@@ -99,11 +101,11 @@ function effectiveBoundaries(
   return result;
 }
 
-function cumulativePositions(sizes: readonly number[]): readonly Rational[] {
+function cumulativePositions(sizes: readonly number[], unit: number): readonly Rational[] {
   const out: Rational[] = [];
   let sum = R.ZERO;
   for (const size of sizes) {
-    sum = R.add(sum, of(size, 8));
+    sum = R.add(sum, of(size, unit));
     out.push(sum);
   }
   return out;

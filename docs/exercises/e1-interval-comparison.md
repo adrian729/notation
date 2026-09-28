@@ -22,6 +22,7 @@ Implementation: `apps/app/src/exercises/interval-comparison/` (pure logic) and `
 - Press **A** or **B** (mouse, touch, or keys `A` / `B`) [EM: "Choose A with the mouse or on the keyboard"].
 - Binary only; there is no "equal" answer [EM]. Pairs of equal size are never generated [ours; EarMaster never mentions ties].
 - One answer per question; it is evaluated immediately [EM F15].
+- Anything that ends the question (answering, **Finish** in endless mode, or leaving) stops the sound immediately; **Play question** can replay it afterwards [ours].
 
 ## Options
 
@@ -34,10 +35,12 @@ Custom exercise (all options) [EM, E1 options]; workshop lessons fix them.
 | Tone relationship | Common first tone · Common first or second tone · Nearby first tones · No common tones | EM (names from the workshop) |
 | Range | Lowest and highest tone any question may use | ours (replaces EarMaster's keys and root movement) |
 | Tempo | Slow, medium, fast note length (1.0 s, 0.7 s, 0.45 s) | EM (shared tempo option), values ours |
-| Questions | 10, 20, 30 or endless | ours |
-| Auto new question | Off, or after a correct answer (1.5 s) | EM F12 |
+| Questions | A whole number from 1 to 200 (number input, with -10/-1/+1/+10 steppers), or endless | ours |
+| Auto new question | Off, or after a correct answer (1.5 s, shown as a countdown bar on a **Stay** button that cancels it for the current question; replaying restarts the countdown) | EM F12, Stay ours |
 
 Keys and root movement are simplified to a range: EarMaster's key options matter for tonal context, which E1 does not use.
+
+The custom exercise screen shows interval names as full name plus abbreviation (e.g. "Major 3rd (M3)") by default, with a toggle to switch to abbreviations only. The last-used custom options and that toggle are remembered in the browser (`localStorage`) and restored next time the page opens with no options chosen yet; a **Reset to defaults** button clears back to the defaults above [ours].
 
 ## Question choice
 
@@ -55,14 +58,15 @@ Keys and root movement are simplified to a range: EarMaster's key options matter
 
 - After answering, the chosen button turns green if right or red if wrong; the correct button is always green [EM F16].
 - The instruction line says "Correct: B was larger" or "Wrong: A was larger" [ours wording].
-- Reveal: both intervals on a staff, side by side, labelled **A** and **B** with their name and direction (e.g. "Major 3rd, ascending"). Clef: treble unless the question's middle tone lies below C4, then bass [EM shows tones; labels and names ours].
-- Play question still works after answering. **New question** (`Enter`) continues [EM].
+- Reveal: both intervals on their own staff, stacked (A above B) at a large, fixed size, labelled **A** and **B** with their name and direction (e.g. "Major 3rd, ascending"). Clef: treble unless the question's middle tone lies below C4, then bass [EM shows tones; labels and names ours].
+- Play question still works after answering. **Next question** (`Enter`) continues [EM behaviour; EarMaster labels it "New question"].
 - Question score: right or wrong. Lesson or session score: right answers ÷ questions asked, as a percentage [EM F15].
-- In-lesson progress bar: one segment per question, grey upcoming, blue current, green right, red wrong [EM F5, current].
+- Progress bar (any fixed-length run, lesson or custom): one segment per question, grey upcoming, pink (primary) current, green (success) right, red (destructive) wrong [EM F5, current]. Endless runs show no progress bar; instead a **Finish** button ends the session at any point [ours].
+- Every finished session — lesson, custom, or an endless run ended with **Finish** — shows the score and a review of every question asked, each with a **Replay** button. Only lessons additionally show a passed/not passed badge [ours].
 
 ## Levels
 
-Workshop: 20 modules = 5 interval families × 4 tone relationships, each with an ascending, a descending and a harmonic lesson, 60 lessons in all [EM S9 structure; exact lesson names undocumented, names ours].
+Workshop: 20 modules = 5 interval families × 4 tone relationships, each with an ascending, a descending, a harmonic and a mixed lesson (mixed picks a mode uniformly per question, same as Question choice), 80 lessons in all [EM S9 structure; exact lesson names undocumented, names ours].
 
 | Family | Intervals |
 | --- | --- |
@@ -73,8 +77,8 @@ Workshop: 20 modules = 5 interval families × 4 tone relationships, each with an
 | Compound | m9 … P15 |
 
 - Module order: family by family, and inside each family the relationships in the order listed under Question choice (common first tone is easiest) [ours].
-- Lesson rules [EM F3 mechanism, numbers ours]: 10 questions; pass at 80%. Below 80% after 10, add 5 supplementary questions (shown as extra progress segments); the final score covers all questions asked.
-- After the lesson, a summary shows the score, passed or not, and **Retake**, **Next lesson** (suggested when passed) and **Back to lessons** [EM F6].
+- Lesson rules [ours]: a lesson asks exactly its number of questions (10), never more, then shows the score. It is passed at 80% or more (used for the passed mark and the suggested next lesson). Custom runs ask exactly the selected number, show the score and the per-question review, and are never graded. EarMaster's supplementary questions (F3) are deliberately not copied.
+- After the lesson, a summary shows the score, passed or not, and **Retake**, **Next lesson** (suggested when passed) and **Back to lessons** [EM F6], followed by a review of every question asked: both intervals stacked, at exactly the same size as the in-lesson reveal, framed green (success) if answered correctly or red (destructive) if not, each with a **Replay** button that plays the same A–B pair again [ours].
 - Range per lesson: C3–C6 for simple families, G2–C6 for compound [ours].
 - The lesson list shows each lesson's best score and a passed mark, stored locally in the browser [EM F7, simplified].
 - Not copied: stricter end-of-module test lessons, adaptive questions (F4), per-interval statistics.

@@ -56,7 +56,7 @@ export function curves(
   _options?: NotationOptions,
 ): CurvesResult {
   const noteMap = buildNoteMap(justified);
-  const elementList = buildElementList(justified);
+  const elementsBySystem = buildElementsBySystem(justified);
   const twoVoiceMeasures = new Set(
     placedScore.elements.filter((e) => e.voice === 1).map((e) => e.measureIndex),
   );
@@ -108,20 +108,20 @@ export function curves(
     const from0 = noteMap.get(slur.from);
     const to0 = noteMap.get(slur.to);
     if (!from0 || !to0) continue;
-    const dir = slurDirection(slur, from0, to0, twoVoiceMeasures.has(slur.measureIndex), elementList);
+    const dir = slurDirection(slur, from0, to0, twoVoiceMeasures.has(slur.measureIndex), elementsBySystem);
     const from = (dir === -1 && slur.fromBottom ? noteMap.get(slur.fromBottom) : undefined) ?? from0;
     const to = (dir === -1 && slur.toBottom ? noteMap.get(slur.toBottom) : undefined) ?? to0;
 
     if (from.systemIndex === to.systemIndex) {
-      shapes.push(oneSlur(slur, from, to, dir, beamsResult, elementList));
+      shapes.push(oneSlur(slur, from, to, dir, beamsResult, elementsBySystem));
       continue;
     }
 
     const fromSystem = justified.systems[from.systemIndex];
     const toSystem = justified.systems[to.systemIndex];
     if (!fromSystem || !toSystem) continue;
-    shapes.push(firstHalfSlur(slur.id, from, dir, fromSystem, beamsResult, elementList));
-    shapes.push(secondHalfSlur(slur.id, to, dir, toSystem, beamsResult, elementList));
+    shapes.push(firstHalfSlur(slur.id, from, dir, fromSystem, beamsResult, elementsBySystem));
+    shapes.push(secondHalfSlur(slur.id, to, dir, toSystem, beamsResult, elementsBySystem));
   }
 
   return { shapes, diagnostics };
@@ -149,18 +149,25 @@ interface PlacedElement {
   systemIndex: number;
 }
 
-function buildElementList(justified: JustifiedScore): readonly PlacedElement[] {
-  const list: PlacedElement[] = [];
+type ElementsBySystem = ReadonlyMap<number, readonly PlacedElement[]>;
+
+function buildElementsBySystem(justified: JustifiedScore): ElementsBySystem {
+  const bySystem = new Map<number, PlacedElement[]>();
   for (const system of justified.systems) {
     for (const measure of system.measures) {
+      let bucket = bySystem.get(measure.systemIndex);
+      if (!bucket) {
+        bucket = [];
+        bySystem.set(measure.systemIndex, bucket);
+      }
       for (const column of measure.columns) {
         for (const el of column.elements) {
-          list.push({ el, x: column.x, systemIndex: measure.systemIndex });
+          bucket.push({ el, x: column.x, systemIndex: measure.systemIndex });
         }
       }
     }
   }
-  return list;
+  return bySystem;
 }
 
 interface Obstacle {
@@ -280,27 +287,33 @@ function slurDirection(
   from: PlacedNote,
   to: PlacedNote,
   twoVoice: boolean,
-  elementList: readonly PlacedElement[],
+  elementsBySystem: ElementsBySystem,
 ): 1 | -1 {
   if (slur.side === 'up') return 1;
   if (slur.side === 'down') return -1;
   if (twoVoice) return from.el.voice === 0 ? 1 : -1;
-  return anyStemDownInSpan(from, to, elementList) ? 1 : -1;
+  return anyStemDownInSpan(from, to, elementsBySystem) ? 1 : -1;
 }
 
 function anyStemDownInSpan(
   from: PlacedNote,
   to: PlacedNote,
-  elementList: readonly PlacedElement[],
+  elementsBySystem: ElementsBySystem,
 ): boolean {
-  for (const pe of elementList) {
-    if (pe.el.stem?.dir !== -1) continue;
-    if (from.systemIndex === to.systemIndex) {
-      if (pe.systemIndex === from.systemIndex && pe.x >= from.x && pe.x <= to.x) return true;
-    } else {
-      if (pe.systemIndex === from.systemIndex && pe.x >= from.x) return true;
-      if (pe.systemIndex === to.systemIndex && pe.x <= to.x) return true;
+  if (from.systemIndex === to.systemIndex) {
+    const bucket = elementsBySystem.get(from.systemIndex) ?? [];
+    for (const pe of bucket) {
+      if (pe.el.stem?.dir === -1 && pe.x >= from.x && pe.x <= to.x) return true;
     }
+    return false;
+  }
+  const fromBucket = elementsBySystem.get(from.systemIndex) ?? [];
+  for (const pe of fromBucket) {
+    if (pe.el.stem?.dir === -1 && pe.x >= from.x) return true;
+  }
+  const toBucket = elementsBySystem.get(to.systemIndex) ?? [];
+  for (const pe of toBucket) {
+    if (pe.el.stem?.dir === -1 && pe.x <= to.x) return true;
   }
   return false;
 }
@@ -332,7 +345,7 @@ function oneSlur(
   to: PlacedNote,
   dir: 1 | -1,
   beamsResult: BeamsResult,
-  elementList: readonly PlacedElement[],
+  elementsBySystem: ElementsBySystem,
 ): CurveShape {
   const x0 = rightEdge(from) + GAP;
   const x3 = Math.max(leftEdge(to) - GAP, x0 + MIN_SPAN);
@@ -343,7 +356,7 @@ function oneSlur(
     [x0, y0],
     [x3, y3],
     dir,
-    slurObstacles(from.systemIndex, from.x, to.x, beamsResult, elementList),
+    slurObstacles(from.systemIndex, from.x, to.x, beamsResult, elementsBySystem),
   );
   return {
     el: slur.id,
@@ -359,7 +372,7 @@ function firstHalfSlur(
   dir: 1 | -1,
   system: JustifiedSystem,
   beamsResult: BeamsResult,
-  elementList: readonly PlacedElement[],
+  elementsBySystem: ElementsBySystem,
 ): CurveShape {
   const x0 = rightEdge(from) + GAP;
   const x3 = Math.max(x0 + MIN_SPAN, Math.min(system.width, lastColumnX(system) + SYSTEM_END_MARGIN));
@@ -369,7 +382,7 @@ function firstHalfSlur(
     [x0, y],
     [x3, y],
     dir,
-    slurObstacles(from.systemIndex, from.x, x3, beamsResult, elementList),
+    slurObstacles(from.systemIndex, from.x, x3, beamsResult, elementsBySystem),
   );
   return {
     el: id,
@@ -385,7 +398,7 @@ function secondHalfSlur(
   dir: 1 | -1,
   system: JustifiedSystem,
   beamsResult: BeamsResult,
-  elementList: readonly PlacedElement[],
+  elementsBySystem: ElementsBySystem,
 ): CurveShape {
   const x3 = leftEdge(to) - GAP;
   const x0 = Math.min(x3 - MIN_SPAN, Math.max(0, firstColumnX(system) - SYSTEM_START_MARGIN));
@@ -395,7 +408,7 @@ function secondHalfSlur(
     [x0, y],
     [x3, y],
     dir,
-    slurObstacles(to.systemIndex, x0, to.x, beamsResult, elementList),
+    slurObstacles(to.systemIndex, x0, to.x, beamsResult, elementsBySystem),
   );
   return {
     el: id,
@@ -455,11 +468,11 @@ function slurObstacles(
   lo: number,
   hi: number,
   beamsResult: BeamsResult,
-  elementList: readonly PlacedElement[],
+  elementsBySystem: ElementsBySystem,
 ): Obstacle[] {
   const obstacles: Obstacle[] = [];
-  for (const pe of elementList) {
-    if (pe.systemIndex !== systemIndex) continue;
+  const bucket = elementsBySystem.get(systemIndex) ?? [];
+  for (const pe of bucket) {
     if (pe.x <= lo || pe.x >= hi) continue;
     for (const head of pe.el.noteheads) {
       obstacles.push({

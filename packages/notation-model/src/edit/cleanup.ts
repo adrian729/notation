@@ -8,23 +8,27 @@ function asObject(value: unknown): Record<string, any> | undefined {
     : undefined;
 }
 
-function cleanNote(note: unknown, staleIds: ReadonlySet<string>): unknown {
+function cleanNote(note: unknown, tieStaleIds: ReadonlySet<string>): unknown {
   const obj = asObject(note);
   if (!obj || !Array.isArray(obj.ties)) return note;
   const ties = obj.ties.filter((t: unknown) => {
     const target = asObject(t)?.target;
-    return typeof target !== 'string' || !staleIds.has(target);
+    return typeof target !== 'string' || !tieStaleIds.has(target);
   });
   if (ties.length === obj.ties.length) return note;
   return { ...obj, ties };
 }
 
-function cleanEvent(event: Record<string, any>, staleIds: ReadonlySet<string>): Record<string, any> {
+function cleanEvent(
+  event: Record<string, any>,
+  tieStaleIds: ReadonlySet<string>,
+  slurGoneIds: ReadonlySet<string>,
+): Record<string, any> {
   let next = event;
   if (Array.isArray(event.notes)) {
     let changed = false;
     const notes = event.notes.map((n: unknown) => {
-      const cleaned = cleanNote(n, staleIds);
+      const cleaned = cleanNote(n, tieStaleIds);
       if (cleaned !== n) changed = true;
       return cleaned;
     });
@@ -34,9 +38,9 @@ function cleanEvent(event: Record<string, any>, staleIds: ReadonlySet<string>): 
     const slurs = event.slurs.filter((raw: unknown) => {
       const s = asObject(raw);
       if (!s) return true;
-      if (typeof s.target === 'string' && staleIds.has(s.target)) return false;
-      if (typeof s.startNote === 'string' && staleIds.has(s.startNote)) return false;
-      if (typeof s.endNote === 'string' && staleIds.has(s.endNote)) return false;
+      if (typeof s.target === 'string' && slurGoneIds.has(s.target)) return false;
+      if (typeof s.startNote === 'string' && slurGoneIds.has(s.startNote)) return false;
+      if (typeof s.endNote === 'string' && slurGoneIds.has(s.endNote)) return false;
       return true;
     });
     if (slurs.length !== event.slurs.length) next = { ...next, slurs };
@@ -44,19 +48,23 @@ function cleanEvent(event: Record<string, any>, staleIds: ReadonlySet<string>): 
   return next;
 }
 
-function cleanContent(content: readonly unknown[], staleIds: ReadonlySet<string>): readonly unknown[] {
+function cleanContent(
+  content: readonly unknown[],
+  tieStaleIds: ReadonlySet<string>,
+  slurGoneIds: ReadonlySet<string>,
+): readonly unknown[] {
   let changed = false;
   const out = content.map((raw) => {
     const item = asObject(raw);
     if (!item) return raw;
     if (item.type === 'tuplet' && Array.isArray(item.content)) {
-      const inner = cleanContent(item.content, staleIds);
+      const inner = cleanContent(item.content, tieStaleIds, slurGoneIds);
       if (inner === item.content) return raw;
       changed = true;
       return { ...item, content: inner };
     }
     if (item.type === undefined || item.type === 'event') {
-      const cleaned = cleanEvent(item, staleIds);
+      const cleaned = cleanEvent(item, tieStaleIds, slurGoneIds);
       if (cleaned === item) return raw;
       changed = true;
       return cleaned;
@@ -66,15 +74,19 @@ function cleanContent(content: readonly unknown[], staleIds: ReadonlySet<string>
   return changed ? out : content;
 }
 
-export function cleanupPartMeasure(pm: unknown, staleIds: ReadonlySet<string>): unknown {
-  if (staleIds.size === 0) return pm;
+export function cleanupPartMeasure(
+  pm: unknown,
+  tieStaleIds: ReadonlySet<string>,
+  slurGoneIds: ReadonlySet<string>,
+): unknown {
+  if (tieStaleIds.size === 0 && slurGoneIds.size === 0) return pm;
   const measure = asObject(pm);
   if (!measure || !Array.isArray(measure.sequences)) return pm;
   let changed = false;
   const sequences = measure.sequences.map((raw: unknown) => {
     const sequence = asObject(raw);
     if (!sequence || !Array.isArray(sequence.content)) return raw;
-    const content = cleanContent(sequence.content, staleIds);
+    const content = cleanContent(sequence.content, tieStaleIds, slurGoneIds);
     if (content === sequence.content) return raw;
     changed = true;
     return { ...sequence, content };

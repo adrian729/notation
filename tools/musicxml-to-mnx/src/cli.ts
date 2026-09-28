@@ -24,7 +24,12 @@ function main(argv: string[]): void {
     fail(`${inputPath}: expected a .musicxml or .xml file, got "${ext}".`);
   }
 
-  const musicXml = readFileSync(inputPath, 'utf8');
+  let musicXml: string;
+  try {
+    musicXml = readFileSync(inputPath, 'utf8');
+  } catch (error) {
+    fail(`${inputPath}: could not read input: ${error instanceof Error ? error.message : String(error)}`);
+  }
 
   let converted: unknown;
   try {
@@ -41,7 +46,11 @@ function main(argv: string[]): void {
   }
 
   const withIds = assignIds(converted);
-  writeFileSync(outputPath, `${JSON.stringify(withIds, null, 2)}\n`, 'utf8');
+  try {
+    writeFileSync(outputPath, `${JSON.stringify(withIds, null, 2)}\n`, 'utf8');
+  } catch (error) {
+    fail(`${outputPath}: could not write output: ${error instanceof Error ? error.message : String(error)}`);
+  }
   process.stdout.write(`${inputPath} -> ${outputPath}\n`);
 }
 

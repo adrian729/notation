@@ -47,6 +47,29 @@ export interface TemporalScore {
   diagnostics: readonly Diagnostic[];
 }
 
+export function elementsByStaffMeasureKey(staffIndex: number, measureIndex: number): string {
+  return `${staffIndex}:${measureIndex}`;
+}
+
+export function indexElementsByStaffMeasure(
+  score: TemporalScore,
+): ReadonlyMap<string, readonly TemporalElement[]> {
+  const byMeasure = new Map<string, TemporalElement[]>();
+  for (const el of score.elements) {
+    const key = elementsByStaffMeasureKey(el.staffIndex, el.measureIndex);
+    let bucket = byMeasure.get(key);
+    if (!bucket) {
+      bucket = [];
+      byMeasure.set(key, bucket);
+    }
+    bucket.push(el);
+  }
+  for (const bucket of byMeasure.values()) {
+    bucket.sort((a, b) => a.tick - b.tick || a.voice - b.voice);
+  }
+  return byMeasure;
+}
+
 export function temporal(normalized: NormalizedScore, _options?: NotationOptions): TemporalScore {
   const { divisions } = normalized;
   const elements: TemporalElement[] = [];

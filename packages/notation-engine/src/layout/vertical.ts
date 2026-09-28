@@ -5,6 +5,7 @@ import type { ClefSpec, Duration, DurationBase, NoteId, Pitch } from './records.
 import { accidentalOf, type AccidentalScore } from './accidentals.js';
 import type { NormalizedMeasure, NormalizedScore } from './normalize.js';
 import { MIDDLE_LINE, staffPositionOf } from './staff.js';
+import { elementsByStaffMeasureKey, indexElementsByStaffMeasure } from './temporal.js';
 import type { ElementNote, TemporalElement, TemporalScore } from './temporal.js';
 
 export const STEM_LENGTH = 3.5;
@@ -126,12 +127,11 @@ export function vertical(
   const twoVoice = twoVoiceMeasures(score);
   const upVoice = computeUpVoice(normalized, score, twoVoice);
   const elementBeam = beamDirectionsByElement(normalized, score, twoVoice, upVoice, diagnostics);
+  const elementIndex = indexElementsByStaffMeasure(score);
 
   for (const staff of normalized.staves) {
     for (const measure of staff.measures) {
-      const rows = score.elements
-        .filter((e) => e.staffIndex === staff.index && e.measureIndex === measure.index)
-        .sort((a, b) => a.tick - b.tick || a.voice - b.voice);
+      const rows = elementIndex.get(elementsByStaffMeasureKey(staff.index, measure.index)) ?? [];
       const key = measureKey(staff.index, measure.index);
       const shared = twoVoice.has(key);
       const laidOut = rows.map((row) =>

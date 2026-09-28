@@ -48,6 +48,10 @@ function eighths(n: number): BeamableEvent[] {
   return Array.from({ length: n }, (_, i) => ev(`ev${i}`, 'eighth'));
 }
 
+function sixteenths(n: number): BeamableEvent[] {
+  return Array.from({ length: n }, (_, i) => ev(`ev${i}`, '16th'));
+}
+
 describe('beamGroups() meter table (plain, unbroken eighths)', () => {
   const cases: [string, Meter, number, number[][]][] = [
     ['2/4 merges to one group of 4', { beats: 2, beatType: 4 }, 4, [[0, 1, 2, 3]]],
@@ -67,6 +71,11 @@ describe('beamGroups() meter table (plain, unbroken eighths)', () => {
     const groups = beamGroups(meter, eighths(count));
     const numeric = groups.map((g) => g.map((id) => Number(id.replace('ev', ''))));
     expect(numeric).toEqual(expected);
+  });
+
+  it('5/16 groups 3+2 sixteenths, not at double granularity', () => {
+    const groups = beamGroups({ beats: 5, beatType: 16 }, sixteenths(5));
+    expect(groups).toEqual([['ev0', 'ev1', 'ev2'], ['ev3', 'ev4']]);
   });
 
   it('4/4 without merging keeps every quarter beat separate', () => {

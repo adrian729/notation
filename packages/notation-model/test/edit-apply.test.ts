@@ -119,6 +119,30 @@ describe('applyIntent setPitches', () => {
     expectValid(result.doc);
   });
 
+  it('keeps other note fields (e.g. accidentalDisplay) across a re-pitch', () => {
+    const doc = mnx(measure(note('C4', 'q', {}, { accidentalDisplay: { show: true } })));
+    const id = elementIds(doc).idAt(ev([0]))!;
+    const result = applyIntent(doc, { type: 'setPitches', event: id, pitches: pitches('D4') });
+    const event = result.doc.parts[0].measures[0].sequences[0].content[0] as any;
+    expect(event.notes[0].accidentalDisplay).toEqual({ show: true });
+    expect(event.notes[0].pitch).toEqual(parsePitch('D4'));
+    expectValid(result.doc);
+  });
+
+  it('keeps a slur targeting a re-pitched note whose id is preserved', () => {
+    const doc = mnx(
+      measure(
+        note('C4', 'q', {}, { id: 'target-note' }),
+        note('D4', 'q', { slurs: [{ target: 'target-note' }] } as any),
+      ),
+    );
+    const id = elementIds(doc).idAt(ev([0]))!;
+    const result = applyIntent(doc, { type: 'setPitches', event: id, pitches: pitches('E4') });
+    const content = result.doc.parts[0].measures[0].sequences[0].content as any[];
+    expect(content[1].slurs).toEqual([{ target: 'target-note' }]);
+    expectValid(result.doc);
+  });
+
   it('drops a slur endpoint targeting a removed chord member', () => {
     const doc = mnx(
       measure(
