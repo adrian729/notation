@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { CircleHelp } from 'lucide-react';
+import { CircleHelp, SlidersHorizontal } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -50,31 +50,25 @@ function WorkshopPage() {
         <p className="text-muted-foreground">Which interval is larger? No theory needed — the recommended first exercise.</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Custom exercise</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link
-              to="/exercises/interval-comparison/custom"
-              search={{
-                intervals: DEFAULT_OPTIONS.intervals.join(','),
-                modes: DEFAULT_OPTIONS.playingModes.join(','),
-                rel: DEFAULT_OPTIONS.toneRelationship,
-                low: DEFAULT_OPTIONS.range.low,
-                high: DEFAULT_OPTIONS.range.high,
-                tempo: DEFAULT_OPTIONS.tempo,
-                count: String(DEFAULT_OPTIONS.questionCount === 'endless' ? 10 : DEFAULT_OPTIONS.questionCount),
-                endless: DEFAULT_OPTIONS.questionCount === 'endless' ? '1' : '0',
-                auto: DEFAULT_OPTIONS.autoNext ? '1' : '0',
-              }}
-            >
-              Set up custom exercise
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <Button asChild variant="outline" className="self-start">
+        <Link
+          to="/exercises/interval-comparison/custom"
+          search={{
+            intervals: DEFAULT_OPTIONS.intervals.join(','),
+            modes: DEFAULT_OPTIONS.playingModes.join(','),
+            rel: DEFAULT_OPTIONS.toneRelationship,
+            low: DEFAULT_OPTIONS.range.low,
+            high: DEFAULT_OPTIONS.range.high,
+            tempo: DEFAULT_OPTIONS.tempo,
+            count: String(DEFAULT_OPTIONS.questionCount === 'endless' ? 10 : DEFAULT_OPTIONS.questionCount),
+            endless: DEFAULT_OPTIONS.questionCount === 'endless' ? '1' : '0',
+            auto: DEFAULT_OPTIONS.autoNext ? '1' : '0',
+          }}
+        >
+          <SlidersHorizontal />
+          Set up custom exercise
+        </Link>
+      </Button>
 
       <div className="flex flex-col gap-4">
         {MODULES.map((mod) => (

@@ -28,24 +28,24 @@ const RELATIONSHIP_ORDER: readonly ToneRelationship[] = [
   'common-first',
   'common-either',
   'nearby',
-  'no-common',
+  'random',
 ];
 
 const RELATIONSHIP_SLUG: Record<ToneRelationship, string> = {
   'common-first': 'common-first',
   'common-either': 'common-either',
   nearby: 'nearby',
-  'no-common': 'no-common',
+  random: 'random',
 };
 
-const RELATIONSHIP_TITLE: Record<ToneRelationship, string> = {
+export const RELATIONSHIP_TITLE: Record<ToneRelationship, string> = {
   'common-first': 'Common first tone',
   'common-either': 'Common first or second tone',
   nearby: 'Nearby first tones',
-  'no-common': 'No common tones',
+  random: 'Random first tones',
 };
 
-const FAMILY_TITLE: Record<IntervalFamilyId, string> = {
+export const FAMILY_TITLE: Record<IntervalFamilyId, string> = {
   perfect: 'Perfect intervals',
   imperfect: 'Imperfect consonant intervals',
   dissonant: 'Dissonant intervals',
@@ -53,10 +53,10 @@ const FAMILY_TITLE: Record<IntervalFamilyId, string> = {
   compound: 'Compound intervals',
 };
 
-const TASK_HELP =
+export const TASK_HELP =
   'You hear two intervals, A then B. Choose the larger one: the one whose two notes are further apart.';
 
-const FAMILY_HELP: Record<IntervalFamilyId, string> = {
+export const FAMILY_HELP: Record<IntervalFamilyId, string> = {
   perfect:
     'Intervals: perfect 4th, perfect 5th and octave. These open, stable sounds are far apart in size, which makes them the easiest to start with.',
   imperfect:
@@ -68,22 +68,22 @@ const FAMILY_HELP: Record<IntervalFamilyId, string> = {
     'Intervals: from a minor 9th up to two octaves. Wide leaps whose notes are far apart, so the size is harder to hear.',
 };
 
-const RELATIONSHIP_HELP: Record<ToneRelationship, string> = {
+export const RELATIONSHIP_HELP: Record<ToneRelationship, string> = {
   'common-first':
     'A and B start on the same note, so you only compare where the second note lands. This is the easiest setting.',
   'common-either':
     'A and B share one note: sometimes the first note, sometimes the second. When the second note is shared, the intervals start on different notes, which makes the comparison harder.',
   nearby:
-    'A and B start on different notes that are close together (at most a major 3rd apart). There is no shared note to lean on.',
-  'no-common':
-    'A and B share no notes at all and can be anywhere in the range, so you must judge each size on its own. This is the hardest setting.',
+    'A and B start on notes that are close together (at most a major 3rd apart), chosen at random. They may happen to start on the same note.',
+  random:
+    'A and B each start on a random note anywhere in the range, so you must judge each size on its own. This is the hardest setting.',
 };
 
-const FIRST_NOTE_HELP = 'The first note is the one you hear first: the upper note in descending lessons, the lower one otherwise.';
+export const FIRST_NOTE_HELP = 'The first note is the one you hear first: the upper note when the interval is played descending, the lower one otherwise.';
 
 function moduleHelp(family: IntervalFamilyId, relationship: ToneRelationship): HelpSection[] {
   const relationshipText =
-    relationship === 'no-common' ? RELATIONSHIP_HELP[relationship] : `${RELATIONSHIP_HELP[relationship]} ${FIRST_NOTE_HELP}`;
+    relationship === 'random' ? RELATIONSHIP_HELP[relationship] : `${RELATIONSHIP_HELP[relationship]} ${FIRST_NOTE_HELP}`;
   return [
     { heading: 'Interval Comparison', text: TASK_HELP },
     { heading: FAMILY_TITLE[family], text: FAMILY_HELP[family] },
@@ -94,14 +94,14 @@ function moduleHelp(family: IntervalFamilyId, relationship: ToneRelationship): H
 const ALL_MODES: readonly PlayingMode[] = ['asc', 'desc', 'harmonic'];
 const MODE_ORDER: readonly LessonMode[] = ['asc', 'desc', 'harmonic', 'mixed'];
 const MODE_SLUG: Record<LessonMode, string> = { asc: 'asc', desc: 'desc', harmonic: 'harmonic', mixed: 'mixed' };
-const MODE_TITLE: Record<LessonMode, string> = {
+export const MODE_TITLE: Record<LessonMode, string> = {
   asc: 'Ascending',
   desc: 'Descending',
   harmonic: 'Harmonic',
   mixed: 'Mixed',
 };
 
-const MODE_HELP: Record<LessonMode, string> = {
+export const MODE_HELP: Record<LessonMode, string> = {
   asc: 'The two notes of each interval are played one after the other, low to high.',
   desc: 'The two notes of each interval are played one after the other, high to low.',
   harmonic: 'The two notes of each interval are played together, at the same time.',

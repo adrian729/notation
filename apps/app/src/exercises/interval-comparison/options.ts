@@ -2,7 +2,7 @@ import { INTERVAL_FAMILIES, type IntervalId } from './intervals.js';
 import { tokenMidi } from './spelling.js';
 
 export type PlayingMode = 'asc' | 'desc' | 'harmonic';
-export type ToneRelationship = 'common-first' | 'common-either' | 'nearby' | 'no-common';
+export type ToneRelationship = 'common-first' | 'common-either' | 'nearby' | 'random';
 export type Tempo = 'slow' | 'medium' | 'fast';
 export type QuestionCount = number | 'endless';
 
@@ -46,7 +46,7 @@ const TONE_RELATIONSHIPS: readonly ToneRelationship[] = [
   'common-first',
   'common-either',
   'nearby',
-  'no-common',
+  'random',
 ];
 const TEMPOS: readonly Tempo[] = ['slow', 'medium', 'fast'];
 const ALL_INTERVAL_IDS = new Set<IntervalId>(

@@ -21,7 +21,7 @@ function midiOfToken(token: string): number {
   return 12 * (p.octave + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[p.step] + (p.alter ?? 0);
 }
 
-const RELATIONSHIPS = ['common-first', 'common-either', 'nearby', 'no-common'] as const;
+const RELATIONSHIPS = ['common-first', 'common-either', 'nearby', 'random'] as const;
 
 describe('generateQuestion invariants', () => {
   for (const toneRelationship of RELATIONSHIPS) {
@@ -70,13 +70,7 @@ describe('generateQuestion invariants', () => {
           expect(q.a.root.step).toBe(q.b.root.step);
           expect(q.a.root.alter).toBe(q.b.root.alter);
         }
-        if (toneRelationship === 'no-common') {
-          const usedA = new Set([aRoot, aOther]);
-          expect(usedA.has(bRoot)).toBe(false);
-          expect(usedA.has(bOther)).toBe(false);
-        }
         if (toneRelationship === 'nearby') {
-          expect(Math.abs(aRoot - bRoot)).toBeGreaterThanOrEqual(1);
           expect(Math.abs(aRoot - bRoot)).toBeLessThanOrEqual(4);
         }
 

@@ -164,7 +164,7 @@ export function generateQuestion(
       }
     } else if (relationship === 'nearby') {
       const rootA = randomRootInRange(rng, low, safeHigh);
-      const offset = randomInt(rng, 1, 4) * (rng() < 0.5 ? 1 : -1);
+      const offset = randomInt(rng, -4, 4);
       const rootBMidi = pitchMidi(rootA) + offset;
       const rootB = midiToPitch(rootBMidi, rng);
       const tonesA = buildTones(sizeA, rootA, mode);
@@ -177,9 +177,7 @@ export function generateQuestion(
       const rootB = randomRootInRange(rng, low, safeHigh);
       const tonesA = buildTones(sizeA, rootA, mode);
       const tonesB = buildTones(sizeB, rootB, mode);
-      const usedA = new Set([pitchMidi(tonesA.root), pitchMidi(tonesA.other)]);
-      const noOverlap = !usedA.has(pitchMidi(tonesB.root)) && !usedA.has(pitchMidi(tonesB.other));
-      if (noOverlap && withinRange(tonesA, low, high) && withinRange(tonesB, low, high)) {
+      if (withinRange(tonesA, low, high) && withinRange(tonesB, low, high)) {
         question = finishQuestion(mode, sizeA, sizeB, tonesA, tonesB);
       }
     }

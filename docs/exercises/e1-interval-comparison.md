@@ -32,7 +32,7 @@ Custom exercise (all options) [EM, E1 options]; workshop lessons fix them.
 | --- | --- | --- |
 | Intervals | Any of m2, M2, m3, M3, P4, TT, P5, m6, M6, m7, M7, P8 and compound m9 … P15 (13–24 semitones); at least two sizes | EM |
 | Playing mode | Any of ascending, descending, harmonic; random among the selected, per question | EM |
-| Tone relationship | Common first tone · Common first or second tone · Nearby first tones · No common tones | EM (names from the workshop) |
+| Tone relationship | Common first tone · Common first or second tone · Nearby first tones · Random first tones | EM (names from the workshop; "Random first tones" is ours, replacing EM's "No common tones") |
 | Range | Lowest and highest tone any question may use | ours (replaces EarMaster's keys and root movement) |
 | Tempo | Slow, medium, fast note length (1.0 s, 0.7 s, 0.45 s) | EM (shared tempo option), values ours |
 | Questions | A whole number from 1 to 200 (number input, with -10/-1/+1/+10 steppers), or endless | ours |
@@ -40,7 +40,7 @@ Custom exercise (all options) [EM, E1 options]; workshop lessons fix them.
 
 Keys and root movement are simplified to a range: EarMaster's key options matter for tonal context, which E1 does not use.
 
-The custom exercise screen shows interval names as full name plus abbreviation (e.g. "Major 3rd (M3)") by default, with a toggle to switch to abbreviations only. The last-used custom options and that toggle are remembered in the browser (`localStorage`) and restored next time the page opens with no options chosen yet; a **Reset to defaults** button clears back to the defaults above [ours].
+The custom exercise screen explains every option inline, reusing the lesson help text. Intervals are picked one by one or with interval sets (Perfect, Imperfect consonant, Dissonant, All intervals) that add or remove their whole group, so sets combine; a **Second octave** toggle adds the same intervals one octave wider (m3 → m10, P8 → P15), removes all compound intervals when turned off, and makes sets picked while it is on cover both octaves. Names show in full ("Major 3rd", "Octave", "Double octave") by default, with a toggle for abbreviations. The number of questions is a −/+ stepper with an editable value (1–200), quick picks 10 · 20 · 30 · 50 and an **Endless** toggle; after a correct answer the run either waits or continues automatically. The last-used custom options and the name toggle are remembered in the browser (`localStorage`) and restored next time the page opens with no options chosen yet; a **Reset to defaults** button clears back to the defaults above [ours].
 
 ## Question choice
 
@@ -49,8 +49,8 @@ The custom exercise screen shows interval names as full name plus abbreviation (
 - Roots, by tone relationship. The **first tone** is the tone played first: the lower tone for ascending and harmonic, the upper tone for descending [EM: "melodic down … the top tone in common"].
   - Common first tone: A and B share their first tone [EM].
   - Common first or second tone: A and B share either their first tone or their second tone, 50/50 [ours; EarMaster names the lesson but does not define it].
-  - Nearby first tones: first tones 1–4 semitones apart [ours].
-  - No common tones: no pitch is shared between A and B [EM name, ours rule].
+  - Nearby first tones: first tones drawn at random 0–4 semitones apart; they may coincide [ours].
+  - Random first tones: A and B start on independent random notes in the range; they may share pitches [ours].
 - All four tones stay inside the range; otherwise the choice is redrawn [ours].
 - Spelling: every interval is spelled correctly from its first tone (letter distance plus quality, e.g. M3 above E♭ is G). First tones use the spellings C, C♯, D, E♭, E, F, F♯, G, A♭, A, B♭, B, respelled enharmonically when the other tone would need a double accidental. A shared tone has the same spelling in both intervals. The tritone is spelled A4 or d5, whichever avoids double accidentals [ours].
 

@@ -76,14 +76,14 @@ const DEGREE_QUALITY_NAME: Record<string, string> = {
   '5P': 'Perfect 5th', '5d': 'Diminished 5th',
   '6m': 'Minor 6th', '6M': 'Major 6th',
   '7m': 'Minor 7th', '7M': 'Major 7th',
-  '8P': 'Perfect 8th',
+  '8P': 'Octave',
   '9m': 'Minor 9th', '9M': 'Major 9th',
   '10m': 'Minor 10th', '10M': 'Major 10th',
   '11P': 'Perfect 11th', '11A': 'Augmented 11th',
   '12P': 'Perfect 12th', '12d': 'Diminished 12th',
   '13m': 'Minor 13th', '13M': 'Major 13th',
   '14m': 'Minor 14th', '14M': 'Major 14th',
-  '15P': 'Perfect 15th',
+  '15P': 'Double octave',
 };
 
 export function intervalDisplayName(degree: number, quality: 'm' | 'M' | 'P' | 'A' | 'd'): string {
