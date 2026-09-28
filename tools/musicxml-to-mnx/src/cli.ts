@@ -38,14 +38,14 @@ function main(argv: string[]): void {
     fail(`${inputPath}: conversion failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  const result = check(converted);
+  const withIds = assignIds(converted);
+  const result = check(withIds);
   if (!result.ok) {
     process.stderr.write(`${inputPath}: ${result.problems.length} problem(s):\n`);
     for (const problem of result.problems) process.stderr.write(`  [${problem.kind}] ${problem.message}\n`);
     process.exit(1);
   }
 
-  const withIds = assignIds(converted);
   try {
     writeFileSync(outputPath, `${JSON.stringify(withIds, null, 2)}\n`, 'utf8');
   } catch (error) {

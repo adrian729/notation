@@ -1,5 +1,13 @@
-import { noteValueLength } from '@polyhymnia/notation-model';
+import { noteValueLength, pitchToMidi, stepNumberOf, STEP_LETTERS } from '@polyhymnia/notation-model';
 import type { Key, NoteValue, Pitch, Time } from '@polyhymnia/notation-model';
+import type { LayoutResult } from '@polyhymnia/notation-engine';
+import type { CSSProperties } from 'react';
+
+export interface RevealBaseProps {
+  className?: string;
+  style?: CSSProperties;
+  onLayout?: (layout: LayoutResult) => void;
+}
 
 export function fittingMeter(duration: NoteValue, count: number): Time {
   const length = noteValueLength(duration);
@@ -26,17 +34,9 @@ const PATTERNS: Record<ScaleName, readonly number[]> = {
   melodicMinor: [0, 2, 3, 5, 7, 9, 11, 12],
 };
 
-const STEP_LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as const;
-
-function stepNumber(letter: Pitch['step']): number {
-  return STEP_LETTERS.indexOf(letter);
-}
-
 function letterOf(n: number): Pitch['step'] {
   return STEP_LETTERS[((n % 7) + 7) % 7]!;
 }
-
-const NATURAL_SEMITONES = [0, 2, 4, 5, 7, 9, 11] as const;
 
 export function scalePitches(
   root: Pitch,
@@ -45,15 +45,14 @@ export function scalePitches(
 ): Pitch[] {
   const pattern =
     scale === 'melodicMinor' && descending ? PATTERNS.naturalMinor : PATTERNS[scale];
-  const rootStep = stepNumber(root.step);
-  const rootAlter = root.alter ?? 0;
-  const rootSemitone = NATURAL_SEMITONES[rootStep]! + rootAlter + 12 * root.octave;
+  const rootStep = stepNumberOf(root.step);
+  const rootSemitone = pitchToMidi(root);
 
   const ascending = pattern.map((semitones, degree): Pitch => {
     const letterIndex = rootStep + degree;
     const step = letterOf(letterIndex);
     const octave = root.octave + Math.floor(letterIndex / 7);
-    const natural = NATURAL_SEMITONES[stepNumber(step)]! + 12 * octave;
+    const natural = pitchToMidi({ step, octave });
     const alter = clampAlter(rootSemitone + semitones - natural);
     return alter === 0 ? { step, octave } : { step, alter, octave };
   });
@@ -68,7 +67,7 @@ function clampAlter(alter: number): number {
 const MAJOR_FIFTHS_BASE = [0, 2, 4, -1, 1, 3, 5] as const;
 
 export function scaleKey(root: Pitch, scale: ScaleName): Key {
-  const majorFifths = MAJOR_FIFTHS_BASE[stepNumber(root.step)]! + 7 * (root.alter ?? 0);
+  const majorFifths = MAJOR_FIFTHS_BASE[stepNumberOf(root.step)]! + 7 * (root.alter ?? 0);
   const fifths = scale === 'major' ? majorFifths : majorFifths - 3;
   return { fifths: clampFifths(fifths) };
 }

@@ -47,7 +47,6 @@ export interface NotationHandle {
   getLayout(): LayoutResult;
   getTimeMap(): TimeMap;
   exportSVG(): string;
-  hitTest(point: { x: number; y: number }, opts?: Parameters<typeof hitTest>[2]): HitResult | null;
   setPlaybackTick(tick: number): void;
   focus(id: NoteId): void;
 }
@@ -81,12 +80,12 @@ export function Notation({
   const lastHoverRef = useRef<string | null>(null);
   const lastPointerRef = useRef<{ x: number; y: number } | null>(null);
   const lastPointerEventRef = useRef<MouseEvent | null>(null);
-  const playbackView = extractPlaybackView(children);
+  const playbackView = extractChildProps<NotationPlaybackProps>(children, PlaybackChild)?.view;
   const imperativeTickRef = useRef<number | null>(null);
   const viewRef = useRef<PlaybackView | undefined>(playbackView);
   viewRef.current = playbackView;
-  const interaction = extractInteraction(children);
-  const marks = extractMarks(children);
+  const interaction = extractChildProps<NotationInteractionProps>(children, InteractionChild);
+  const marks = extractChildProps<NotationMarksProps>(children, MarksChild);
   const targets = interaction?.targets ?? EMPTY_TARGETS;
 
   useEffect(() => {
@@ -104,12 +103,12 @@ export function Notation({
     const tick = imperativeTickRef.current;
     if (view?.mode === 'notes') setPlaying(elementRefs.current, new Set(view.activeIds));
     else if (view?.mode === 'off') setPlaying(elementRefs.current, EMPTY_IDS);
-    else if (view?.mode === 'cursor') {
-      const at = tick ?? declaredTick(layout.timemap, view.position);
-      placeCursor(cursorRef.current, layout.timemap, at);
-      setPlaying(elementRefs.current, view.highlightActive ? new Set(layout.timemap.activeAt(at)) : EMPTY_IDS);
-    } else if (tick !== null) setPlaying(elementRefs.current, new Set(layout.timemap.activeAt(tick)));
-    else if (view === undefined) setPlaying(elementRefs.current, EMPTY_IDS);
+    else if (view === undefined && tick === null) setPlaying(elementRefs.current, EMPTY_IDS);
+    else {
+      const at = tick ?? (view?.mode === 'cursor' ? declaredTick(layout.timemap, view.position) : 0);
+      if (view?.mode === 'cursor' && !view.highlightActive) setPlaying(elementRefs.current, EMPTY_IDS);
+      applyTick(view, at, layout, elementRefs.current, cursorRef.current);
+    }
   }, [playbackView, layout]);
 
   useEffect(() => {
@@ -117,16 +116,18 @@ export function Notation({
     setSelection(elementRefs.current, marks?.selection);
   }, [marks?.states, marks?.selection, layout]);
 
+  const notifyHover = (hit: HitResult | null, nativeEvent: MouseEvent): void => {
+    if (!interaction?.onIntent || targets.length === 0) return;
+    lastHoverRef.current = hit ? hitIdentity(hit) : null;
+    interaction.onIntent({ type: 'hover', target: hit }, { layout, nativeEvent });
+  };
+
   useEffect(() => {
     if (!interaction?.onIntent || lastHoverRef.current === null) return;
     const pointer = lastPointerRef.current;
     const point = pointer && svgRef.current ? clientToLayoutPoint(svgRef.current, pointer.x, pointer.y) : null;
     const hit = point ? hitTest(layout, point, resolveHitOptions(interaction, options)) : null;
-    lastHoverRef.current = hit ? hitIdentity(hit) : null;
-    interaction.onIntent(
-      { type: 'hover', target: hit },
-      { layout, nativeEvent: lastPointerEventRef.current ?? new MouseEvent('pointermove') },
-    );
+    notifyHover(hit, lastPointerEventRef.current ?? new MouseEvent('pointermove'));
   }, [layout]);
 
   useImperativeHandle(
@@ -135,13 +136,11 @@ export function Notation({
       getLayout: () => layout,
       getTimeMap: () => layout.timemap,
       exportSVG: () => serialize(svgRef.current),
-      hitTest: (point, opts) => hitTest(layout, point, opts),
       setPlaybackTick: (tick) => {
         const view = viewRef.current;
         if (view?.mode === 'notes' || view?.mode === 'off') return;
         imperativeTickRef.current = tick;
-        if (view?.mode === 'cursor') placeCursor(cursorRef.current, layout.timemap, tick);
-        if (view?.mode !== 'cursor' || view.highlightActive) setPlaying(elementRefs.current, new Set(layout.timemap.activeAt(tick)));
+        applyTick(view, tick, layout, elementRefs.current, cursorRef.current);
       },
       focus: (id) => elementRefs.current.get(id)?.focus(),
     }),
@@ -159,15 +158,14 @@ export function Notation({
   };
 
   const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>): void => {
-    if (!interaction?.onIntent || targets.length === 0 || !svgRef.current) return;
     lastPointerRef.current = { x: event.clientX, y: event.clientY };
     lastPointerEventRef.current = event.nativeEvent;
+    if (!interaction?.onIntent || targets.length === 0 || !svgRef.current) return;
     const point = clientToLayoutPoint(svgRef.current, event.clientX, event.clientY);
     const hit = point ? hitTest(layout, point, resolveHitOptions(interaction, options)) : null;
     const identity = hit ? hitIdentity(hit) : null;
     if (identity === lastHoverRef.current) return;
-    lastHoverRef.current = identity;
-    interaction.onIntent({ type: 'hover', target: hit }, { layout, nativeEvent: event.nativeEvent });
+    notifyHover(hit, event.nativeEvent);
   };
 
   const handlePointerLeave = (event: ReactPointerEvent<SVGSVGElement>): void => {
@@ -277,6 +275,21 @@ export namespace Notation {
 function declaredTick(timemap: TimeMap, position: { tick: number } | { seconds: number } | undefined): number {
   if (!position) return 0;
   return 'tick' in position ? position.tick : timemap.writtenTickAtSeconds(position.seconds);
+}
+
+function applyTick(
+  view: PlaybackView | undefined,
+  tick: number,
+  layout: LayoutResult,
+  refs: Map<string, SVGGElement>,
+  cursorGroup: SVGGElement | null,
+): void {
+  if (view?.mode === 'cursor') {
+    placeCursor(cursorGroup, layout.timemap, tick);
+    if (view.highlightActive) setPlaying(refs, new Set(layout.timemap.activeAt(tick)));
+  } else {
+    setPlaying(refs, new Set(layout.timemap.activeAt(tick)));
+  }
 }
 
 function CursorGroup({
@@ -393,26 +406,10 @@ function classNames(...parts: (string | undefined)[]): string {
 const EMPTY_IDS: ReadonlySet<string> = new Set();
 const EMPTY_TARGETS: readonly [] = [];
 
-function extractPlaybackView(children: ReactNode): PlaybackView | undefined {
-  let view: PlaybackView | undefined;
+function extractChildProps<P>(children: ReactNode, type: (props: P) => unknown): P | undefined {
+  let props: P | undefined;
   Children.forEach(children, (child) => {
-    if (isValidElement<NotationPlaybackProps>(child) && child.type === PlaybackChild) view = child.props.view;
-  });
-  return view;
-}
-
-function extractInteraction(children: ReactNode): NotationInteractionProps | undefined {
-  let props: NotationInteractionProps | undefined;
-  Children.forEach(children, (child) => {
-    if (isValidElement<NotationInteractionProps>(child) && child.type === InteractionChild) props = child.props;
-  });
-  return props;
-}
-
-function extractMarks(children: ReactNode): NotationMarksProps | undefined {
-  let props: NotationMarksProps | undefined;
-  Children.forEach(children, (child) => {
-    if (isValidElement<NotationMarksProps>(child) && child.type === MarksChild) props = child.props;
+    if (isValidElement<P>(child) && child.type === type) props = child.props;
   });
   return props;
 }

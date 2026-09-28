@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Notation } from '@polyhymnia/notation-react';
-import type { MnxDocument } from '@polyhymnia/notation-react';
+import type { MnxDocument } from '@polyhymnia/notation-model';
 import { ChordReveal, IntervalReveal, ScaleReveal } from '@polyhymnia/notation-react/presets';
 import { NoteHeard, Dictation, ErrorDetection, IntervalId } from './exercises/index.js';
 import { Example } from './Example.js';

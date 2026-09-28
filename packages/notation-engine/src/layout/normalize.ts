@@ -1,7 +1,6 @@
 import { elementIds, noteValueLength, readMnx, tupletRatio, Rational as R } from '@polyhymnia/notation-model';
 import type {
   Diagnostic,
-  ElementIds,
   ElementPosition,
   Event as MnxEvent,
   MeasureGlobal,
@@ -17,27 +16,31 @@ import type {
 import type { NotationOptions } from '../options.js';
 import {
   DEFAULT_TIME,
+  DURATION_BASES,
+  stepNumber,
   type AccidentalPolicy,
   type Alter,
   type ClefSpec,
   type Dots,
   type DurationBase,
+  type ElementNote,
   type KeySpec,
   type MeasureFlow,
   type MeasureFlows,
-  type NormalizedBeam,
+  type NormalizedEvent,
+  type NormalizedMeasure,
+  type NormalizedScore,
+  type NormalizedVoice,
   type NoteId,
   type NoteValueSpec,
-  type NormalizedSlur,
-  type NormalizedTie,
-  type Pitch,
-  type StepNumber,
+  type StaffPitch,
   type TempoEvent,
   type TempoMap,
   type TimeSpec,
   type TupletRef,
 } from './records.js';
 import { MIDDLE_LINE } from './staff.js';
+import { asArray, asObject, createReader, idFor, type MutableNote, type Reader } from './normalize-reader.js';
 import {
   barlineEndOf,
   isMidMeasure,
@@ -50,116 +53,10 @@ import {
 } from './normalize-measure.js';
 import { resolveBeams } from './normalize-beams.js';
 
-export interface ElementNote {
-  id: NoteId;
-  pitch: Pitch;
-  tie?: 'start' | 'stop' | 'continue';
-  accidentalPolicy?: AccidentalPolicy;
-}
-
-export interface NormalizedElement {
-  id: NoteId;
-  kind: 'note' | 'chord' | 'rest';
-  base: DurationBase;
-  dots: Dots;
-  length: Rational;
-  tuplet?: TupletRef;
-  notes: readonly ElementNote[];
-  stem?: 'up' | 'down';
-  breath?: 'comma' | 'caesura';
-  wholeBar?: boolean;
-  staffPosition?: number;
-}
-
-export interface NormalizedGap {
-  kind: 'space';
-  length: Rational;
-}
-
-export type NormalizedEvent = NormalizedElement | NormalizedGap;
-
-export interface NormalizedVoice {
-  index: 0 | 1;
-  events: readonly NormalizedEvent[];
-}
-
-export interface NormalizedMeasure {
-  index: number;
-  clef: ClefSpec;
-  key: KeySpec;
-  time: TimeSpec;
-  voices: readonly NormalizedVoice[];
-  pickup: boolean;
-  capacity: Rational;
-  capacityTicks: number;
-  barlineStart?: 'none' | 'repeat-start';
-  barlineEnd?: 'single' | 'double' | 'dashed' | 'final' | 'repeat-end' | 'none';
-  systemBreak: boolean;
-}
-
-export interface NormalizedStaff {
-  index: number;
-  clef: ClefSpec;
-  key: KeySpec;
-  time: TimeSpec;
-  measures: readonly NormalizedMeasure[];
-}
-
-export interface NormalizedScore {
-  id: string;
-  divisions: number;
-  tempo: TempoMap;
-  flow: MeasureFlows;
-  staves: readonly NormalizedStaff[];
-  beams: readonly NormalizedBeam[];
-  ties: readonly NormalizedTie[];
-  slurs: readonly NormalizedSlur[];
-  diagnostics: readonly Diagnostic[];
-  usedIds: ReadonlySet<string>;
-}
-
 const DEFAULT_CLEF: ClefSpec = { kind: 'treble' };
 const DEFAULT_KEY: KeySpec = { fifths: 0 };
-const STEP_NUMBERS: Record<string, StepNumber> = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
-const SUPPORTED_BASES = new Set<string>(['breve', 'whole', 'half', 'quarter', 'eighth', '16th', '32nd', '64th']);
+const SUPPORTED_BASES = new Set<string>(DURATION_BASES);
 const HANDLED_MARKINGS = new Set(['breath', 'caesura', '_c', '_x', 'id']);
-
-type MutableNote = { -readonly [K in keyof ElementNote]: ElementNote[K] };
-
-interface PendingTie {
-  from: MutableNote;
-  tie: Tie;
-  measureIndex: number;
-}
-
-interface PendingSlur {
-  fromEventId: NoteId;
-  fromNotes: readonly MutableNote[];
-  slur: Slur;
-  k: number;
-  measureIndex: number;
-}
-
-export interface Reader {
-  diagnostics: Diagnostic[];
-  unsupported(construct: string, measureIndex: number | undefined, consequence: string): void;
-  notesById: Map<string, MutableNote>;
-  ties: PendingTie[];
-  resolvedTies: NormalizedTie[];
-  slurs: PendingSlur[];
-  resolvedSlurs: NormalizedSlur[];
-  eventsById: Map<string, readonly MutableNote[]>;
-  noteOrder: Map<MutableNote, { voice: 0 | 1; order: number }>;
-  eventOrder: [number, number];
-  ids: ElementIds;
-  usedIds: Set<string>;
-}
-
-function idFor(reader: Reader, pos: ElementPosition, candidate: string): NoteId {
-  const id = reader.ids.idAt(pos) ?? reader.ids.mint(candidate);
-  reader.usedIds.add(id);
-  return id;
-}
 
 interface SequenceScope {
   measureIndex: number;
@@ -192,33 +89,8 @@ export function normalize(doc: MnxDocument, options?: NotationOptions): Normaliz
     (read.diagnostics.some((d) => d.code === 'mnx-unsupported-version') ? doc : null);
   if (!source) return empty();
 
-  const seen = new Set<string>();
   const ids = elementIds(source);
-  const reader: Reader = {
-    diagnostics,
-    notesById: new Map(),
-    ties: [],
-    resolvedTies: [],
-    slurs: [],
-    resolvedSlurs: [],
-    eventsById: new Map(),
-    noteOrder: new Map(),
-    eventOrder: [0, 0],
-    ids,
-    usedIds: new Set(),
-    unsupported(construct, measureIndex, consequence) {
-      const key = `${construct}@${measureIndex ?? ''}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      const where = measureIndex === undefined ? '' : ` in measure ${measureIndex}`;
-      diagnostics.push({
-        severity: 'warning',
-        code: 'mnx-unsupported',
-        message: `Unsupported MNX: ${construct}${where}; ${consequence}.`,
-        ...(measureIndex === undefined ? {} : { measureIndex }),
-      });
-    },
-  };
+  const reader = createReader(ids, diagnostics);
 
   const parts = asArray(source.parts);
   const part = asObject(parts[0]);
@@ -374,44 +246,6 @@ function idOf(source: MnxDocument): string {
   return typeof source.id === 'string' ? source.id : 'score';
 }
 
-export function asArray(value: unknown): readonly unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-export function asObject(value: unknown): Record<string, any> | undefined {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Record<string, any>)
-    : undefined;
-}
-
-export function synthId(candidate: string, reader: Reader): NoteId {
-  const id = reader.ids.mint(candidate);
-  reader.usedIds.add(id);
-  return id;
-}
-
-export function resolveId(
-  explicit: unknown,
-  candidate: string,
-  reader: Reader,
-  measureIndex?: number,
-): NoteId {
-  if (typeof explicit === 'string') {
-    if (reader.usedIds.has(explicit)) {
-      reader.diagnostics.push({
-        severity: 'warning',
-        code: 'id-collision',
-        message: `Duplicate id ${JSON.stringify(explicit)} appears on more than one laid-out element; only the first is addressable.`,
-        ...(measureIndex === undefined ? {} : { measureIndex }),
-      });
-      return explicit;
-    }
-    reader.usedIds.add(explicit);
-    return explicit;
-  }
-  return synthId(candidate, reader);
-}
-
 function readSequences(sequences: readonly unknown[], measureIndex: number, reader: Reader): NormalizedVoice[] {
   const kept: { sequence: Partial<Sequence>; index: number }[] = [];
   sequences.forEach((raw, index) => {
@@ -446,7 +280,11 @@ function readSequences(sequences: readonly unknown[], measureIndex: number, read
         reader.unsupported('full-measure rest visualDuration', measureIndex, 'drawn as a whole-bar rest');
       }
       events.push({
-        id: idFor(reader, { measureIndex, sequenceIndex: index, path: [], full: true }, `m${measureIndex}.s${index}.full`),
+        id: idFor(
+          reader,
+          { measureIndex, sequenceIndex: index, path: [], fullMeasureRest: true },
+          `m${measureIndex}.s${index}.full`,
+        ),
         kind: 'rest',
         base: 'whole',
         dots: 0,
@@ -711,9 +549,9 @@ function readNote(
   return element;
 }
 
-function readPitch(value: unknown, measureIndex: number, reader: Reader): Pitch {
+function readPitch(value: unknown, measureIndex: number, reader: Reader): StaffPitch {
   const pitch = asObject(value);
-  const step = typeof pitch?.step === 'string' ? STEP_NUMBERS[pitch.step] : undefined;
+  const step = stepNumber(pitch?.step);
   const octave = pitch?.octave;
   if (step === undefined || typeof octave !== 'number' || !Number.isInteger(octave)) {
     reader.diagnostics.push({
@@ -909,7 +747,7 @@ function pickAnchor(notes: readonly MutableNote[], side: 'up' | 'down' | undefin
   return (side === 'down' ? sorted[sorted.length - 1]! : sorted[0]!).id;
 }
 
-function pitchIndex(p: Pitch): number {
+function pitchIndex(p: StaffPitch): number {
   return p.step + 7 * p.octave;
 }
 

@@ -55,7 +55,7 @@ interface MeasureBox {
 }
 ```
 
-`LayoutResult.measures` carries one `MeasureBox` per `HorizontalMeasure`, so `hitTest` and `previewShapes` can look up a measure's clef/key at call time without re-running layout. `contentX` is the first column's `xStart` (the content band's left edge, chrome excluded); an empty measure with no columns falls back to the content-right edge, giving it a zero-width band.
+`LayoutResult.measures` carries one `MeasureBox` per `PositionedMeasure` (built by `query/measures.ts`'s `buildMeasureBox`), so `hitTest` and `previewShapes` can look up a measure's clef/key at call time without re-running layout. `contentX` is the first column's `xStart` (the content band's left edge, chrome excluded); an empty measure with no columns falls back to the content-right edge, giving it a zero-width band.
 
 ```ts
 interface PreviewNote { measureIndex: number; x: number; pitch: Pitch; voice?: 0|1 }

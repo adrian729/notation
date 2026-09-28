@@ -639,7 +639,7 @@ Placement follows `AGENTS.md`: dependency direction `model ← engine ← {react
 | Tie-tail ids missing from `timemap.byId`: a tie-merged `TimeMapEntry` is built from the tie head, so `ids` hold only the head's ids and `byId(tailId)` is `undefined`; `midiOfId` then falls back to the hit's pitch | Clicking tied notes in note-heard, error detection, hover-to-hear | `notation-engine` `query/timemap.ts`; one regression test |
 | `HitResult` element `pitch` ignores the written accidental: derived from staff position + key, because `ElementBox` carries no written `Pitch` | Any exercise reading the clicked note's pitch (labels, sound fallback, answer checks on existing notes) | `notation-engine`: carry written pitch on `ElementBox` |
 | Parallel `ids` / `midiNotes` arrays (plus separate `midi`) in `TimeMapEntry`; lookups use `indexOf` in `midiOfId` and `eventsFromTimeMap` | Fragile id → sound lookups | `notation-engine` + `audio` (breaking: per-member `{ id, midi }`) |
-| No pitch → midi in `notation-model` (engine `midiOf` works on its own record type; audio has `midiOfPitch`) | Duplicate pitch math; generators and MIDI spelling need one home | `notation-model` |
+| ~~No pitch → midi in `notation-model`~~ resolved: `pitchToMidi` in `notation-model` is used by engine, audio, react presets and the app | — | `notation-model` |
 | Only `parts[0]` is laid out (`normalize.ts`); `applyIntent` addresses part 0, staff 1, first two sequences | Accompanied dictation, harmonic dictation | Engine, model |
 | Volta (`ending`), `jump` and fermata emit `mnx-unsupported` "not drawn"; repeats still play via `playOrder` | Library excerpts show no endings or fermatas | `notation-engine` |
 

@@ -1,6 +1,5 @@
 import type { Pitch as MnxPitch } from '@polyhymnia/notation-model';
-import { STEP_LETTERS } from '../layout/records.js';
-import type { NoteId } from '../layout/records.js';
+import { toMnxPitch, type NoteId, type StepNumber } from '../layout/records.js';
 import { STAFF_HEIGHT, keyAlterOf, stepIndexAt } from '../layout/staff.js';
 import type { Box, ElementBox, LayoutResult, MeasureBox, Slot, SystemBox } from '../layout/types.js';
 
@@ -22,18 +21,12 @@ const DEFAULT_KINDS: readonly HitKind[] = ['element', 'slot', 'point'];
 const DEFAULT_RADIUS = 0.5;
 export const HIT_STAFF_MARGIN = 4;
 
-function toMnxPitch(step: number, alter: number, octave: number): MnxPitch {
-  const normalizedStep = ((step % 7) + 7) % 7;
-  const letter = STEP_LETTERS[normalizedStep]!;
-  return alter !== 0 ? { step: letter, octave, alter } : { step: letter, octave };
-}
-
 function pitchAt(staffPosition: number, measureBox: MeasureBox, insertAlteration: 'key' | 'natural'): MnxPitch {
   const stepIdx = stepIndexAt(staffPosition, measureBox.clef);
-  const step = ((stepIdx % 7) + 7) % 7;
+  const step = (((stepIdx % 7) + 7) % 7) as StepNumber;
   const octave = Math.floor(stepIdx / 7);
   const alter = insertAlteration === 'natural' ? 0 : keyAlterOf(measureBox.key, step);
-  return toMnxPitch(step, alter, octave);
+  return toMnxPitch({ step, alter, octave });
 }
 
 function findSystem(layout: LayoutResult, y: number): SystemBox | undefined {
@@ -76,7 +69,7 @@ function hitElement(
   }
   if (!best) return null;
 
-  const pitch = best.pitch ? toMnxPitch(best.pitch.step, best.pitch.alter, best.pitch.octave) : null;
+  const pitch = best.pitch ? toMnxPitch(best.pitch) : null;
   return {
     kind: 'element',
     id: best.id,

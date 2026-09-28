@@ -1,15 +1,9 @@
-import { INTERVAL_FAMILIES, type IntervalId } from './intervals.js';
-import { tokenMidi } from './spelling.js';
+import { INTERVAL_FAMILIES, type IntervalId } from '../shared/intervals.js';
+import { tokenMidi } from '../shared/spelling.js';
+import type { PlayingMode, RangeOption, Tempo } from '../shared/playing.js';
 
-export type PlayingMode = 'asc' | 'desc' | 'harmonic';
 export type ToneRelationship = 'common-first' | 'common-either' | 'nearby' | 'random';
-export type Tempo = 'slow' | 'medium' | 'fast';
 export type QuestionCount = number | 'endless';
-
-export interface RangeOption {
-  low: string;
-  high: string;
-}
 
 export interface ExerciseOptions {
   intervals: readonly IntervalId[];
@@ -21,13 +15,6 @@ export interface ExerciseOptions {
   autoNext: boolean;
 }
 
-export const TEMPO_NOTE_DURATION: Record<Tempo, number> = {
-  slow: 1.0,
-  medium: 0.7,
-  fast: 0.45,
-};
-
-export const AUTO_NEXT_DELAY_MS = 1500;
 export const QUESTION_COUNT_MIN = 1;
 export const QUESTION_COUNT_MAX = 200;
 

@@ -1,5 +1,18 @@
-import { INTERVAL_FAMILIES, INTERVAL_FAMILY_ORDER, type IntervalFamilyId } from './intervals.js';
-import { DEFAULT_OPTIONS, type ExerciseOptions, type PlayingMode, type ToneRelationship } from './options.js';
+import { INTERVAL_FAMILIES, INTERVAL_FAMILY_ORDER, type IntervalFamilyId } from '../shared/intervals.js';
+import {
+  FAMILY_TITLE,
+  FAMILY_HELP,
+  MODE_TITLE,
+  MODE_HELP,
+  ALL_MODES,
+  MODE_ORDER,
+  rangeForFamily,
+  type LessonMode,
+  type HelpSection,
+  type OverviewSection,
+} from '../shared/families.js';
+import { createCatalog } from '../shared/catalog.js';
+import { DEFAULT_OPTIONS, type ExerciseOptions, type ToneRelationship } from './options.js';
 
 export interface ModuleDef {
   id: string;
@@ -8,13 +21,6 @@ export interface ModuleDef {
   title: string;
   help: readonly HelpSection[];
 }
-
-export interface HelpSection {
-  heading: string;
-  text: string;
-}
-
-export type LessonMode = PlayingMode | 'mixed';
 
 export interface LessonDef {
   id: string;
@@ -45,28 +51,8 @@ export const RELATIONSHIP_TITLE: Record<ToneRelationship, string> = {
   random: 'Random first tones',
 };
 
-export const FAMILY_TITLE: Record<IntervalFamilyId, string> = {
-  perfect: 'Perfect intervals',
-  imperfect: 'Imperfect consonant intervals',
-  dissonant: 'Dissonant intervals',
-  simple: 'All simple intervals',
-  compound: 'Compound intervals',
-};
-
 export const TASK_HELP =
   'You hear two intervals, A then B. Choose the larger one (the one whose two notes are further apart), or Same if they are the same size.';
-
-export const FAMILY_HELP: Record<IntervalFamilyId, string> = {
-  perfect:
-    'Intervals: perfect 4th, perfect 5th and octave. These open, stable sounds are far apart in size, which makes them the easiest to start with.',
-  imperfect:
-    'Intervals: minor and major 3rd, minor and major 6th. Sweet, consonant sounds; the minor and major versions are only one semitone apart, so listen closely.',
-  dissonant:
-    'Intervals: minor and major 2nd, tritone, minor and major 7th. Tense, clashing sounds, from the smallest steps to the widest leaps below an octave.',
-  simple: 'Intervals: every interval from a minor 2nd up to an octave, all mixed together.',
-  compound:
-    'Intervals: from a minor 9th up to two octaves. Wide leaps whose notes are far apart, so the size is harder to hear.',
-};
 
 export const RELATIONSHIP_HELP: Record<ToneRelationship, string> = {
   'common-first':
@@ -91,28 +77,7 @@ function moduleHelp(family: IntervalFamilyId, relationship: ToneRelationship): H
   ];
 }
 
-const ALL_MODES: readonly PlayingMode[] = ['asc', 'desc', 'harmonic'];
-const MODE_ORDER: readonly LessonMode[] = ['asc', 'desc', 'harmonic', 'mixed'];
 const MODE_SLUG: Record<LessonMode, string> = { asc: 'asc', desc: 'desc', harmonic: 'harmonic', mixed: 'mixed' };
-export const MODE_TITLE: Record<LessonMode, string> = {
-  asc: 'Ascending',
-  desc: 'Descending',
-  harmonic: 'Harmonic',
-  mixed: 'Mixed',
-};
-
-export const MODE_HELP: Record<LessonMode, string> = {
-  asc: 'The two notes of each interval are played one after the other, low to high.',
-  desc: 'The two notes of each interval are played one after the other, high to low.',
-  harmonic: 'The two notes of each interval are played together, at the same time.',
-  mixed: 'Each question is ascending, descending or harmonic, chosen at random.',
-};
-
-export interface OverviewSection {
-  heading: string;
-  intro: string;
-  items: readonly { term: string; text: string }[];
-}
 
 export const OVERVIEW_HELP: readonly OverviewSection[] = [
   {
@@ -143,10 +108,6 @@ export const OVERVIEW_HELP: readonly OverviewSection[] = [
   },
 ];
 
-function rangeForFamily(family: IntervalFamilyId): { low: string; high: string } {
-  return family === 'compound' ? { low: 'G2', high: 'C6' } : { low: 'C3', high: 'C6' };
-}
-
 export const MODULES: readonly ModuleDef[] = INTERVAL_FAMILY_ORDER.flatMap((family) =>
   RELATIONSHIP_ORDER.map((toneRelationship) => ({
     id: `${family}-${RELATIONSHIP_SLUG[toneRelationship]}`,
@@ -175,17 +136,8 @@ export const LESSONS: readonly LessonDef[] = MODULES.flatMap((mod) =>
   })),
 );
 
-const LESSON_BY_ID = new Map(LESSONS.map((l) => [l.id, l]));
-const MODULE_BY_ID = new Map(MODULES.map((m) => [m.id, m]));
+const catalog = createCatalog(MODULES, LESSONS);
 
-export function lessonById(id: string): LessonDef | undefined {
-  return LESSON_BY_ID.get(id);
-}
-
-export function moduleById(id: string): ModuleDef | undefined {
-  return MODULE_BY_ID.get(id);
-}
-
-export function lessonsForModule(moduleId: string): readonly LessonDef[] {
-  return LESSONS.filter((l) => l.moduleId === moduleId);
-}
+export const lessonById = catalog.lessonById;
+export const moduleById = catalog.moduleById;
+export const lessonsForModule = catalog.lessonsForModule;

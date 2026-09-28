@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LESSONS } from '@/exercises/interval-comparison/workshop';
+import { LESSONS } from '@/exercises/interval-comparison/catalog';
 import { generateQuestion } from '@/exercises/interval-comparison/generator';
 
 function mulberry32(seed: number) {

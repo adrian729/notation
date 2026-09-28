@@ -1,17 +1,18 @@
 import { Rational as R } from '@polyhymnia/notation-model';
 import type { Diagnostic, Rational } from '@polyhymnia/notation-model';
 import type { NotationOptions } from '../options.js';
-import type { NormalizedEvent, NormalizedMeasure, NormalizedScore } from './normalize.js';
 import {
   decomposeLength,
   noteValueSpecLength,
   type DurationBase,
+  type ElementNote,
+  type NormalizedEvent,
+  type NormalizedMeasure,
+  type NormalizedScore,
   type NoteId,
   type TupletRef,
 } from './records.js';
 
-export type { ElementNote } from './normalize.js';
-import type { ElementNote } from './normalize.js';
 export interface TemporalElement {
   id: NoteId;
   kind: 'note' | 'chord' | 'rest';

@@ -20,3 +20,15 @@ export function parsePitch(token: string): Pitch {
     ? { step, octave: Number.parseInt(octave!, 10) }
     : { step, alter, octave: Number.parseInt(octave!, 10) };
 }
+
+export const STEP_LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as const satisfies readonly Pitch['step'][];
+
+const NATURAL_SEMITONES: Record<Pitch['step'], number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+
+export function stepNumberOf(step: Pitch['step']): number {
+  return STEP_LETTERS.indexOf(step);
+}
+
+export function pitchToMidi(pitch: Pitch): number {
+  return 12 * (pitch.octave + 1) + NATURAL_SEMITONES[pitch.step] + (pitch.alter ?? 0);
+}

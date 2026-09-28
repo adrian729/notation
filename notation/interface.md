@@ -46,14 +46,13 @@ Renders the `<svg>`, computes layout (`useMemo`, keyed on `score` identity), pro
 interface NotationHandle {
   getLayout(): LayoutResult;
   getTimeMap(): TimeMap;
-  hitTest(p: { x: number; y: number }, opts?: HitOptions): HitResult | null;
   setPlaybackTick(tick: number): void;
   exportSVG(): string;
   focus(id: NoteId): void;                        // NoteId — a plain string, mnx.md's ID rule
 }
 ```
 
-Implemented in `notation-react`: `getLayout`, `getTimeMap`, `exportSVG`, `setPlaybackTick` (drives note highlighting from `timemap.activeAt(tick)` and, when `mode:'cursor'` is mounted, moves the cursor via `timemap.positionAtTick(tick)`; imperatively, no re-render, no clock: the app calls it each frame; the last imperative tick survives parent re-renders until layout or mode changes; ignored in `notes` and `off` modes), `hitTest` (delegates to the engine's `hitTest` over the current layout), `focus` (focuses the element `<g>` by id via the same ref map `setPlaybackTick` uses; no-op if the id has no on-screen element).
+Implemented in `notation-react`: `getLayout`, `getTimeMap`, `exportSVG`, `setPlaybackTick` (drives note highlighting from `timemap.activeAt(tick)` and, when `mode:'cursor'` is mounted, moves the cursor via `timemap.positionAtTick(tick)`; imperatively, no re-render, no clock: the app calls it each frame; the last imperative tick survives parent re-renders until layout or mode changes; ignored in `notes` and `off` modes), `focus` (focuses the element `<g>` by id via the same ref map `setPlaybackTick` uses; no-op if the id has no on-screen element). Hit-testing isn't a handle method — callers import `hitTest` from `@polyhymnia/notation-engine` and call `hitTest(handle.getLayout(), p, opts)` directly (`interaction.md`).
 
 ## Options
 

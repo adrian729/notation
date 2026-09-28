@@ -1,5 +1,5 @@
 import type { Diagnostic } from '@polyhymnia/notation-model';
-import type { ClefSpec, KeySpec, NoteId, Pitch } from './records.js';
+import type { ClefSpec, KeySpec, NoteId, StaffPitch } from './records.js';
 import type { TimeMap } from '../query/timemap.js';
 
 export interface ViewBox {
@@ -64,7 +64,7 @@ export interface ElementBox {
   durationTicks: number;
   label: string;
   eventId: NoteId;
-  pitch?: Pitch;
+  pitch?: StaffPitch;
 }
 
 export interface SlotRef {

@@ -16,16 +16,11 @@ import type { CurvesResult } from './curves.js';
 import type { TupletsResult } from './tuplets.js';
 import { resolvePlayOrder } from '../query/playorder.js';
 import { buildTimeMap, type MeasureTime, type Placement } from '../query/timemap.js';
-import { buildMeasureBox } from '../query/measures.js';
+import { buildMeasureBox, contentBounds } from '../query/measures.js';
 import { measureSlots } from '../query/slots.js';
-import {
-  KEY_GAP,
-  cancelledAccidentals,
-  digitsWidth,
-  type HorizontalMeasure,
-} from './horizontal.js';
-import type { JustifiedScore } from './justify.js';
-import { STAFF_HEIGHT, STAFF_LINES, clefGlyph, clefGlyphY, keySignature } from './staff.js';
+import { digitsWidth, layOutKeyGlyphs } from './horizontal.js';
+import type { JustifiedScore, PositionedMeasure } from './justify.js';
+import { STAFF_HEIGHT, STAFF_LINES, clefGlyph, clefGlyphY } from './staff.js';
 import type { TemporalScore } from './temporal.js';
 import type {
   Box,
@@ -97,10 +92,11 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
         w: measure.width,
       });
 
-      measures.push(buildMeasureBox(measure, system.index));
-      slots.push(...measureSlots(measure));
+      const bounds = contentBounds(measure);
+      measures.push(buildMeasureBox(measure, bounds));
+      slots.push(...measureSlots(measure, bounds));
 
-      const contentRight = measure.x + measure.width - measure.chrome.endBarlineWidth;
+      const { contentRight } = bounds;
       measure.columns.forEach((column, i) => {
         const next = measure.columns[i + 1];
         const columnRight = next ? next.xStart : contentRight;
@@ -185,7 +181,7 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
 }
 
 function emitChrome(
-  measure: HorizontalMeasure,
+  measure: PositionedMeasure,
   staffTop: number,
   glyphs: GlyphRun[],
 ): void {
@@ -197,18 +193,9 @@ function emitChrome(
   }
 
   if (measure.chrome.keyWidth > 0) {
-    const cancel = measure.chrome.cancelKey
-      ? cancelledAccidentals(measure.chrome.cancelKey, measure.key, measure.clef)
-      : [];
-    for (const natural of cancel) {
-      glyphs.push(glyph(natural.glyph, x, staffTop + natural.y, 'key-accidental'));
-      x += glyphAdvanceWidth(natural.glyph) + KEY_GAP;
-    }
-    if (measure.chrome.showKey) {
-      for (const acc of keySignature(measure.key, measure.clef)) {
-        glyphs.push(glyph(acc.glyph, x, staffTop + acc.y, 'key-accidental'));
-        x += glyphAdvanceWidth(acc.glyph) + KEY_GAP;
-      }
+    const key = layOutKeyGlyphs(measure.key, measure.clef, measure.chrome.cancelKey, measure.chrome.showKey, x);
+    for (const acc of key.glyphs) {
+      glyphs.push(glyph(acc.glyph, acc.x, staffTop + acc.y, 'key-accidental'));
     }
     x = measure.x + measure.chrome.startBarlineWidth + measure.chrome.clefWidth + measure.chrome.keyWidth;
   }
@@ -247,7 +234,7 @@ function emitDigits(digits: string, centre: number, y: number, glyphs: GlyphRun[
 }
 
 function emitBarlines(
-  measure: HorizontalMeasure,
+  measure: PositionedMeasure,
   staffTop: number,
   glyphs: GlyphRun[],
   rects: RectShape[],
@@ -583,11 +570,20 @@ function contentMargins(
   };
 }
 
+const PATH_POINT = /(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g;
+
+function pathPoints(d: string): { x: string; y: number }[] {
+  return [...d.matchAll(PATH_POINT)].map((match) => ({ x: match[1]!, y: Number(match[2]) }));
+}
+
+function mapPathPoints(d: string, fn: (x: string, y: number) => string): string {
+  return d.replace(PATH_POINT, (_match, x: string, y: string) => fn(x, Number(y)));
+}
+
 function pathYExtent(d: string): [number, number] {
   let min = Infinity;
   let max = -Infinity;
-  for (const match of d.matchAll(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)) {
-    const y = Number(match[2]);
+  for (const { y } of pathPoints(d)) {
     min = Math.min(min, y);
     max = Math.max(max, y);
   }
@@ -596,10 +592,7 @@ function pathYExtent(d: string): [number, number] {
 
 function offsetPathY(d: string, dy: number): string {
   if (dy === 0) return d;
-  return d.replace(
-    /(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g,
-    (_match, x: string, y: string) => `${x},${(Number(y) + dy).toFixed(3)}`,
-  );
+  return mapPathPoints(d, (x, y) => `${x},${(y + dy).toFixed(3)}`);
 }
 
 function pathFrom(points: readonly (readonly [number, number])[], staffTop: number): string {

@@ -43,7 +43,7 @@ Note values: `breve`, `whole`, `half`, `quarter`, `eighth`, `16th`, `32nd`, `64t
 
 ## Unsupported MNX
 
-`AGENTS.md`: unsupported MNX renders what's possible plus an `mnx-unsupported` diagnostic, never throws. Constructs the engine recognizes but does not lay out — each reported once per measure (or once per document, for whole-document constructs), via `Reader.unsupported()` in `normalize.ts`:
+`AGENTS.md`: unsupported MNX renders what's possible plus an `mnx-unsupported` diagnostic, never throws. Constructs the engine recognizes but does not lay out — each reported once per measure (or once per document, for whole-document constructs), via `Reader.unsupported()` (`layout/normalize-reader.ts`'s `createReader`):
 
 - Multiple parts (only `parts[0]` is laid out), a part with `staves > 1` (only staff 1), a part's `transposition`/`kit` (percussion kits aren't laid out)
 - A 3rd+ sequence in a measure (`too-many-voices`, listed separately below since it isn't gated through `unsupported()`); a sequence on `staff !== 1`
@@ -103,7 +103,7 @@ Beam id = the MNX `beams[].id` when given, otherwise `{firstElementId}.beam` via
 
 Every element the engine lays out gets an id: the MNX `id` when the document supplies one, otherwise a deterministic positional id. Content an app references — playback highlight, quiz lookups, click targets — **must** carry a real MNX `id`; a positional id is stable only until the document is edited.
 
-Id synthesis is a single shared implementation, `elementIds(doc)` in `notation-model` (`@polyhymnia/notation-model`'s `elementIds`/`ElementIds`/`NoteId`). It walks `parts[0]`'s staff-1 sequences once, in the same order and with the same rules the engine used to apply inline, and hands back a position-keyed lookup (`idAt(pos)`/`nodeOf(id)`, where a position is `{ measureIndex, sequenceIndex, path }` plus a `note` index for chord members or a `full` marker for a full-measure rest) plus `mint(candidate)`/`resolve(explicit, candidate)` for ids assigned outside that walk (beams). `notation-engine`'s `normalize.ts` no longer synthesizes ids itself; it only looks up what `elementIds` already computed.
+Id synthesis is a single shared implementation, `elementIds(doc)` in `notation-model` (`@polyhymnia/notation-model`'s `elementIds`/`ElementIds`/`NoteId`). It walks `parts[0]`'s staff-1 sequences once, in the same order and with the same rules the engine used to apply inline, and hands back a position-keyed lookup (`idAt(pos)`/`nodeOf(id)`/`mint(candidate)`/`diagnostics`, where a position is `{ measureIndex, sequenceIndex, path }` plus a `note` index for chord members or a `fullMeasureRest` marker, and `nodeOf` returns the entry — `{ measureIndex, sequenceIndex, path, note?, element }` — with `element: { kind, node }` typed per kind from the generated MNX types, kind being `event`, `chordNote`, `tuplet` or `fullMeasureRest`). `mint(candidate)` is for ids assigned outside that walk (beams). Collision suffixes are `~n` everywhere: `assignIds` (the MusicXML tool) mints through the same `mintId`. `notation-engine`'s `normalize.ts` no longer synthesizes ids itself; it only looks up what `elementIds` already computed.
 
 Positional id shapes (measure `m`, sequence `s`, event index `k` within its voice):
 

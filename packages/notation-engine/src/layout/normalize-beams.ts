@@ -1,18 +1,18 @@
 import { beamGroups, beatGroupingFor, Rational as R } from '@polyhymnia/notation-model';
 import type { BeamableEvent, MnxDocument, Rational } from '@polyhymnia/notation-model';
 import type { NotationOptions } from '../options.js';
-import { noteValueSpecLength, type BeamSegment, type DurationBase, type NoteId, type NormalizedBeam } from './records.js';
 import {
-  asArray,
-  asObject,
-  resolveId,
-  synthId,
+  noteValueSpecLength,
+  type BeamSegment,
+  type DurationBase,
+  type NormalizedBeam,
   type NormalizedElement,
   type NormalizedEvent,
   type NormalizedMeasure,
   type NormalizedVoice,
-  type Reader,
-} from './normalize.js';
+  type NoteId,
+} from './records.js';
+import { asArray, asObject, resolveId, synthId, type Reader } from './normalize-reader.js';
 
 const BEAM_LEVEL: Partial<Record<DurationBase, number>> = { eighth: 1, '16th': 2, '32nd': 3, '64th': 4 };
 

@@ -1,8 +1,7 @@
 import { engravingDefaults, glyphAdvanceWidth } from '../font/metadata.js';
 import { DEFAULT_OPTIONS, type NotationOptions } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/notation-model';
-import type { ClefSpec, KeySpec, TimeSpec } from './records.js';
-import type { NormalizedMeasure, NormalizedScore } from './normalize.js';
+import type { ClefSpec, KeySpec, NormalizedMeasure, NormalizedScore, TimeSpec } from './records.js';
 import { clefEquals, clefGlyph, keySignature } from './staff.js';
 import type { TemporalScore } from './temporal.js';
 import type { VerticalElement, VerticalScore } from './vertical.js';
@@ -10,12 +9,12 @@ import type { VerticalElement, VerticalScore } from './vertical.js';
 const ROD_PADDING = 0.4;
 export const EPS_STRETCH = 0.05;
 export const CHROME_GAP = 0.6;
-export const KEY_GAP = 0.1;
+const KEY_GAP = 0.1;
 export const BARLINE_PAD = 0.4;
 const MEASURE_LEAD = 0.4;
 const MIN_MEASURE_CONTENT = 4;
 
-export interface LayoutColumn {
+export interface HorizontalColumn {
   staffIndex: number;
   measureIndex: number;
   tick: number;
@@ -28,8 +27,6 @@ export interface LayoutColumn {
   idealWidth: number;
   width: number;
   stretch: number;
-  xStart: number;
-  x: number;
 }
 
 export interface MeasureChrome {
@@ -56,15 +53,11 @@ export interface HorizontalMeasure {
   startTick: number;
   endTick: number;
   capacityTicks: number;
-  columns: readonly LayoutColumn[];
+  columns: readonly HorizontalColumn[];
   contentWidth: number;
   startChrome: MeasureChrome;
   midChrome: MeasureChrome;
   systemBreak: boolean;
-  x: number;
-  width: number;
-  chrome: MeasureChrome;
-  systemIndex: number;
 }
 
 export interface HorizontalScore {
@@ -125,10 +118,6 @@ export function horizontal(
       startChrome: chromeOf(measure, previous, true),
       midChrome: chromeOf(measure, previous, false),
       systemBreak: measure.systemBreak,
-      x: 0,
-      width: 0,
-      chrome: chromeOf(measure, previous, false),
-      systemIndex: 0,
     });
     previous = measure;
   }
@@ -148,7 +137,7 @@ interface ColumnContext {
 function buildColumns(
   elements: readonly VerticalElement[],
   ctx: ColumnContext,
-): LayoutColumn[] {
+): HorizontalColumn[] {
   const byTick = new Map<number, VerticalElement[]>();
   for (const el of elements) {
     const bucket = byTick.get(el.tick);
@@ -182,9 +171,7 @@ function buildColumns(
       idealWidth,
       width: Math.max(rodWidth, springWidth),
       stretch: idealWidth + EPS_STRETCH,
-      xStart: 0,
-      x: 0,
-    } satisfies LayoutColumn;
+    } satisfies HorizontalColumn;
   });
 }
 
@@ -241,20 +228,35 @@ function keyWidth(
   cancelKey: KeySpec | null,
   showKey: boolean,
 ): number {
-  let width = 0;
-  if (cancelKey) {
-    const naturals = cancelledAccidentals(cancelKey, measure.key, measure.clef).length;
-    width += naturals * (glyphAdvanceWidth('accidentalNatural') + KEY_GAP);
-  }
-  if (showKey) {
-    for (const acc of keySignature(measure.key, measure.clef)) {
-      width += glyphAdvanceWidth(acc.glyph) + KEY_GAP;
-    }
-  }
+  const { width } = layOutKeyGlyphs(measure.key, measure.clef, cancelKey, showKey, 0);
   return width > 0 ? width + CHROME_GAP : 0;
 }
 
-export function cancelledAccidentals(
+export interface KeyGlyph {
+  glyph: string;
+  x: number;
+  y: number;
+}
+
+export function layOutKeyGlyphs(
+  key: KeySpec,
+  clef: ClefSpec,
+  cancelKey: KeySpec | null,
+  showKey: boolean,
+  x0: number,
+): { glyphs: readonly KeyGlyph[]; width: number } {
+  const naturals = cancelKey ? cancelledAccidentals(cancelKey, key, clef) : [];
+  const accidentals = showKey ? keySignature(key, clef) : [];
+  const glyphs: KeyGlyph[] = [];
+  let x = x0;
+  for (const acc of [...naturals, ...accidentals]) {
+    glyphs.push({ glyph: acc.glyph, x, y: acc.y });
+    x += glyphAdvanceWidth(acc.glyph) + KEY_GAP;
+  }
+  return { glyphs, width: x - x0 };
+}
+
+function cancelledAccidentals(
   from: KeySpec,
   to: KeySpec,
   clef: ClefSpec,

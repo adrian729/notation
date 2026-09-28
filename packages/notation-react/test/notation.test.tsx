@@ -129,7 +129,7 @@ describe('<Notation>', () => {
 });
 
 describe('NotationHandle', () => {
-  it('exposes layout, timemap, SVG export and hitTest; throws only for the unbuilt cursor', () => {
+  it('exposes layout, timemap, and SVG export; throws only for the unbuilt cursor', () => {
     const ref = createRef<NotationHandle>();
     render(<Notation score={simpleScore()} ref={ref} />);
     const handle = ref.current!;
@@ -141,7 +141,6 @@ describe('NotationHandle', () => {
     expect(svg.startsWith('<svg')).toBe(true);
     expect(svg).toContain('http://www.w3.org/2000/svg');
 
-    expect(handle.hitTest({ x: -1000, y: -1000 })).toBeNull();
     expect(() => handle.focus('n1')).not.toThrow();
     expect(() => handle.setPlaybackTick(0)).not.toThrow();
   });

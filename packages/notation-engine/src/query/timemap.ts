@@ -1,5 +1,5 @@
-import { Rational as R } from '@polyhymnia/notation-model';
-import { midiOf, noteValueSpecLength, type NoteId, type NoteValueSpec, type TempoEvent, type TempoMap } from '../layout/records.js';
+import { pitchToMidi, Rational as R } from '@polyhymnia/notation-model';
+import { noteValueSpecLength, toMnxPitch, type NoteId, type NoteValueSpec, type TempoEvent, type TempoMap } from '../layout/records.js';
 import type { TemporalElement } from '../layout/temporal.js';
 import type { SystemBox } from '../layout/types.js';
 import type { PlaySegment } from './playorder.js';
@@ -62,7 +62,7 @@ export interface TimeMapInput {
   playOrder?: readonly PlaySegment[];
 }
 
-export const DEFAULT_TEMPO_BPM = 120;
+const DEFAULT_TEMPO_BPM = 120;
 const DEFAULT_BEAT_UNIT: NoteValueSpec = { base: 'quarter', dots: 0 };
 
 export function buildTimeMap(input: TimeMapInput): TimeMap {
@@ -203,9 +203,9 @@ function toEntry(head: TemporalElement, input: TimeMapInput, durationTicks: numb
     x: place?.x ?? 0,
     y: place?.y ?? 0,
     kind: head.kind,
-    ...(head.kind === 'note' && notes[0] ? { midi: midiOf(notes[0].pitch) } : {}),
+    ...(head.kind === 'note' && notes[0] ? { midi: pitchToMidi(toMnxPitch(notes[0].pitch)) } : {}),
     ...(head.kind === 'chord'
-      ? { midiNotes: notes.map((n) => midiOf(n.pitch)) }
+      ? { midiNotes: notes.map((n) => pitchToMidi(toMnxPitch(n.pitch))) }
       : {}),
   };
 }

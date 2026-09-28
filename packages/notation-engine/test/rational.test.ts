@@ -3,7 +3,7 @@ import fc from 'fast-check';
 import { noteValueLength, Rational as R, rational } from '@polyhymnia/notation-model';
 import type { NoteValueBase } from '@polyhymnia/notation-model';
 import { normalize } from '../src/layout/normalize.js';
-import type { NormalizedElement } from '../src/layout/normalize.js';
+import type { NormalizedElement } from '../src/layout/records.js';
 import { temporal } from '../src/layout/temporal.js';
 import { DEFAULT_DIVISIONS, decomposeLength, noteValueSpecLength } from '../src/layout/records.js';
 import { fixture, measure, mnx, note, tuplet } from './mnx.js';

@@ -13,11 +13,6 @@ function asObject(value: unknown): Record<string, any> | undefined {
     : undefined;
 }
 
-function isEventNode(node: object): node is Record<string, any> {
-  const obj = node as Record<string, any>;
-  return ('notes' in obj || 'rest' in obj) && !('pitch' in obj);
-}
-
 function pitchKey(pitch: Pitch | undefined): string {
   if (!pitch) return '';
   return `${pitch.step}${pitch.alter ?? 0}/${pitch.octave}`;
@@ -43,10 +38,6 @@ function unsupported(event: string): ApplyResult['diagnostics'] {
   ];
 }
 
-function isFullMeasureRest(found: { full?: boolean } | undefined): boolean {
-  return found?.full === true;
-}
-
 function substituteAtPath(
   content: readonly unknown[],
   path: readonly number[],
@@ -68,15 +59,33 @@ function substituteAtPath(
   return out;
 }
 
+function idsRemovedBy(
+  doc: MnxDocument,
+  part: Record<string, any>,
+  rawMeasures: unknown[],
+  oldIds: readonly (string | undefined)[],
+): Set<string> {
+  const rawDoc: MnxDocument = {
+    ...doc,
+    parts: doc.parts.map((p, i) => (i === 0 ? { ...part, measures: rawMeasures } : p)),
+  } as MnxDocument;
+  const rawIds = elementIds(rawDoc);
+  const removed = new Set<string>();
+  for (const id of oldIds) {
+    if (id && !rawIds.nodeOf(id)) removed.add(id);
+  }
+  return removed;
+}
+
 function setPitches(doc: MnxDocument, eventId: string, pitches: readonly Pitch[]): ApplyResult {
   const ids = elementIds(doc);
   const found = ids.nodeOf(eventId);
-  if (!found || !isEventNode(found.node)) {
-    if (isFullMeasureRest(found)) return { doc, changed: [], diagnostics: unsupported(eventId) };
+  if (!found || found.element.kind !== 'event') {
+    if (found?.element.kind === 'fullMeasureRest') return { doc, changed: [], diagnostics: unsupported(eventId) };
     return { doc, changed: [], diagnostics: missing(eventId) };
   }
 
-  const event = found.node;
+  const event = found.element.node;
   const oldNotes = asArray(event.notes)
     .map((n) => asObject(n))
     .filter((n): n is Record<string, any> => n !== undefined);
@@ -127,7 +136,7 @@ function setPitches(doc: MnxDocument, eventId: string, pitches: readonly Pitch[]
   if (pitches.length === 0) newEvent.rest = {};
   else newEvent.notes = newNotes;
 
-  const part = asObject(doc.parts[0]);
+  const part = asObject(asArray(doc.parts)[0]);
   if (!part || !Array.isArray(part.measures)) return { doc, changed: [], diagnostics: missing(eventId) };
   let substituted = false;
   const rawMeasures: unknown[] = [];
@@ -156,15 +165,7 @@ function setPitches(doc: MnxDocument, eventId: string, pitches: readonly Pitch[]
   }
   if (!substituted) return { doc, changed: [], diagnostics: missing(eventId) };
 
-  const rawDoc: MnxDocument = {
-    ...doc,
-    parts: doc.parts.map((p, i) => (i === 0 ? { ...part, measures: rawMeasures } : p)),
-  } as MnxDocument;
-  const rawIds = elementIds(rawDoc);
-  const slurGoneIds = new Set<string>();
-  for (const id of oldNoteIds) {
-    if (id && !rawIds.nodeOf(id)) slurGoneIds.add(id);
-  }
+  const slurGoneIds = idsRemovedBy(doc, part, rawMeasures, oldNoteIds);
 
   const newMeasures = rawMeasures.map((pm) => cleanupPartMeasure(pm, staleTieIds, slurGoneIds));
   const newDoc: MnxDocument = { ...doc, parts: doc.parts.map((p, i) => (i === 0 ? { ...part, measures: newMeasures } : p)) } as MnxDocument;
@@ -173,11 +174,7 @@ function setPitches(doc: MnxDocument, eventId: string, pitches: readonly Pitch[]
 
 export function applyIntent(doc: MnxDocument, intent: EditIntent): ApplyResult {
   if (intent.type === 'setPitches') {
-    try {
-      return setPitches(doc, intent.event, intent.pitches);
-    } catch {
-      return { doc, changed: [], diagnostics: missing(intent.event) };
-    }
+    return setPitches(doc, intent.event, intent.pitches);
   }
   return { doc, changed: [], diagnostics: [] };
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { elementIds } from '../src/mnx/element-ids.js';
 import { chord, grace, measure, mnx, note, rest, tremolo, tuplet, value } from './support.js';
 
-const pos = (path: number[], extra: { note?: number; full?: boolean } = {}) => ({
+const pos = (path: number[], extra: { note?: number; fullMeasureRest?: boolean } = {}) => ({
   measureIndex: 0,
   sequenceIndex: 0,
   path,
@@ -24,7 +24,7 @@ describe('elementIds', () => {
     const [e0] = doc.parts[0].measures[0].sequences[0].content as any[];
     expect(ids.idAt(pos([0]))).toBe('my-note');
     expect(ids.idAt(pos([1]))).toBe('m0.s0.e1');
-    expect(ids.nodeOf('my-note')?.node).toBe(e0);
+    expect(ids.nodeOf('my-note')?.element.node).toBe(e0);
   });
 
   it('gives a chord member id shaped {eventId}.n{k}', () => {
@@ -39,7 +39,7 @@ describe('elementIds', () => {
   it('gives a full-measure rest the .full suffix', () => {
     const doc = mnx({ sequences: [{ content: [], fullMeasure: {} }] } as any);
     const ids = elementIds(doc);
-    expect(ids.idAt(pos([], { full: true }))).toBe('m0.s0.full');
+    expect(ids.idAt(pos([], { fullMeasureRest: true }))).toBe('m0.s0.full');
   });
 
   it('advances the event counter past grace notes before an unlabeled event', () => {

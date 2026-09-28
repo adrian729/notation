@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, Check, CircleHelp, Infinity, Minus, Play, Plus, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,34 +8,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import {
   chromaticTokens,
-  DEFAULT_OPTIONS,
   FAMILY_HELP,
   FAMILY_TITLE,
-  FIRST_NOTE_HELP,
   INTERVAL_FAMILIES,
+  intervalById,
+  intervalBySemitones,
   intervalIdDisplayName,
   MODE_HELP,
   MODE_TITLE,
+  TEMPO_NOTE_DURATION,
+  tokenMidi,
+  type IntervalId,
+  type PlayingMode,
+  type Tempo,
+} from '@/exercises/shared';
+import {
+  FIRST_NOTE_HELP,
   normalizeOptions,
   normalizeQuestionCount,
+  parseCustomSearch,
   PLAYING_MODES,
   QUESTION_COUNT_MAX,
   QUESTION_COUNT_MIN,
   RELATIONSHIP_HELP,
   RELATIONSHIP_TITLE,
   TASK_HELP,
-  TEMPO_NOTE_DURATION,
   TEMPOS,
   TONE_RELATIONSHIPS,
-  tokenMidi,
   validateExerciseOptions,
+  type CustomSearch,
   type ExerciseOptions,
-  type IntervalId,
-  type PlayingMode,
   type QuestionCount,
-  type Tempo,
-  type ToneRelationship,
 } from '@/exercises/interval-comparison';
+import { readJson, writeJson } from '@/lib/storage';
 import { Runner } from './-Runner';
 
 type SetId = 'perfect' | 'imperfect' | 'dissonant' | 'simple';
@@ -55,50 +60,12 @@ const SET_HELP: Record<SetId, string> = {
 const SECOND_OCTAVE_HELP =
   'Adds the same intervals one octave wider, up to two octaves: a minor 3rd also brings in the minor 10th, an octave the double octave. Wide leaps are harder to hear. Sets you pick while it is on include both octaves.';
 const SECOND_OCTAVE: Partial<Record<IntervalId, IntervalId>> = Object.fromEntries(
-  INTERVAL_FAMILIES.simple.map((id, i) => [id, INTERVAL_FAMILIES.compound[i]!]),
+  INTERVAL_FAMILIES.simple.map((id) => [id, intervalBySemitones(intervalById(id).semitones + 12).id]),
 );
 const COUNT_PRESETS = ['10', '20', '30', '50'] as const;
 const INTERVAL_ORDER: readonly IntervalId[] = [...INTERVAL_FAMILIES.simple, ...INTERVAL_FAMILIES.compound];
 const RANGE_TOKENS = chromaticTokens(tokenMidi('E2')!, tokenMidi('C7')!);
 const CUSTOM_PREFS_KEY = 'polyhymnia:e1:customOptions';
-
-export interface CustomSearch {
-  intervals: string;
-  modes: string;
-  rel: ToneRelationship;
-  low: string;
-  high: string;
-  tempo: Tempo;
-  count: string;
-  endless: '0' | '1';
-  auto: '0' | '1';
-}
-
-const DEFAULT_QUESTION_COUNT = DEFAULT_OPTIONS.questionCount === 'endless' ? 10 : DEFAULT_OPTIONS.questionCount;
-
-export function parseCustomSearch(search: Record<string, unknown>): CustomSearch {
-  const rel =
-    typeof search.rel === 'string' && (TONE_RELATIONSHIPS as readonly string[]).includes(search.rel)
-      ? (search.rel as ToneRelationship)
-      : DEFAULT_OPTIONS.toneRelationship;
-  const tempo =
-    typeof search.tempo === 'string' && (TEMPOS as readonly string[]).includes(search.tempo)
-      ? (search.tempo as Tempo)
-      : DEFAULT_OPTIONS.tempo;
-  const countRaw = typeof search.count === 'string' || typeof search.count === 'number' ? Number(search.count) : NaN;
-  const count = Number.isFinite(countRaw) ? String(normalizeQuestionCount(countRaw)) : String(DEFAULT_QUESTION_COUNT);
-  return {
-    intervals: typeof search.intervals === 'string' ? search.intervals : DEFAULT_OPTIONS.intervals.join(','),
-    modes: typeof search.modes === 'string' ? search.modes : DEFAULT_OPTIONS.playingModes.join(','),
-    rel,
-    low: typeof search.low === 'string' ? search.low : DEFAULT_OPTIONS.range.low,
-    high: typeof search.high === 'string' ? search.high : DEFAULT_OPTIONS.range.high,
-    tempo,
-    count,
-    endless: String(search.endless) === '1' ? '1' : '0',
-    auto: String(search.auto) === '1' ? '1' : '0',
-  };
-}
 
 const DEFAULT_SEARCH = parseCustomSearch({});
 
@@ -120,29 +87,17 @@ interface StoredCustomPrefs {
 }
 
 function loadStoredCustomPrefs(): StoredCustomPrefs | undefined {
-  try {
-    const raw = globalThis.localStorage?.getItem(CUSTOM_PREFS_KEY);
-    if (!raw) return undefined;
-    const parsed = JSON.parse(raw) as { search?: unknown; longNames?: unknown };
-    if (typeof parsed !== 'object' || parsed === null) return undefined;
-    const search = parseCustomSearch(
-      typeof parsed.search === 'object' && parsed.search !== null
-        ? (parsed.search as Record<string, unknown>)
-        : {},
-    );
-    const longNames = typeof parsed.longNames === 'boolean' ? parsed.longNames : true;
-    return { search, longNames };
-  } catch {
-    return undefined;
-  }
+  const parsed = readJson(CUSTOM_PREFS_KEY) as { search?: unknown; longNames?: unknown } | undefined;
+  if (typeof parsed !== 'object' || parsed === null) return undefined;
+  const search = parseCustomSearch(
+    typeof parsed.search === 'object' && parsed.search !== null ? (parsed.search as Record<string, unknown>) : {},
+  );
+  const longNames = typeof parsed.longNames === 'boolean' ? parsed.longNames : true;
+  return { search, longNames };
 }
 
 function persistCustomPrefs(search: CustomSearch, longNames: boolean): void {
-  try {
-    globalThis.localStorage?.setItem(CUSTOM_PREFS_KEY, JSON.stringify({ search, longNames }));
-  } catch {
-    return;
-  }
+  writeJson(CUSTOM_PREFS_KEY, { search, longNames });
 }
 
 export const Route = createFileRoute('/exercises/interval-comparison/custom')({
@@ -170,8 +125,9 @@ function CustomPage() {
   const [countText, setCountText] = useState(search.count);
   const countValue = Number(search.count);
   const initialSearchRef = useRef(search);
-  const raw = toRawOptions(search);
-  const validation = validateExerciseOptions(raw);
+  const raw = useMemo(() => toRawOptions(search), [search]);
+  const validation = useMemo(() => validateExerciseOptions(raw), [raw]);
+  const runnerOptions = useMemo(() => normalizeOptions(raw), [raw]);
   const rawIntervals = raw.intervals ?? [];
   const rawModes = raw.playingModes ?? [];
   const endless = search.endless === '1';
@@ -231,7 +187,7 @@ function CustomPage() {
   if (running) {
     return (
       <Runner
-        options={normalizeOptions(raw)}
+        options={runnerOptions}
         title="Custom exercise"
         onBack={() => setRunning(false)}
       />

@@ -1,9 +1,8 @@
 import type { NotationOptions } from '../options.js';
 import { DEFAULT_OPTIONS } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/notation-model';
-import type { NoteId, Pitch } from './records.js';
+import type { NormalizedScore, NoteId, StaffPitch } from './records.js';
 import { accidentalGlyph, keyAlterations } from './staff.js';
-import type { NormalizedScore } from './normalize.js';
 import { elementsByStaffMeasureKey, indexElementsByStaffMeasure } from './temporal.js';
 import type { TemporalScore } from './temporal.js';
 
@@ -112,7 +111,7 @@ export function accidentalOf(
   return resolved.byNote.get(id) ?? NONE;
 }
 
-function tieKey(p: Pitch): string {
+function tieKey(p: StaffPitch): string {
   return `${p.step}:${p.alter}:${p.octave}`;
 }
 

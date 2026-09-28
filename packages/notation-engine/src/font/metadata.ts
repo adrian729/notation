@@ -42,7 +42,7 @@ export interface EngravingDefaults {
   textFontFamily: readonly string[];
 }
 
-export interface FontMetadata {
+interface FontMetadata {
   fontName: string;
   fontVersion: string;
   engravingDefaults: EngravingDefaults;
@@ -51,10 +51,7 @@ export interface FontMetadata {
   glyphsWithAnchors: Readonly<Record<string, GlyphAnchors>>;
 }
 
-export const fontMetadata: FontMetadata = raw as unknown as FontMetadata;
-
-export const fontName: string = fontMetadata.fontName;
-export const fontVersion: string = fontMetadata.fontVersion;
+const fontMetadata: FontMetadata = raw as unknown as FontMetadata;
 
 export const engravingDefaults: EngravingDefaults = fontMetadata.engravingDefaults;
 
@@ -68,7 +65,7 @@ export function glyphBBox(name: GlyphName | string): GlyphBBox {
   return fontMetadata.glyphBBoxes[name] ?? EMPTY_BBOX;
 }
 
-export function glyphAnchors(name: GlyphName | string): GlyphAnchors | undefined {
+function glyphAnchors(name: GlyphName | string): GlyphAnchors | undefined {
   return fontMetadata.glyphsWithAnchors[name];
 }
 
@@ -77,8 +74,4 @@ export function glyphAnchor(
   anchor: string,
 ): readonly [number, number] | undefined {
   return glyphAnchors(name)?.[anchor];
-}
-
-export function hasGlyph(name: string): name is GlyphName {
-  return name in fontMetadata.glyphAdvanceWidths;
 }

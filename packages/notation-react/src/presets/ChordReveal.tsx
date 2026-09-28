@@ -1,21 +1,18 @@
 import { useMemo } from 'react';
-import type { CSSProperties, JSX } from 'react';
+import type { JSX } from 'react';
 import type { NoteValue } from '@polyhymnia/notation-model';
 import type { ClefSpec } from '@polyhymnia/notation-engine';
-import type { LayoutResult } from '@polyhymnia/notation-engine';
 import { Notation } from '../Notation.js';
 import { fittingMeter, durationKey } from './shared.js';
+import type { RevealBaseProps } from './shared.js';
 import { buildMeasureScore, chordEvent } from './mnxBuild.js';
 
 const QUARTER: NoteValue = { base: 'quarter' };
 
-export interface ChordRevealProps {
+export interface ChordRevealProps extends RevealBaseProps {
   pitches: readonly string[];
   clef: ClefSpec['kind'];
   duration?: NoteValue;
-  className?: string;
-  style?: CSSProperties;
-  onLayout?: (layout: LayoutResult) => void;
 }
 
 export function ChordReveal({

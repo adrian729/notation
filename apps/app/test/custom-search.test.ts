@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseCustomSearch } from '@/routes/exercises/interval-comparison/custom';
+import { parseCustomSearch } from '@/exercises/interval-comparison/customSearch';
 
 describe('parseCustomSearch', () => {
   it('fills every field with defaults when given an empty object', () => {

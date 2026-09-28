@@ -88,7 +88,7 @@ describe('applyIntent setPitches', () => {
 
   it('returns intent-target-unsupported for a whole-bar rest id', () => {
     const doc = mnx({ sequences: [{ content: [], fullMeasure: {} }] } as any);
-    const fullId = elementIds(doc).idAt({ measureIndex: 0, sequenceIndex: 0, path: [], full: true })!;
+    const fullId = elementIds(doc).idAt({ measureIndex: 0, sequenceIndex: 0, path: [], fullMeasureRest: true })!;
     const result = applyIntent(doc, { type: 'setPitches', event: fullId, pitches: pitches('C4') });
     expect(result.doc).toBe(doc);
     expect(result.changed).toEqual([]);

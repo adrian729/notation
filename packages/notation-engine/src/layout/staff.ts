@@ -1,4 +1,4 @@
-import { stepIndex, type ClefSpec, type KeySpec, type Pitch } from './records.js';
+import { stepIndex, type ClefSpec, type KeySpec, type StaffPitch } from './records.js';
 
 export const STAFF_LINES = 5;
 export const STAFF_HEIGHT = STAFF_LINES - 1;
@@ -18,11 +18,11 @@ const CLEF_ANCHOR_STEP: Record<ClefSpec['kind'], number> = {
   tenor: 28,
 };
 
-export function topLineStep(clef: ClefSpec): number {
+function topLineStep(clef: ClefSpec): number {
   return TOP_LINE_STEP[clef.kind] + 7 * (clef.octaveShift ?? 0);
 }
 
-export function staffPositionOf(p: Pitch, clef: ClefSpec): number {
+export function staffPositionOf(p: StaffPitch, clef: ClefSpec): number {
   return (topLineStep(clef) - stepIndex(p)) * 0.5;
 }
 

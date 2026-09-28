@@ -1,5 +1,5 @@
 import type { Diagnostic } from './read.js';
-import type { MnxDocument } from './types.js';
+import type { Event, FullMeasureRest, MnxDocument, Note, Tuplet } from './types.js';
 
 export type NoteId = string;
 
@@ -8,11 +8,23 @@ export interface ElementPosition {
   sequenceIndex: number;
   path: readonly number[];
   note?: number;
-  full?: boolean;
+  fullMeasureRest?: boolean;
 }
 
-export interface ElementIdEntry extends ElementPosition {
-  node: object;
+export type ElementNode =
+  | { kind: 'event'; node: Event }
+  | { kind: 'chordNote'; node: Note }
+  | { kind: 'tuplet'; node: Tuplet }
+  | { kind: 'fullMeasureRest'; node: FullMeasureRest };
+
+export type ElementNodeKind = ElementNode['kind'];
+
+export interface ElementIdEntry {
+  measureIndex: number;
+  sequenceIndex: number;
+  path: readonly number[];
+  note?: number;
+  element: ElementNode;
 }
 
 export interface ElementIds {
@@ -32,7 +44,7 @@ function asObject(value: unknown): Record<string, any> | undefined {
     : undefined;
 }
 
-function collectExplicitIds(source: MnxDocument): Set<string> {
+export function collectExplicitIds(source: unknown): Set<string> {
   const ids = new Set<string>();
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
@@ -57,9 +69,29 @@ interface Scope {
 
 function positionKey(pos: ElementPosition): string {
   const parts: string[] = [String(pos.measureIndex), String(pos.sequenceIndex), `[${pos.path.join(',')}]`];
-  if (pos.full) parts.push('full');
+  if (pos.fullMeasureRest) parts.push('full');
   if (pos.note !== undefined) parts.push(`n${pos.note}`);
   return parts.join('.');
+}
+
+export interface IdSet {
+  has(id: string): boolean;
+  add(id: string): void;
+}
+
+export function mintId(existing: IdSet, candidate: string): NoteId {
+  if (!existing.has(candidate)) {
+    existing.add(candidate);
+    return candidate;
+  }
+  let n = 2;
+  let id = `${candidate}~${n}`;
+  while (existing.has(id)) {
+    n += 1;
+    id = `${candidate}~${n}`;
+  }
+  existing.add(id);
+  return id;
 }
 
 export function elementIds(doc: MnxDocument): ElementIds {
@@ -82,24 +114,22 @@ export function elementIds(doc: MnxDocument): ElementIds {
     usedIds.add(id);
   }
 
+  const taken: IdSet = {
+    has: (id) => explicitIds.has(id) || usedIds.has(id),
+    add: (id) => usedIds.add(id),
+  };
+
   function synth(candidate: string, measureIndex: number | undefined): NoteId {
-    if (!explicitIds.has(candidate) && !usedIds.has(candidate)) {
-      usedIds.add(candidate);
-      return candidate;
+    const collided = taken.has(candidate);
+    const id = mintId(taken, candidate);
+    if (collided) {
+      diagnostics.push({
+        severity: 'warning',
+        code: 'id-collision',
+        message: `Synthesized id ${JSON.stringify(candidate)} collides with an existing id; using ${JSON.stringify(id)} instead.`,
+        ...(measureIndex === undefined ? {} : { measureIndex }),
+      });
     }
-    let n = 2;
-    let id = `${candidate}~${n}`;
-    while (explicitIds.has(id) || usedIds.has(id)) {
-      n += 1;
-      id = `${candidate}~${n}`;
-    }
-    usedIds.add(id);
-    diagnostics.push({
-      severity: 'warning',
-      code: 'id-collision',
-      message: `Synthesized id ${JSON.stringify(candidate)} collides with an existing id; using ${JSON.stringify(id)} instead.`,
-      ...(measureIndex === undefined ? {} : { measureIndex }),
-    });
     return id;
   }
 
@@ -111,9 +141,12 @@ export function elementIds(doc: MnxDocument): ElementIds {
     return synth(candidate, measureIndex);
   }
 
-  function register(node: object, pos: ElementPosition, id: NoteId): void {
+  function register(element: ElementNode, pos: ElementPosition, id: NoteId): void {
     idByPosition.set(positionKey(pos), id);
-    if (!nodeById.has(id)) nodeById.set(id, { ...pos, node });
+    if (!nodeById.has(id)) {
+      const { measureIndex, sequenceIndex, path, note } = pos;
+      nodeById.set(id, { measureIndex, sequenceIndex, path, note, element });
+    }
   }
 
   function walkContent(content: readonly unknown[], scope: Scope, path: readonly number[]): void {
@@ -126,7 +159,11 @@ export function elementIds(doc: MnxDocument): ElementIds {
           const index = scope.tupletCount;
           scope.tupletCount += 1;
           const id = resolve(item.id, `m${scope.measureIndex}.s${scope.sequenceIndex}.t${index}`, scope.measureIndex);
-          register(item, { measureIndex: scope.measureIndex, sequenceIndex: scope.sequenceIndex, path: itemPath }, id);
+          register(
+            { kind: 'tuplet', node: item as unknown as Tuplet },
+            { measureIndex: scope.measureIndex, sequenceIndex: scope.sequenceIndex, path: itemPath },
+            id,
+          );
           walkContent(asArray(item.content), scope, itemPath);
           break;
         }
@@ -144,7 +181,7 @@ export function elementIds(doc: MnxDocument): ElementIds {
           scope.eventCount += 1;
           const id = resolve(item.id, `m${scope.measureIndex}.s${scope.sequenceIndex}.e${index}`, scope.measureIndex);
           const pos: ElementPosition = { measureIndex: scope.measureIndex, sequenceIndex: scope.sequenceIndex, path: itemPath };
-          register(item, pos, id);
+          register({ kind: 'event', node: item as unknown as Event }, pos, id);
           const notes = asArray(item.notes)
             .map((n) => asObject(n))
             .filter((n): n is Record<string, any> => n !== undefined);
@@ -156,7 +193,7 @@ export function elementIds(doc: MnxDocument): ElementIds {
                 : notes.length > 1
                   ? synth(candidate, scope.measureIndex)
                   : candidate;
-            register(note, { ...pos, note: k }, noteId);
+            register({ kind: 'chordNote', node: note as unknown as Note }, { ...pos, note: k }, noteId);
           });
           break;
         }
@@ -187,7 +224,11 @@ export function elementIds(doc: MnxDocument): ElementIds {
       const full = asObject(sequence.fullMeasure);
       if (full) {
         const id = resolve(full.id, `m${measureIndex}.s${index}.full`, measureIndex);
-        register(full, { measureIndex, sequenceIndex: index, path: [], full: true }, id);
+        register(
+          { kind: 'fullMeasureRest', node: full as unknown as FullMeasureRest },
+          { measureIndex, sequenceIndex: index, path: [], fullMeasureRest: true },
+          id,
+        );
       }
     });
   });

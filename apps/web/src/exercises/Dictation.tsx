@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Notation, applyIntent, parsePitch } from '@polyhymnia/notation-react';
-import type { MnxDocument, NotationIntent, NoteId, Pitch, PreviewNote } from '@polyhymnia/notation-react';
+import { Notation } from '@polyhymnia/notation-react';
+import type { NotationIntent } from '@polyhymnia/notation-react';
+import { applyIntent, parsePitch } from '@polyhymnia/notation-model';
+import type { MnxDocument, NoteId, Pitch } from '@polyhymnia/notation-model';
+import type { PreviewNote } from '@polyhymnia/notation-engine';
 import { melodic } from '@polyhymnia/audio';
 import { createSound } from '../sound.js';
 import score from '../scores/exercise-dictation.mnx.json';

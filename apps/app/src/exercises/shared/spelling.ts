@@ -1,15 +1,6 @@
-import { parsePitch } from '@polyhymnia/notation-model';
+import { parsePitch, pitchToMidi, STEP_LETTERS, stepNumberOf, type Pitch } from '@polyhymnia/notation-model';
 
-export interface SpelledPitch {
-  step: 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B';
-  alter: number;
-  octave: number;
-}
-
-const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as const;
-const NATURAL_SEMITONE: Record<(typeof LETTERS)[number], number> = {
-  C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11,
-};
+export type SpelledPitch = Pick<Required<Pitch>, 'step' | 'alter' | 'octave'>;
 
 const ACCIDENTAL_TOKEN: Record<number, string> = {
   '-2': 'bb', '-1': 'b', '0': '', '1': '#', '2': '##',
@@ -43,24 +34,15 @@ const ENHARMONIC_ALTERNATE: Partial<Record<string, { step: SpelledPitch['step'];
   Bb: { step: 'A', alter: 1 },
 };
 
-function letterIndex(step: SpelledPitch['step']): number {
-  return LETTERS.indexOf(step);
-}
-
 export function pitchToToken(pitch: SpelledPitch): string {
   const acc = ACCIDENTAL_TOKEN[pitch.alter];
   if (acc === undefined) throw new RangeError(`unrepresentable accidental: ${pitch.alter}`);
   return `${pitch.step}${acc}${pitch.octave}`;
 }
 
-export function pitchMidi(pitch: SpelledPitch): number {
-  return 12 * (pitch.octave + 1) + NATURAL_SEMITONE[pitch.step] + pitch.alter;
-}
-
 export function tokenMidi(token: string): number | undefined {
   try {
-    const p = parsePitch(token);
-    return pitchMidi({ step: p.step, alter: p.alter ?? 0, octave: p.octave });
+    return pitchToMidi(parsePitch(token));
   } catch {
     return undefined;
   }
@@ -80,23 +62,23 @@ export function enharmonicAlternate(pitch: SpelledPitch): SpelledPitch | undefin
   const key = `${pitch.step}${pitch.alter === 1 ? '#' : pitch.alter === -1 ? 'b' : ''}`;
   const alt = ENHARMONIC_ALTERNATE[key];
   if (!alt || pitch.alter === 0) return undefined;
-  const rootMidi = pitchMidi(pitch);
-  const naturalMidi = 12 * (pitch.octave + 1) + NATURAL_SEMITONE[alt.step] + alt.alter;
+  const rootMidi = pitchToMidi(pitch);
+  const naturalMidi = pitchToMidi({ step: alt.step, alter: alt.alter, octave: pitch.octave });
   const octaveShift = Math.round((rootMidi - naturalMidi) / 12);
   return { step: alt.step, alter: alt.alter, octave: pitch.octave + octaveShift };
 }
 
 function spellAtDegree(root: SpelledPitch, degree: number, semitones: number, direction: 1 | -1): SpelledPitch {
   const letterSteps = (degree - 1) * direction;
-  const rootLI = letterIndex(root.step);
+  const rootLI = stepNumberOf(root.step);
   const rawLI = rootLI + letterSteps;
   const targetLI = ((rawLI % 7) + 7) % 7;
   const octaveAdd = Math.floor(rawLI / 7);
-  const targetLetter = LETTERS[targetLI]!;
+  const targetLetter = STEP_LETTERS[targetLI]!;
   const targetOctave = root.octave + octaveAdd;
-  const rootMidi = pitchMidi(root);
+  const rootMidi = pitchToMidi(root);
   const targetMidi = rootMidi + semitones * direction;
-  const targetNatural = 12 * (targetOctave + 1) + NATURAL_SEMITONE[targetLetter];
+  const targetNatural = pitchToMidi({ step: targetLetter, octave: targetOctave });
   const alter = targetMidi - targetNatural;
   return { step: targetLetter, alter, octave: targetOctave };
 }
@@ -199,7 +181,7 @@ export function qualityForIntervalId(id: string, degree: number): 'm' | 'M' | 'P
 }
 
 export function pickPreferredRoot(pitchClass: number, octave: number, rng: () => number): SpelledPitch {
-  const options = PREFERRED_ROOT_PITCHES.filter((p) => ((pitchMidi(p) % 12) + 12) % 12 === pitchClass);
+  const options = PREFERRED_ROOT_PITCHES.filter((p) => ((pitchToMidi(p) % 12) + 12) % 12 === pitchClass);
   const chosen = options[Math.floor(rng() * options.length)] ?? PREFERRED_ROOT_PITCHES[0]!;
   return { ...chosen, octave };
 }

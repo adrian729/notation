@@ -1,10 +1,15 @@
 import { DEFAULT_OPTIONS, type NotationOptions } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/notation-model';
-import { measureWidth, type HorizontalMeasure, type HorizontalScore } from './horizontal.js';
+import { measureWidth, type HorizontalMeasure, type HorizontalScore, type MeasureChrome } from './horizontal.js';
+
+export interface SystemMeasure extends HorizontalMeasure {
+  systemIndex: number;
+  chrome: MeasureChrome;
+}
 
 export interface SystemAssignment {
   index: number;
-  measures: readonly HorizontalMeasure[];
+  measures: readonly SystemMeasure[];
   naturalWidth: number;
 }
 
@@ -16,7 +21,7 @@ export interface BreakScore {
 export function breakSystems(score: HorizontalScore, options?: NotationOptions): BreakScore {
   const widthSp = options?.widthSp ?? DEFAULT_OPTIONS.widthSp;
   const systems: SystemAssignment[] = [];
-  let current: HorizontalMeasure[] = [];
+  let current: SystemMeasure[] = [];
   let width = 0;
 
   const flush = (): void => {
@@ -34,9 +39,11 @@ export function breakSystems(score: HorizontalScore, options?: NotationOptions):
       candidate = measureWidth(measure, true);
     }
     const startsSystem = current.length === 0;
-    measure.chrome = startsSystem ? measure.startChrome : measure.midChrome;
-    measure.systemIndex = systems.length;
-    current.push(measure);
+    current.push({
+      ...measure,
+      systemIndex: systems.length,
+      chrome: startsSystem ? measure.startChrome : measure.midChrome,
+    });
     width += candidate;
     if (measure.systemBreak) flush();
   }

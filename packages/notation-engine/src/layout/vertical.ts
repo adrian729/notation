@@ -1,14 +1,22 @@
 import { engravingDefaults, glyphAdvanceWidth, glyphAnchor, glyphBBox } from '../font/metadata.js';
 import type { NotationOptions } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/notation-model';
-import type { ClefSpec, Duration, DurationBase, NoteId, Pitch } from './records.js';
+import type {
+  ClefSpec,
+  Duration,
+  DurationBase,
+  ElementNote,
+  NormalizedMeasure,
+  NormalizedScore,
+  NoteId,
+  StaffPitch,
+} from './records.js';
 import { accidentalOf, type AccidentalScore } from './accidentals.js';
-import type { NormalizedMeasure, NormalizedScore } from './normalize.js';
 import { MIDDLE_LINE, staffPositionOf } from './staff.js';
 import { elementsByStaffMeasureKey, indexElementsByStaffMeasure } from './temporal.js';
-import type { ElementNote, TemporalElement, TemporalScore } from './temporal.js';
+import type { TemporalElement, TemporalScore } from './temporal.js';
 
-export const STEM_LENGTH = 3.5;
+const STEM_LENGTH = 3.5;
 
 const ACCIDENTAL_GAP = 0.16;
 const ACCIDENTAL_COLUMN_GAP = 0.12;
@@ -58,7 +66,7 @@ export interface AccidentalLayout {
 
 export interface NoteheadLayout {
   id: NoteId;
-  pitch: Pitch;
+  pitch: StaffPitch;
   staffPosition: number;
   glyph: string;
   width: number;

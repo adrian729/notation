@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { generateQuestion, validateExerciseOptions } from '@/exercises/interval-comparison/generator';
-import { intervalById } from '@/exercises/interval-comparison/intervals';
-import { pitchMidi } from '@/exercises/interval-comparison/spelling';
+import { intervalById } from '@/exercises/shared/intervals';
 import { normalizeOptions } from '@/exercises/interval-comparison/options';
-import { parsePitch } from '@polyhymnia/notation-model';
+import { parsePitch, pitchToMidi } from '@polyhymnia/notation-model';
 
 function mulberry32(seed: number) {
   let a = seed;
@@ -48,10 +47,10 @@ describe('generateQuestion invariants', () => {
         expect(options.intervals).toContain(q.a.size);
         expect(options.intervals).toContain(q.b.size);
 
-        const aRoot = pitchMidi(q.a.root);
-        const aOther = pitchMidi(q.a.other);
-        const bRoot = pitchMidi(q.b.root);
-        const bOther = pitchMidi(q.b.other);
+        const aRoot = pitchToMidi(q.a.root);
+        const aOther = pitchToMidi(q.a.other);
+        const bRoot = pitchToMidi(q.b.root);
+        const bOther = pitchToMidi(q.b.other);
         for (const m of [aRoot, aOther, bRoot, bOther]) {
           expect(m).toBeGreaterThanOrEqual(low);
           expect(m).toBeLessThanOrEqual(high);
@@ -97,7 +96,7 @@ describe('generateQuestion invariants', () => {
     let found = false;
     for (let i = 0; i < 500; i++) {
       const q = generateQuestion(options, rng);
-      const pitchClass = ((pitchMidi(q.a.root) % 12) + 12) % 12;
+      const pitchClass = ((pitchToMidi(q.a.root) % 12) + 12) % 12;
       if (pitchClass === 8) {
         found = true;
         expect(['A', 'G']).toContain(q.a.root.step);
@@ -110,6 +109,7 @@ describe('generateQuestion invariants', () => {
     expect(found).toBe(true);
   });
 });
+
 
 describe('validateExerciseOptions', () => {
   const base = {

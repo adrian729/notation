@@ -1,94 +1,9 @@
 export type { NotationOptions } from './options.js';
-export { DEFAULT_OPTIONS } from './options.js';
 
-export {
-  fontMetadata,
-  fontName,
-  fontVersion,
-  engravingDefaults,
-  glyphAdvanceWidth,
-  glyphBBox,
-  glyphAnchors,
-  glyphAnchor,
-  hasGlyph,
-} from './font/metadata.js';
-export type { EngravingDefaults, FontMetadata, GlyphBBox, GlyphAnchors, GlyphName } from './font/metadata.js';
-export { GLYPH_CODEPOINT, glyphCodepoint } from './font/glyphs.js';
-
-export { DEFAULT_DIVISIONS, describePitch, midiOf, stepIndex } from './layout/records.js';
-export type {
-  AccidentalPolicy,
-  Alter,
-  BeamSegment,
-  ClefSpec,
-  Dots,
-  Duration,
-  DurationBase,
-  KeySpec,
-  MeasureFlow,
-  NormalizedBeam,
-  NoteId,
-  NoteValueSpec,
-  Pitch,
-  StepNumber,
-  TempoEvent,
-  TempoMap,
-  TimeSpec,
-  TupletBracketSetting,
-  TupletDisplay,
-  TupletNumberSetting,
-  TupletRef,
-} from './layout/records.js';
-
-export { normalize } from './layout/normalize.js';
-export type {
-  ElementNote,
-  NormalizedElement,
-  NormalizedEvent,
-  NormalizedGap,
-  NormalizedMeasure,
-  NormalizedScore,
-  NormalizedStaff,
-  NormalizedVoice,
-} from './layout/normalize.js';
-export { temporal } from './layout/temporal.js';
-export type { TemporalElement, TemporalMeasure, TemporalScore } from './layout/temporal.js';
-export { accidentals } from './layout/accidentals.js';
-export type { AccidentalScore, ResolvedAccidental } from './layout/accidentals.js';
-export { grouping } from './layout/grouping.js';
-export type { GroupingScore, TupletSpan } from './layout/grouping.js';
-export { vertical, STEM_LENGTH } from './layout/vertical.js';
-export type {
-  VerticalElement,
-  VerticalScore,
-  NoteheadLayout,
-  StemLayout,
-  RestLayout,
-  BreathLayout,
-} from './layout/vertical.js';
-export { horizontal } from './layout/horizontal.js';
-export type { HorizontalMeasure, HorizontalScore, LayoutColumn, MeasureChrome } from './layout/horizontal.js';
-export { breakSystems } from './layout/break.js';
-export type { BreakScore, SystemAssignment } from './layout/break.js';
-export { justify } from './layout/justify.js';
-export type { JustifiedScore, JustifiedSystem } from './layout/justify.js';
-export { emit } from './layout/emit.js';
-export {
-  staffPositionOf,
-  stepIndexAt,
-  topLineStep,
-  clefGlyph,
-  clefGlyphY,
-  keyAlterations,
-  keySignature,
-  STAFF_HEIGHT,
-  STAFF_LINES,
-  MIDDLE_LINE,
-} from './layout/staff.js';
+export type { ClefSpec, KeySpec, StaffPitch, TimeSpec } from './layout/records.js';
 
 export { layoutScore } from './layout/index.js';
 export type {
-  Box,
   ElementBox,
   GlyphRun,
   LayoutResult,
@@ -101,9 +16,7 @@ export type {
   ViewBox,
 } from './layout/types.js';
 
-export { buildTimeMap, DEFAULT_TEMPO_BPM } from './query/timemap.js';
-export type { PlaySegment } from './query/playorder.js';
-export type { MeasureTime, TempoOverride, TimeMap, TimeMapEntry } from './query/timemap.js';
+export type { TempoOverride, TimeMap, TimeMapEntry } from './query/timemap.js';
 
 export { hitTest, HIT_STAFF_MARGIN } from './query/hitTest.js';
 export type { HitKind, HitOptions, HitResult } from './query/hitTest.js';

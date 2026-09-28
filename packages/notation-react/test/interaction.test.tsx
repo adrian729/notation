@@ -2,7 +2,7 @@ import { createRef } from 'react';
 import { StrictMode } from 'react';
 import { render, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { layoutScore, STAFF_HEIGHT, previewShapes } from '@polyhymnia/notation-engine';
+import { layoutScore, previewShapes } from '@polyhymnia/notation-engine';
 import type { HitResult } from '@polyhymnia/notation-engine';
 import { parsePitch } from '@polyhymnia/notation-model';
 import type { Event, MnxDocument, NoteValue } from '@polyhymnia/notation-model';
@@ -106,7 +106,7 @@ describe('<Notation.Interaction>', () => {
     );
     const svg = container.querySelector('svg')!;
     stubGeometry(svg);
-    fireEvent.click(svg, { clientX: slot.x + slot.w / 2, clientY: system.y + STAFF_HEIGHT / 2 });
+    fireEvent.click(svg, { clientX: slot.x + slot.w / 2, clientY: system.y + system.h / 2 });
 
     expect(intents).toHaveLength(1);
     const target = intents[0]!.target as Extract<HitResult, { kind: 'slot' }>;
@@ -252,6 +252,32 @@ describe('<Notation.Interaction>', () => {
     expect(intents).toHaveLength(2);
     expect(intents[1]!.type).toBe('hover');
     expect(intents[1]!.target).not.toBeNull();
+  });
+
+  it('does not re-evaluate hover on layout change once targets becomes empty', () => {
+    const doc = simpleScore();
+    const layout = layoutScore(doc);
+    const box = Object.values(layout.elements)[0]!;
+    const intents: NotationIntent[] = [];
+    const { container, rerender } = render(
+      <Notation score={doc}>
+        <Notation.Interaction targets={['element']} onIntent={(i) => intents.push(i)} />
+      </Notation>,
+    );
+    const svg = container.querySelector('svg')!;
+    stubGeometry(svg);
+    fireEvent.pointerMove(svg, { clientX: box.hitBox.x + box.hitBox.w / 2, clientY: box.hitBox.y + box.hitBox.h / 2 });
+    expect(intents).toHaveLength(1);
+
+    const otherDoc = simpleScore();
+    otherDoc.parts[0]!.measures[0]!.sequences[0]!.content.push(noteEvent('A4', QUARTER));
+    rerender(
+      <Notation score={otherDoc}>
+        <Notation.Interaction targets={[]} onIntent={(i) => intents.push(i)} />
+      </Notation>,
+    );
+
+    expect(intents).toHaveLength(1);
   });
 
   it('emits hover again when the pointer moves vertically inside one slot', () => {

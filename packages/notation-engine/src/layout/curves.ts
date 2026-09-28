@@ -92,16 +92,7 @@ export function curves(
     const dir =
       tie.side === 'up' ? 1 : tie.side === 'down' ? -1 : directionFor(from, siblings, twoVoiceMeasures.has(tie.measureIndex));
 
-    if (from.systemIndex === to.systemIndex) {
-      shapes.push(oneCurve(tie.id, from, to, dir));
-      continue;
-    }
-
-    const fromSystem = justified.systems[from.systemIndex];
-    const toSystem = justified.systems[to.systemIndex];
-    if (!fromSystem || !toSystem) continue;
-    shapes.push(firstHalf(tie.id, from, dir, fromSystem));
-    shapes.push(secondHalf(tie.id, to, dir, toSystem));
+    for (const span of spansBetween(from, to, justified)) shapes.push(tieShape(tie.id, span, dir));
   }
 
   for (const slur of slurs) {
@@ -112,16 +103,9 @@ export function curves(
     const from = (dir === -1 && slur.fromBottom ? noteMap.get(slur.fromBottom) : undefined) ?? from0;
     const to = (dir === -1 && slur.toBottom ? noteMap.get(slur.toBottom) : undefined) ?? to0;
 
-    if (from.systemIndex === to.systemIndex) {
-      shapes.push(oneSlur(slur, from, to, dir, beamsResult, elementsBySystem));
-      continue;
+    for (const span of spansBetween(from, to, justified)) {
+      shapes.push(slurShape(slur.id, span, dir, beamsResult, elementsBySystem));
     }
-
-    const fromSystem = justified.systems[from.systemIndex];
-    const toSystem = justified.systems[to.systemIndex];
-    if (!fromSystem || !toSystem) continue;
-    shapes.push(firstHalfSlur(slur.id, from, dir, fromSystem, beamsResult, elementsBySystem));
-    shapes.push(secondHalfSlur(slur.id, to, dir, toSystem, beamsResult, elementsBySystem));
   }
 
   return { shapes, diagnostics };
@@ -230,18 +214,30 @@ function clearApex(y0: number, y3: number, dir: 1 | -1, arch: number): number {
   return Math.max(arch, needed, ARCH_MIN);
 }
 
-function oneCurve(id: string, from: PlacedNote, to: PlacedNote, dir: 1 | -1): CurveShape {
-  const x0 = rightEdge(from) + GAP;
-  const x3 = Math.max(leftEdge(to) - GAP, x0 + MIN_SPAN);
-  const y0 = endpointY(from, dir);
-  const y3 = endpointY(to, dir);
-  const arch = clearApex(y0, y3, dir, archFor(x3 - x0));
-  return {
-    el: id,
-    systemIndex: from.systemIndex,
-    cls: 'tie',
-    d: curvePath([x0, y0], [x3, y3], dir, arch, engravingDefaults.tieEndpointThickness, engravingDefaults.tieMidpointThickness),
-  };
+type CurveSpan =
+  | { kind: 'whole'; from: PlacedNote; to: PlacedNote }
+  | { kind: 'start'; from: PlacedNote; system: JustifiedSystem }
+  | { kind: 'end'; to: PlacedNote; system: JustifiedSystem };
+
+interface CurveGeometry {
+  systemIndex: number;
+  x0: number;
+  x3: number;
+  y0: number;
+  y3: number;
+  lo: number;
+  hi: number;
+}
+
+function spansBetween(from: PlacedNote, to: PlacedNote, justified: JustifiedScore): readonly CurveSpan[] {
+  if (from.systemIndex === to.systemIndex) return [{ kind: 'whole', from, to }];
+  const fromSystem = justified.systems[from.systemIndex];
+  const toSystem = justified.systems[to.systemIndex];
+  if (!fromSystem || !toSystem) return [];
+  return [
+    { kind: 'start', from, system: fromSystem },
+    { kind: 'end', to, system: toSystem },
+  ];
 }
 
 function lastColumnX(system: JustifiedSystem): number {
@@ -256,30 +252,53 @@ function firstColumnX(system: JustifiedSystem): number {
   return column ? column.x : 0;
 }
 
-function firstHalf(id: string, from: PlacedNote, dir: 1 | -1, system: JustifiedSystem): CurveShape {
-  const x0 = rightEdge(from) + GAP;
-  const x3 = Math.max(x0 + MIN_SPAN, Math.min(system.width, lastColumnX(system) + SYSTEM_END_MARGIN));
-  const y = endpointY(from, dir);
-  const arch = clearApex(y, y, dir, archFor(x3 - x0));
+function curveSpan(span: CurveSpan, endpointYOf: (note: PlacedNote) => number): CurveGeometry {
+  switch (span.kind) {
+    case 'whole': {
+      const { from, to } = span;
+      const x0 = rightEdge(from) + GAP;
+      const x3 = Math.max(leftEdge(to) - GAP, x0 + MIN_SPAN);
+      return { systemIndex: from.systemIndex, x0, x3, y0: endpointYOf(from), y3: endpointYOf(to), lo: from.x, hi: to.x };
+    }
+    case 'start': {
+      const { from, system } = span;
+      const x0 = rightEdge(from) + GAP;
+      const x3 = Math.max(x0 + MIN_SPAN, Math.min(system.width, lastColumnX(system) + SYSTEM_END_MARGIN));
+      const y = endpointYOf(from);
+      return { systemIndex: from.systemIndex, x0, x3, y0: y, y3: y, lo: from.x, hi: x3 };
+    }
+    case 'end': {
+      const { to, system } = span;
+      const x3 = leftEdge(to) - GAP;
+      const x0 = Math.min(x3 - MIN_SPAN, Math.max(0, firstColumnX(system) - SYSTEM_START_MARGIN));
+      const y = endpointYOf(to);
+      return { systemIndex: to.systemIndex, x0, x3, y0: y, y3: y, lo: x0, hi: to.x };
+    }
+  }
+}
+
+function curveShape(
+  id: string,
+  cls: CurveShape['cls'],
+  g: CurveGeometry,
+  dir: 1 | -1,
+  arch: number,
+): CurveShape {
+  const e = engravingDefaults;
+  const [endT, midT] =
+    cls === 'tie' ? [e.tieEndpointThickness, e.tieMidpointThickness] : [e.slurEndpointThickness, e.slurMidpointThickness];
   return {
     el: id,
-    systemIndex: from.systemIndex,
-    cls: 'tie',
-    d: curvePath([x0, y], [x3, y], dir, arch, engravingDefaults.tieEndpointThickness, engravingDefaults.tieMidpointThickness),
+    systemIndex: g.systemIndex,
+    cls,
+    d: curvePath([g.x0, g.y0], [g.x3, g.y3], dir, arch, endT, midT),
   };
 }
 
-function secondHalf(id: string, to: PlacedNote, dir: 1 | -1, system: JustifiedSystem): CurveShape {
-  const x3 = leftEdge(to) - GAP;
-  const x0 = Math.min(x3 - MIN_SPAN, Math.max(0, firstColumnX(system) - SYSTEM_START_MARGIN));
-  const y = endpointY(to, dir);
-  const arch = clearApex(y, y, dir, archFor(x3 - x0));
-  return {
-    el: id,
-    systemIndex: to.systemIndex,
-    cls: 'tie',
-    d: curvePath([x0, y], [x3, y], dir, arch, engravingDefaults.tieEndpointThickness, engravingDefaults.tieMidpointThickness),
-  };
+function tieShape(id: string, span: CurveSpan, dir: 1 | -1): CurveShape {
+  const g = curveSpan(span, (note) => endpointY(note, dir));
+  const arch = clearApex(g.y0, g.y3, dir, archFor(g.x3 - g.x0));
+  return curveShape(id, 'tie', g, dir, arch);
 }
 
 function slurDirection(
@@ -339,83 +358,22 @@ function slurEndpointY(note: PlacedNote, dir: 1 | -1, stemOverrides: BeamsResult
   return note.head.staffPosition - dir * V_OFFSET;
 }
 
-function oneSlur(
-  slur: NormalizedSlur,
-  from: PlacedNote,
-  to: PlacedNote,
-  dir: 1 | -1,
-  beamsResult: BeamsResult,
-  elementsBySystem: ElementsBySystem,
-): CurveShape {
-  const x0 = rightEdge(from) + GAP;
-  const x3 = Math.max(leftEdge(to) - GAP, x0 + MIN_SPAN);
-  const y0 = slurEndpointY(from, dir, beamsResult.stemOverrides);
-  const y3 = slurEndpointY(to, dir, beamsResult.stemOverrides);
-  const arch = clearSlur(
-    slurArchFor(x3 - x0),
-    [x0, y0],
-    [x3, y3],
-    dir,
-    slurObstacles(from.systemIndex, from.x, to.x, beamsResult, elementsBySystem),
-  );
-  return {
-    el: slur.id,
-    systemIndex: from.systemIndex,
-    cls: 'slur',
-    d: curvePath([x0, y0], [x3, y3], dir, arch, engravingDefaults.slurEndpointThickness, engravingDefaults.slurMidpointThickness),
-  };
-}
-
-function firstHalfSlur(
+function slurShape(
   id: string,
-  from: PlacedNote,
+  span: CurveSpan,
   dir: 1 | -1,
-  system: JustifiedSystem,
   beamsResult: BeamsResult,
   elementsBySystem: ElementsBySystem,
 ): CurveShape {
-  const x0 = rightEdge(from) + GAP;
-  const x3 = Math.max(x0 + MIN_SPAN, Math.min(system.width, lastColumnX(system) + SYSTEM_END_MARGIN));
-  const y = slurEndpointY(from, dir, beamsResult.stemOverrides);
+  const g = curveSpan(span, (note) => slurEndpointY(note, dir, beamsResult.stemOverrides));
   const arch = clearSlur(
-    slurArchFor(x3 - x0),
-    [x0, y],
-    [x3, y],
+    slurArchFor(g.x3 - g.x0),
+    [g.x0, g.y0],
+    [g.x3, g.y3],
     dir,
-    slurObstacles(from.systemIndex, from.x, x3, beamsResult, elementsBySystem),
+    slurObstacles(g.systemIndex, g.lo, g.hi, beamsResult, elementsBySystem),
   );
-  return {
-    el: id,
-    systemIndex: from.systemIndex,
-    cls: 'slur',
-    d: curvePath([x0, y], [x3, y], dir, arch, engravingDefaults.slurEndpointThickness, engravingDefaults.slurMidpointThickness),
-  };
-}
-
-function secondHalfSlur(
-  id: string,
-  to: PlacedNote,
-  dir: 1 | -1,
-  system: JustifiedSystem,
-  beamsResult: BeamsResult,
-  elementsBySystem: ElementsBySystem,
-): CurveShape {
-  const x3 = leftEdge(to) - GAP;
-  const x0 = Math.min(x3 - MIN_SPAN, Math.max(0, firstColumnX(system) - SYSTEM_START_MARGIN));
-  const y = slurEndpointY(to, dir, beamsResult.stemOverrides);
-  const arch = clearSlur(
-    slurArchFor(x3 - x0),
-    [x0, y],
-    [x3, y],
-    dir,
-    slurObstacles(to.systemIndex, x0, to.x, beamsResult, elementsBySystem),
-  );
-  return {
-    el: id,
-    systemIndex: to.systemIndex,
-    cls: 'slur',
-    d: curvePath([x0, y], [x3, y], dir, arch, engravingDefaults.slurEndpointThickness, engravingDefaults.slurMidpointThickness),
-  };
+  return curveShape(id, 'slur', g, dir, arch);
 }
 
 function clearSlur(
@@ -506,7 +464,7 @@ function slurObstacles(
   return obstacles;
 }
 
-export function curvePath(
+function curvePath(
   p0: readonly [number, number],
   p3: readonly [number, number],
   dir: 1 | -1,

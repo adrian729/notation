@@ -90,6 +90,12 @@ importers:
       '@polyhymnia/audio':
         specifier: workspace:*
         version: link:../../packages/audio
+      '@polyhymnia/notation-engine':
+        specifier: workspace:*
+        version: link:../../packages/notation-engine
+      '@polyhymnia/notation-model':
+        specifier: workspace:*
+        version: link:../../packages/notation-model
       '@polyhymnia/notation-react':
         specifier: workspace:*
         version: link:../../packages/notation-react

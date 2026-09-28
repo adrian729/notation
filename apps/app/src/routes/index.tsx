@@ -42,6 +42,20 @@ function HomePage() {
             </Button>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Interval Identification</CardTitle>
+            <CardDescription>
+              Hear one interval and name it, from perfect 4ths and 5ths up to
+              compound intervals.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link to="/exercises/interval-identification">Start training</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </section>
     </div>
   );

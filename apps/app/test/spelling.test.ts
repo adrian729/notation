@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pitchToToken, spellInterval, type SpelledPitch } from '@/exercises/interval-comparison/spelling';
+import { pitchToToken, spellInterval, type SpelledPitch } from '@/exercises/shared/spelling';
 
 function pitch(token: string): SpelledPitch {
   const match = /^([A-G])(#|b)?(-?\d+)$/.exec(token)!;

@@ -1,12 +1,12 @@
-import { Rational as R } from '@polyhymnia/notation-model';
-import type { NoteId as ModelNoteId, Rational } from '@polyhymnia/notation-model';
+import { noteValueLength, Rational as R, STEP_LETTERS, stepNumberOf } from '@polyhymnia/notation-model';
+import type { Diagnostic, Pitch, NoteId as ModelNoteId, Rational } from '@polyhymnia/notation-model';
 
 export type NoteId = ModelNoteId;
 
 export type StepNumber = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type Alter = -2 | -1 | 0 | 1 | 2;
 
-export interface Pitch {
+export interface StaffPitch {
   step: StepNumber;
   alter: Alter;
   octave: number;
@@ -124,35 +124,21 @@ export const DURATION_BASES: readonly DurationBase[] = [
   '64th',
 ];
 
-export const STEP_LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as const;
-const STEP_SEMITONES: readonly number[] = [0, 2, 4, 5, 7, 9, 11];
+export function stepNumber(letter: unknown): StepNumber | undefined {
+  if (!(STEP_LETTERS as readonly unknown[]).includes(letter)) return undefined;
+  return stepNumberOf(letter as Pitch['step']) as StepNumber;
+}
 
-const BASE_WHOLE_NOTES: Record<DurationBase, Rational> = {
-  breve: { n: 2, d: 1 },
-  whole: { n: 1, d: 1 },
-  half: { n: 1, d: 2 },
-  quarter: { n: 1, d: 4 },
-  eighth: { n: 1, d: 8 },
-  '16th': { n: 1, d: 16 },
-  '32nd': { n: 1, d: 32 },
-  '64th': { n: 1, d: 64 },
-};
+export function toMnxPitch(p: StaffPitch): Pitch {
+  const step = STEP_LETTERS[p.step];
+  return p.alter !== 0 ? { step, octave: p.octave, alter: p.alter } : { step, octave: p.octave };
+}
 
-const DOT_FACTOR: readonly Rational[] = [
-  { n: 1, d: 1 },
-  { n: 3, d: 2 },
-  { n: 7, d: 4 },
-];
-
-export function stepIndex(p: Pitch): number {
+export function stepIndex(p: StaffPitch): number {
   return p.step + 7 * p.octave;
 }
 
-export function midiOf(p: Pitch): number {
-  return 12 * (p.octave + 1) + STEP_SEMITONES[p.step]! + p.alter;
-}
-
-export function describePitch(p: Pitch): string {
+export function describePitch(p: StaffPitch): string {
   const alter =
     p.alter === 0
       ? ''
@@ -167,7 +153,7 @@ export function describePitch(p: Pitch): string {
 }
 
 export function noteValueSpecLength(value: NoteValueSpec): Rational {
-  return R.multiply(BASE_WHOLE_NOTES[value.base], DOT_FACTOR[value.dots]!);
+  return noteValueLength(value)!;
 }
 
 interface Candidate {
@@ -209,3 +195,71 @@ export interface MeasureFlow {
 }
 
 export type MeasureFlows = readonly MeasureFlow[];
+
+export interface ElementNote {
+  id: NoteId;
+  pitch: StaffPitch;
+  tie?: 'start' | 'stop' | 'continue';
+  accidentalPolicy?: AccidentalPolicy;
+}
+
+export interface NormalizedElement {
+  id: NoteId;
+  kind: 'note' | 'chord' | 'rest';
+  base: DurationBase;
+  dots: Dots;
+  length: Rational;
+  tuplet?: TupletRef;
+  notes: readonly ElementNote[];
+  stem?: 'up' | 'down';
+  breath?: 'comma' | 'caesura';
+  wholeBar?: boolean;
+  staffPosition?: number;
+}
+
+export interface NormalizedGap {
+  kind: 'space';
+  length: Rational;
+}
+
+export type NormalizedEvent = NormalizedElement | NormalizedGap;
+
+export interface NormalizedVoice {
+  index: 0 | 1;
+  events: readonly NormalizedEvent[];
+}
+
+export interface NormalizedMeasure {
+  index: number;
+  clef: ClefSpec;
+  key: KeySpec;
+  time: TimeSpec;
+  voices: readonly NormalizedVoice[];
+  pickup: boolean;
+  capacity: Rational;
+  capacityTicks: number;
+  barlineStart?: 'none' | 'repeat-start';
+  barlineEnd?: 'single' | 'double' | 'dashed' | 'final' | 'repeat-end' | 'none';
+  systemBreak: boolean;
+}
+
+export interface NormalizedStaff {
+  index: number;
+  clef: ClefSpec;
+  key: KeySpec;
+  time: TimeSpec;
+  measures: readonly NormalizedMeasure[];
+}
+
+export interface NormalizedScore {
+  id: string;
+  divisions: number;
+  tempo: TempoMap;
+  flow: MeasureFlows;
+  staves: readonly NormalizedStaff[];
+  beams: readonly NormalizedBeam[];
+  ties: readonly NormalizedTie[];
+  slurs: readonly NormalizedSlur[];
+  diagnostics: readonly Diagnostic[];
+  usedIds: ReadonlySet<string>;
+}

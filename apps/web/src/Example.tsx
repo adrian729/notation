@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { Diagnostic, LayoutResult } from '@polyhymnia/notation-react';
+import type { Diagnostic } from '@polyhymnia/notation-model';
+import type { LayoutResult } from '@polyhymnia/notation-engine';
 
 interface ExampleProps {
   title: string;

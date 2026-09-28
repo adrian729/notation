@@ -1,3 +1,5 @@
+import { collectExplicitIds, mintId } from './element-ids.js';
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -8,28 +10,6 @@ function hasContentArray(value: unknown): value is { content: unknown[] } {
 
 function isEventLike(value: unknown): value is { notes?: unknown; rest?: unknown } {
   return isRecord(value) && (Array.isArray(value.notes) || isRecord(value.rest));
-}
-
-function collectIds(value: unknown, into: Set<string>): void {
-  if (Array.isArray(value)) {
-    for (const item of value) collectIds(item, into);
-    return;
-  }
-  if (!isRecord(value)) return;
-  if (typeof value.id === 'string') into.add(value.id);
-  for (const key of Object.keys(value)) collectIds(value[key], into);
-}
-
-export function mintId(existing: Set<string>, candidate: string): string {
-  if (!existing.has(candidate)) {
-    existing.add(candidate);
-    return candidate;
-  }
-  let n = 2;
-  while (existing.has(`${candidate}-${n}`)) n += 1;
-  const id = `${candidate}-${n}`;
-  existing.add(id);
-  return id;
 }
 
 function processEvent(
@@ -92,8 +72,7 @@ function processContent(
 }
 
 export function assignIds<T>(doc: T): T {
-  const existing = new Set<string>();
-  collectIds(doc, existing);
+  const existing = collectExplicitIds(doc);
 
   if (!isRecord(doc) || !Array.isArray(doc.parts)) return doc;
   const multiPart = doc.parts.length > 1;

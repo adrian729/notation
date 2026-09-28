@@ -2,7 +2,7 @@
 
 Product spec for Polyhymnia's version of EarMaster's Interval Comparison (`docs/earmaster.md` E1). Tags: **[EM]** = matches documented EarMaster behaviour (source in `docs/earmaster.md` or the URL given); **[ours]** = EarMaster is undocumented here, so this is our decision.
 
-Implementation: `apps/app/src/exercises/interval-comparison/` (pure logic) and `apps/app/src/routes/exercises/interval-comparison/` (screens). Nothing in `packages/*` changes.
+Implementation: `apps/app/src/exercises/interval-comparison/` (pure logic) and `apps/app/src/routes/exercises/interval-comparison/` (screens). Logic shared with E2 lives in `apps/app/src/exercises/shared/`. Nothing in `packages/*` changes.
 
 ## Plays
 
@@ -45,7 +45,7 @@ The custom exercise screen explains every option inline, reusing the lesson help
 ## Question choice
 
 - Mode: uniform among the enabled modes [EM].
-- Sizes: A and B are each drawn uniformly and independently from the enabled set, so they may be the same size (probability 1 ÷ the number of enabled sizes); the exact same pair and order never repeats back to back [ours].
+- Sizes: A and B are each drawn uniformly from the enabled set; when B lands on the same size as A it is drawn once more, so they are the same size with probability 1 ÷ (number of enabled sizes)²; the exact same pair and order never repeats back to back [ours].
 - Roots, by tone relationship. The **first tone** is the tone played first: the lower tone for ascending and harmonic, the upper tone for descending [EM: "melodic down … the top tone in common"].
   - Common first tone: A and B share their first tone [EM].
   - Common first or second tone: A and B share either their first tone or their second tone, 50/50 [ours; EarMaster names the lesson but does not define it].

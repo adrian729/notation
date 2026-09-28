@@ -1,11 +1,22 @@
 import { DEFAULT_OPTIONS, type NotationOptions } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/notation-model';
-import { chromeWidth, measureWidth, type HorizontalMeasure } from './horizontal.js';
-import type { BreakScore } from './break.js';
+import { chromeWidth, measureWidth, type HorizontalColumn } from './horizontal.js';
+import type { BreakScore, SystemMeasure } from './break.js';
+
+export interface PositionedColumn extends HorizontalColumn {
+  xStart: number;
+  x: number;
+}
+
+export interface PositionedMeasure extends Omit<SystemMeasure, 'columns'> {
+  columns: readonly PositionedColumn[];
+  x: number;
+  width: number;
+}
 
 export interface JustifiedSystem {
   index: number;
-  measures: readonly HorizontalMeasure[];
+  measures: readonly PositionedMeasure[];
   width: number;
   naturalWidth: number;
 }
@@ -37,22 +48,22 @@ export function justify(broken: BreakScore, options?: NotationOptions): Justifie
     );
 
     let x = 0;
+    const measures: PositionedMeasure[] = [];
     for (const measure of system.measures) {
-      measure.x = x;
-      measure.systemIndex = system.index;
+      const measureX = x;
       x += chromeWidth(measure.chrome);
-      for (const column of measure.columns) {
-        column.xStart = x;
-        column.x = x + column.leftWidth;
+      const columns = measure.columns.map((column): PositionedColumn => {
+        const positioned = { ...column, xStart: x, x: x + column.leftWidth };
         const extra = totalStretch > 0 ? (slack * column.stretch) / totalStretch : 0;
         x += column.width + extra;
-      }
+        return positioned;
+      });
       if (measure.columns.length === 0) x += measure.contentWidth;
       x += measure.chrome.endBarlineWidth;
-      measure.width = x - measure.x;
+      measures.push({ ...measure, columns, x: measureX, width: x - measureX });
     }
 
-    systems.push({ index: system.index, measures: system.measures, width: x, naturalWidth: natural });
+    systems.push({ index: system.index, measures, width: x, naturalWidth: natural });
   }
 
   return {

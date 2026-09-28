@@ -1,21 +1,23 @@
-import type { Question } from './generator.js';
-
 export const PASS_THRESHOLD = 0.8;
 
-export interface AnsweredQuestion {
-  question: Question;
+export interface AnsweredQuestion<Q, A> {
+  question: Q;
+  answer: A;
   correct: boolean;
 }
 
-export interface LessonFlowState {
-  answered: AnsweredQuestion[];
+export interface LessonFlowState<Q, A> {
+  answered: AnsweredQuestion<Q, A>[];
   targetCount: number;
   finished: boolean;
   endless: boolean;
   graded: boolean;
 }
 
-export function createLessonFlow(options: { questionCount: number | 'endless'; graded?: boolean }): LessonFlowState {
+export function createLessonFlow<Q, A>(options: {
+  questionCount: number | 'endless';
+  graded?: boolean;
+}): LessonFlowState<Q, A> {
   const endless = options.questionCount === 'endless';
   return {
     answered: [],
@@ -26,29 +28,34 @@ export function createLessonFlow(options: { questionCount: number | 'endless'; g
   };
 }
 
-export function recordAnswer(state: LessonFlowState, question: Question, correct: boolean): LessonFlowState {
+export function recordAnswer<Q, A>(
+  state: LessonFlowState<Q, A>,
+  question: Q,
+  answer: A,
+  correct: boolean,
+): LessonFlowState<Q, A> {
   if (state.finished) return state;
-  const answered = [...state.answered, { question, correct }];
+  const answered = [...state.answered, { question, answer, correct }];
   const finished = !state.endless && answered.length >= state.targetCount;
   return { ...state, answered, finished };
 }
 
-export function finishFlow(state: LessonFlowState): LessonFlowState {
+export function finishFlow<Q, A>(state: LessonFlowState<Q, A>): LessonFlowState<Q, A> {
   if (!state.endless || state.finished) return state;
   return { ...state, finished: true };
 }
 
-export function scoreOf(answered: readonly AnsweredQuestion[]): number {
+export function scoreOf<Q, A>(answered: readonly AnsweredQuestion<Q, A>[]): number {
   if (answered.length === 0) return 0;
   const right = answered.filter((a) => a.correct).length;
   return right / answered.length;
 }
 
-export function passedLesson(state: LessonFlowState): boolean {
+export function passedLesson<Q, A>(state: LessonFlowState<Q, A>): boolean {
   return !state.endless && state.graded && state.finished && scoreOf(state.answered) >= PASS_THRESHOLD;
 }
 
-export function progressSegments(state: LessonFlowState): ('upcoming' | 'right' | 'wrong')[] {
+export function progressSegments<Q, A>(state: LessonFlowState<Q, A>): ('upcoming' | 'right' | 'wrong')[] {
   const total = state.endless ? state.answered.length : state.targetCount;
   const segments: ('upcoming' | 'right' | 'wrong')[] = [];
   for (let i = 0; i < total; i++) {

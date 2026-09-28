@@ -1,7 +1,6 @@
 import type { NotationOptions } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/notation-model';
-import type { NormalizedScore } from './normalize.js';
-import type { NoteId, TupletDisplay } from './records.js';
+import type { NormalizedScore, NoteId, TupletDisplay } from './records.js';
 import type { TemporalScore } from './temporal.js';
 
 export interface TupletSpan {

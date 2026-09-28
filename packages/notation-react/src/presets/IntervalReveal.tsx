@@ -1,23 +1,20 @@
 import { useMemo } from 'react';
-import type { CSSProperties, JSX } from 'react';
+import type { JSX } from 'react';
 import type { NoteValue } from '@polyhymnia/notation-model';
 import type { ClefSpec } from '@polyhymnia/notation-engine';
-import type { LayoutResult } from '@polyhymnia/notation-engine';
 import { Notation } from '../Notation.js';
 import { durationKey, fittingMeter } from './shared.js';
+import type { RevealBaseProps } from './shared.js';
 import { buildMeasureScore, chordEvent, noteEvent } from './mnxBuild.js';
 
 const QUARTER: NoteValue = { base: 'quarter' };
 
-export interface IntervalRevealProps {
+export interface IntervalRevealProps extends RevealBaseProps {
   from: string;
   to: string;
   clef: ClefSpec['kind'];
   mode: 'harmonic' | 'melodic';
   duration?: NoteValue;
-  className?: string;
-  style?: CSSProperties;
-  onLayout?: (layout: LayoutResult) => void;
 }
 
 export function IntervalReveal({

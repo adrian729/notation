@@ -1,6 +1,6 @@
 import type { Clef, Diagnostic, MeasureGlobal, PartMeasure } from '@polyhymnia/notation-model';
-import { DEFAULT_DIVISIONS, type ClefSpec, type KeySpec, type TimeSpec } from './records.js';
-import { asArray, asObject, type NormalizedMeasure, type Reader } from './normalize.js';
+import { DEFAULT_DIVISIONS, type ClefSpec, type KeySpec, type NormalizedMeasure, type TimeSpec } from './records.js';
+import { asArray, asObject, type Reader } from './normalize-reader.js';
 
 const BARLINES: Partial<Record<string, NormalizedMeasure['barlineEnd']>> = {
   regular: 'single',

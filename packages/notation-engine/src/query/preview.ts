@@ -1,7 +1,7 @@
 import type { Pitch as MnxPitch } from '@polyhymnia/notation-model';
 import { engravingDefaults, glyphAdvanceWidth } from '../font/metadata.js';
 import { glyphCodepoint } from '../font/glyphs.js';
-import type { Alter, Pitch as EnginePitch, StepNumber } from '../layout/records.js';
+import { stepNumber, type Alter, type StaffPitch } from '../layout/records.js';
 import { STAFF_HEIGHT, accidentalGlyph, keyAlterOf, staffPositionOf } from '../layout/staff.js';
 import type { GlyphRun, LayoutResult, RectShape } from '../layout/types.js';
 
@@ -12,19 +12,9 @@ export interface PreviewNote {
   voice?: 0 | 1;
 }
 
-const STEP_NUMBER_BY_LETTER: Record<string, StepNumber> = {
-  C: 0,
-  D: 1,
-  E: 2,
-  F: 3,
-  G: 4,
-  A: 5,
-  B: 6,
-};
-
-function toEnginePitch(pitch: MnxPitch): EnginePitch {
+function toStaffPitch(pitch: MnxPitch): StaffPitch {
   return {
-    step: STEP_NUMBER_BY_LETTER[pitch.step] ?? 0,
+    step: stepNumber(pitch.step) ?? 0,
     alter: (pitch.alter ?? 0) as Alter,
     octave: pitch.octave,
   };
@@ -51,8 +41,8 @@ export function previewShapes(
   const system = layout.systems.find((s) => s.index === measureBox.systemIndex);
   if (!system) return { glyphs: [], rects: [] };
 
-  const enginePitch = toEnginePitch(preview.pitch);
-  const staffPosition = staffPositionOf(enginePitch, measureBox.clef);
+  const staffPitch = toStaffPitch(preview.pitch);
+  const staffPosition = staffPositionOf(staffPitch, measureBox.clef);
   const y = system.y + staffPosition;
 
   const glyphs: GlyphRun[] = [];
@@ -72,9 +62,9 @@ export function previewShapes(
     }
   }
 
-  const keyAlter = keyAlterOf(measureBox.key, enginePitch.step);
-  if (enginePitch.alter !== keyAlter) {
-    const glyphName = accidentalGlyph(enginePitch.alter);
+  const keyAlter = keyAlterOf(measureBox.key, staffPitch.step);
+  if (staffPitch.alter !== keyAlter) {
+    const glyphName = accidentalGlyph(staffPitch.alter);
     const accWidth = glyphAdvanceWidth(glyphName);
     glyphs.push({
       x: preview.x - accWidth - 0.2,
