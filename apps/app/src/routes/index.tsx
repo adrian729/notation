@@ -43,13 +43,13 @@ function HomePage() {
         <span>Ear training</span>
       </div>
 
-      <header className="flex items-start gap-base">
-        <img src={LOGO_URL} alt="" className="size-12 shrink-0" />
-        <div className="flex min-w-0 flex-col gap-tight">
-          <h1 className="font-display text-title sm:text-display" style={DISPLAY_WONK}>
+      <header className="-mt-loose flex flex-col items-center gap-base text-center">
+        <img src={LOGO_URL} alt="" className="size-[5.75rem] sm:size-30" />
+        <div className="flex flex-col items-center gap-tight">
+          <h1 className="font-display text-[1.75rem] sm:text-[3rem]" style={DISPLAY_WONK}>
             Polyhymnia
           </h1>
-          <p className="max-w-[64ch] text-body text-muted-foreground">
+          <p className="max-w-[52ch] text-body text-muted-foreground">
             Ear training for musicians: the difference between reading music and hearing it.
           </p>
         </div>
