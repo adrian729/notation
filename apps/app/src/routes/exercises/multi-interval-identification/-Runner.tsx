@@ -55,6 +55,8 @@ const REVEAL_PLACEHOLDER = (
 );
 
 export function Runner({ options, title, lessonId, onBack, onNextLesson }: RunnerProps) {
+  const events = (question: Question) => buildQuestionEvents(question, options.tempo);
+
   return (
     <LessonRunner<Question, Answer, MultiIntervalOptions>
       options={options}
@@ -63,12 +65,12 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
       onBack={onBack}
       onNextLesson={onNextLesson}
       generate={generate}
-      buildEvents={(question) => buildQuestionEvents(question, options.tempo)}
+      buildEvents={events}
       isCorrect={isCorrect}
       saveResult={recordLessonResult}
       prompt="Name each note's interval above the lowest note."
       verdict={verdict}
-      renderAnswers={(props) => <AnswerRows {...props} intervals={options.intervals} />}
+      renderAnswers={(props) => <AnswerRows {...props} intervals={options.intervals} events={events} />}
       renderReveal={(question) => <StackReveal question={question} />}
       revealPlaceholder={REVEAL_PLACEHOLDER}
       summaryNote={(item) => ` — you answered ${item.answer.join(', ')}`}

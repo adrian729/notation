@@ -28,6 +28,7 @@ export interface AnswerRenderProps<Q, A> {
   answered: boolean;
   disabled: boolean;
   answer: (choice: A) => void;
+  hear: (events: NoteEvent[]) => void;
 }
 
 export interface LessonRunnerProps<Q, A, O extends RunnerOptions> {
@@ -137,7 +138,6 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
   const [sound] = useState(createSound);
   const [blocked, setBlocked] = useState(false);
   const [started, setStarted] = useState(false);
-  const [replaySignal, setReplaySignal] = useState(0);
   const [autoPaused, setAutoPaused] = useState(false);
   const persistedRef = useRef(false);
   const playButtonRef = useRef<HTMLButtonElement>(null);
@@ -170,16 +170,18 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
 
   useEffect(() => unlockSound(), []);
 
-  const playQuestion = useCallback(
-    (question: Q) => {
+  const playEvents = useCallback(
+    (events: NoteEvent[]) => {
       setBlocked(false);
-      const playback = sound.playEvents(buildEventsRef.current(question));
+      const playback = sound.playEvents(events);
       void playback.finished.then((result) => {
         if (result === 'blocked') setBlocked(true);
       });
     },
     [sound],
   );
+
+  const playQuestion = useCallback((question: Q) => playEvents(buildEventsRef.current(question)), [playEvents]);
 
   const play = useCallback(() => {
     if (!state.question) return;
@@ -188,11 +190,19 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
   }, [state.question, playQuestion]);
 
   const replay = useCallback(() => {
-    if (state.phase === 'answered') setReplaySignal((n) => n + 1);
+    if (state.phase === 'answered') setAutoPaused(true);
     play();
   }, [state.phase, play]);
 
   const replayQuestion = useCallback((q: Q) => playQuestion(q), [playQuestion]);
+
+  const hear = useCallback(
+    (events: NoteEvent[]) => {
+      setAutoPaused(true);
+      playEvents(events);
+    },
+    [playEvents],
+  );
 
   useEffect(() => {
     if (!state.question) return;
@@ -241,7 +251,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
     if (!autoNextArmed) return;
     const id = window.setTimeout(goNext, AUTO_NEXT_DELAY_MS);
     return () => window.clearTimeout(id);
-  }, [autoNextArmed, goNext, replaySignal]);
+  }, [autoNextArmed, goNext]);
 
   useEffect(() => {
     const isTextInput = (el: EventTarget | null) =>
@@ -359,6 +369,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
           answered: answeredYet,
           disabled: !answeredYet && !started,
           answer,
+          hear,
         })}
       </Fragment>
 
@@ -381,7 +392,6 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
             <TimerOff />
             Stay
             <span
-              key={replaySignal}
               aria-hidden
               className="absolute inset-x-0 bottom-0 h-0.5 origin-left animate-countdown bg-primary-strong"
               style={{ animationDuration: `${AUTO_NEXT_DELAY_MS}ms` }}

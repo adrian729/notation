@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
+import type { NoteEvent } from '@polyhymnia/audio';
 import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { answerTileClass, answerTileState } from '@/components/lesson/answerTiles';
 import { intervalById, intervalIdDisplayName, type IntervalId } from '@/exercises/shared';
-import type { Question } from '@/exercises/multi-interval-identification';
+import { withAnswer, type Question } from '@/exercises/multi-interval-identification';
 import type { AnswerRenderProps } from '@/components/lesson/LessonRunner';
 
 const COLUMNS = 6;
@@ -33,15 +34,19 @@ export function AnswerRows({
   answered,
   disabled,
   answer,
+  hear,
   intervals,
+  events,
 }: AnswerRenderProps<Question, readonly IntervalId[]> & {
   intervals: readonly IntervalId[];
+  events: (question: Question) => NoteEvent[];
 }) {
   const [draft, setDraft] = useState<readonly (IntervalId | undefined)[]>([]);
   const placement = useMemo(() => gridPlacement(intervals), [intervals]);
   const rowCount = question.rows.length;
   const chosen = answered ? (selected ?? []) : draft;
   const choose = (index: number, id: IntervalId) => {
+    if (answered) return hear(events(withAnswer(question, index, id)));
     const next = Array.from({ length: rowCount }, (_, i) => (i === index ? id : draft[i]));
     setDraft(next);
     if (next.every((choice) => choice !== undefined)) answer(next as readonly IntervalId[]);
@@ -76,8 +81,8 @@ export function AnswerRows({
                   <button
                     key={id}
                     type="button"
-                    disabled={disabled || answered}
-                    aria-label={`${id}, ${intervalIdDisplayName(id).toLowerCase()}`}
+                    disabled={disabled}
+                    aria-label={`${answered ? 'Hear ' : ''}${id}, ${intervalIdDisplayName(id).toLowerCase()}`}
                     aria-pressed={choice === id}
                     onClick={() => choose(index, id)}
                     style={{ gridRow: cell.row, gridColumn: cell.column }}

@@ -1,5 +1,6 @@
 import { createRootRoute, Link, Outlet } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
+import { InstrumentSelect } from '@/components/custom/InstrumentSelect';
 import { LOGO_URL } from '@/lib/logo';
 
 export const Route = createRootRoute({
@@ -9,7 +10,7 @@ export const Route = createRootRoute({
 
 function SiteHeader() {
   return (
-    <header className="border-b px-6 py-3">
+    <header className="flex items-center justify-between gap-3 border-b px-6 py-3">
       <Link
         to="/"
         className="inline-flex items-center gap-2.5 rounded-sm text-lg font-semibold text-teal-800 outline-none transition-colors hover:text-teal-600 focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -17,6 +18,7 @@ function SiteHeader() {
         <img src={LOGO_URL} alt="" className="size-8" />
         Polyhymnia
       </Link>
+      <InstrumentSelect />
     </header>
   );
 }

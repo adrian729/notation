@@ -6,6 +6,7 @@ import {
   spellRelative,
   tokenMidi,
   writtenIntervalName,
+  type IntervalSpec,
   type SpelledPitch,
 } from './spelling.js';
 import type { PlayingMode } from './playing.js';
@@ -84,6 +85,11 @@ export function midiToPitch(midi: number, rng: Rng): SpelledPitch {
   const pitchClass = ((midi % 12) + 12) % 12;
   const octave = Math.floor(midi / 12) - 1;
   return pickPreferredRoot(pitchClass, octave, rng);
+}
+
+export function pitchAbove(root: SpelledPitch, spec: IntervalSpec, dir: 1 | -1 = 1): SpelledPitch {
+  const spelled = spellRelative(root, [spec], dir, 2);
+  return spelled?.members[0]?.pitch ?? midiToPitch(pitchToMidi(root) + dir * spec.semitones, () => 0);
 }
 
 export function randomRootInRange(rng: Rng, low: number, high: number): SpelledPitch {

@@ -1,7 +1,7 @@
 import { pitchToMidi } from '@polyhymnia/notation-model';
-import { clefForMidis, midiOfToken, midiToPitch, pickOne, randomInt, type Rng } from '../shared/tones.js';
+import { clefForMidis, midiOfToken, midiToPitch, pickOne, pitchAbove, randomInt, type Rng } from '../shared/tones.js';
 import { intervalById, type IntervalId } from '../shared/intervals.js';
-import { pitchToToken, spellRelative } from '../shared/spelling.js';
+import { pitchToToken, spellRelative, tokenPitch } from '../shared/spelling.js';
 import type { MultiIntervalOptions, MultiPlayingMode } from './options.js';
 
 export interface StackRow {
@@ -19,6 +19,16 @@ export interface Question {
 
 export function questionSignature(q: Question): string {
   return q.rows.map((row) => row.size).join(',');
+}
+
+export function withAnswer(question: Question, rowIndex: number, size: IntervalId): Question {
+  const replaced = question.rows[rowIndex]!.pitch;
+  const pitch = pitchToToken(pitchAbove(tokenPitch(question.reference), intervalById(size)));
+  return {
+    ...question,
+    rows: question.rows.map((row, i) => (i === rowIndex ? { size, pitch } : row)),
+    sounding: question.sounding.map((token) => (token === replaced ? pitch : token)),
+  };
 }
 
 const MAX_ATTEMPTS = 400;

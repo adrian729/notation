@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { NoteEvent } from '@polyhymnia/audio';
 import { NotesReveal } from '@polyhymnia/notation-react/presets';
 import { cn } from '@/lib/utils';
 import { RevealStaff } from '@/components/lesson/RevealStaff';
@@ -10,6 +11,7 @@ import {
   generateQuestion,
   questionSignature,
   recordLessonResult,
+  withAnswer,
   type IdentificationOptions,
   type Question,
 } from '@/exercises/interval-identification';
@@ -70,8 +72,13 @@ function AnswerGrid({
   answered,
   disabled,
   answer,
+  hear,
   intervals,
-}: AnswerRenderProps<Question, IntervalId> & { intervals: readonly IntervalId[] }) {
+  events,
+}: AnswerRenderProps<Question, IntervalId> & {
+  intervals: readonly IntervalId[];
+  events: (question: Question) => NoteEvent[];
+}) {
   const correct = question.size;
   return (
     <div className={cn('grid gap-2 sm:gap-3', answerGridClass(intervals.length))}>
@@ -80,7 +87,8 @@ function AnswerGrid({
           key={id}
           type="button"
           disabled={disabled}
-          onClick={() => answer(id)}
+          aria-label={answered ? `Hear ${intervalIdDisplayName(id)}` : undefined}
+          onClick={() => (answered ? hear(events(withAnswer(question, id))) : answer(id))}
           className={cn(
             'flex h-16 items-center justify-center rounded-xl border-2 px-2 text-center text-sm font-semibold leading-tight sm:text-base',
             answerTileClass(answerTileState(id, correct, selected, answered)),
@@ -99,6 +107,8 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
     [options.intervals],
   );
 
+  const events = (question: Question) => buildQuestionEvents(question, options.tempo);
+
   return (
     <LessonRunner<Question, IntervalId, IdentificationOptions>
       options={options}
@@ -107,12 +117,12 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
       onBack={onBack}
       onNextLesson={onNextLesson}
       generate={generate}
-      buildEvents={(question) => buildQuestionEvents(question, options.tempo)}
+      buildEvents={events}
       isCorrect={isCorrect}
       saveResult={recordLessonResult}
       prompt="Which interval did you hear?"
       verdict={verdict}
-      renderAnswers={(props) => <AnswerGrid {...props} intervals={sortedIntervals} />}
+      renderAnswers={(props) => <AnswerGrid {...props} intervals={sortedIntervals} events={events} />}
       renderReveal={(question) => <IntervalSingle question={question} />}
       revealPlaceholder={REVEAL_PLACEHOLDER}
       summaryNote={(item) => ` — you answered ${intervalIdDisplayName(item.answer)}`}

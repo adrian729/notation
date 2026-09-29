@@ -2,8 +2,8 @@ import { pitchToMidi } from '@polyhymnia/notation-model';
 import { chordById, chordSpan, type ChordId, type ChordQuality } from './chords.js';
 import type { ChordPlayback } from './playback.js';
 import type { ChordOptions } from './options.js';
-import { spellRelative, pitchToToken, tokenMidi, type SpelledPitch } from '../shared/spelling.js';
-import { clefForMidis, midiOfToken, midiToPitch, pickOne, randomInt, type Rng } from '../shared/tones.js';
+import { spellRelative, pitchToToken, tokenMidi, tokenPitch, type SpelledPitch } from '../shared/spelling.js';
+import { clefForMidis, midiOfToken, midiToPitch, pickOne, pitchAbove, randomInt, type Rng } from '../shared/tones.js';
 
 export interface Question {
   playback: ChordPlayback;
@@ -22,6 +22,23 @@ function spellChord(chord: ChordQuality, root: SpelledPitch): SpelledPitch[] | u
   return spelled && [spelled.pinned, ...spelled.members.map((member) => member.pitch)];
 }
 
+function chordQuestion(playback: ChordPlayback, quality: ChordId, spelled: readonly SpelledPitch[]): Question {
+  return {
+    playback,
+    quality,
+    pitches: spelled.map(pitchToToken),
+    noteNames: spelled.map((pitch) => `${pitch.step}${ACCIDENTAL_GLYPH[pitch.alter]}`),
+    clef: clefForMidis(spelled.map(pitchToMidi)),
+  };
+}
+
+export function withAnswer(question: Question, quality: ChordId): Question {
+  const chord = chordById(quality);
+  const root = tokenPitch(question.pitches[0]!);
+  const spelled = spellChord(chord, root) ?? [root, ...chord.above.map((spec) => pitchAbove(root, spec))];
+  return chordQuestion(question.playback, quality, spelled);
+}
+
 export function questionSignature(q: Question): string {
   return `${q.quality}|${midiOfToken(q.pitches[0]!)}|${q.playback}`;
 }
@@ -38,13 +55,7 @@ export function generateQuestion(options: ChordOptions, rng: Rng = Math.random, 
     const spelled = spellChord(chord, root);
     if (!spelled) continue;
 
-    const question: Question = {
-      playback,
-      quality,
-      pitches: spelled.map(pitchToToken),
-      noteNames: spelled.map((pitch) => `${pitch.step}${ACCIDENTAL_GLYPH[pitch.alter]}`),
-      clef: clefForMidis(spelled.map(pitchToMidi)),
-    };
+    const question = chordQuestion(playback, quality, spelled);
     if (last === questionSignature(question) && attempt < MAX_ATTEMPTS - 1) continue;
     return question;
   }

@@ -6,6 +6,7 @@
 
 - `@polyhymnia/audio` (pure, no DOM, no Web Audio): `NoteEvent`, `Clip`, `eventsFromTimeMap`, `midiOfPitch`, `midiToFrequency`, `melodic`, `harmonic`, `shift`, `concat`, `transpose`, `Instrument`, and types `EventsOptions`, `PitchLike`.
 - `@polyhymnia/audio/webaudio` (DOM lib): `synthInstrument`, `createPlayer`, `createAudioContext`, `unlockAudio`, `createSharedPlayer`, `defaultInstrument`, and types `Player`, `Playback`, `PlayResult`.
+- `@polyhymnia/audio/sampler` (DOM lib): `loadSampler(ctx, { out, samples: { midi, url }[] })` resolves to an `Instrument`, and type `Sample`.
 
 ## Events and clips
 
@@ -36,7 +37,7 @@ Times are seconds from clip start. `midi` may be fractional; `id` is an MNX note
 
 ## Extension seam
 
-`Instrument { noteOn(midi, when, duration, velocity?), stopAll() }` is DOM-free. Sample players, drones or per-voice instruments are new `Instrument` implementations behind their own entry, pinned, with permission to install any dependency. Deferred: seek/slice/loop, count-in, metronome, MIDI export, dynamics-driven velocity, grace notes, tempo ramps.
+`Instrument { noteOn(midi, when, duration, velocity?), stopAll() }` is DOM-free. `loadSampler` is the sample-player implementation: it fetches and decodes every sample up front (rejecting if any fails), trims leading silence and peak-normalizes at decode time, and `noteOn` plays the nearest sample repitched by `playbackRate`, fading out over 80 ms at note end. Drones or per-voice instruments are new `Instrument` implementations behind their own entry, pinned, with permission to install any dependency. Deferred: seek/slice/loop, count-in, metronome, MIDI export, dynamics-driven velocity, grace notes, tempo ramps.
 
 ## App responsibilities
 

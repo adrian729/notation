@@ -45,6 +45,10 @@ export function pitchToToken(pitch: SpelledPitch): string {
   return `${pitch.step}${acc}${pitch.octave}`;
 }
 
+export function tokenPitch(token: string): SpelledPitch {
+  return { alter: 0, ...parsePitch(token) };
+}
+
 export function tokenMidi(token: string): number | undefined {
   try {
     return pitchToMidi(parsePitch(token));

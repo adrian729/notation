@@ -1,3 +1,4 @@
+import type { NoteEvent } from '@polyhymnia/audio';
 import { NotesReveal } from '@polyhymnia/notation-react/presets';
 import { cn } from '@/lib/utils';
 import { RevealStaff } from '@/components/lesson/RevealStaff';
@@ -10,6 +11,7 @@ import {
   generateQuestion,
   questionSignature,
   recordLessonResult,
+  withAnswer,
   type ChordId,
   type ChordOptions,
   type Question,
@@ -69,8 +71,13 @@ function AnswerGrid({
   answered,
   disabled,
   answer,
+  hear,
   chords,
-}: AnswerRenderProps<Question, ChordId> & { chords: readonly ChordId[] }) {
+  events,
+}: AnswerRenderProps<Question, ChordId> & {
+  chords: readonly ChordId[];
+  events: (question: Question) => NoteEvent[];
+}) {
   return (
     <div className={cn('grid auto-rows-fr gap-2 sm:gap-3', answerGridClass(chords.length))}>
       {chords.map((id) => {
@@ -80,7 +87,8 @@ function AnswerGrid({
             key={id}
             type="button"
             disabled={disabled}
-            onClick={() => answer(id)}
+            aria-label={answered ? `Hear ${chord.name}` : undefined}
+            onClick={() => (answered ? hear(events(withAnswer(question, id))) : answer(id))}
             className={cn(
               'flex min-h-16 flex-col items-center justify-center rounded-xl border-2 px-2 py-1 text-center leading-tight',
               answerTileClass(answerTileState(id, question.quality, selected, answered)),
@@ -96,6 +104,8 @@ function AnswerGrid({
 }
 
 export function Runner({ options, title, lessonId, onBack, onNextLesson }: RunnerProps) {
+  const events = (question: Question) => buildQuestionEvents(question, options.tempo);
+
   return (
     <LessonRunner<Question, ChordId, ChordOptions>
       options={options}
@@ -104,12 +114,12 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
       onBack={onBack}
       onNextLesson={onNextLesson}
       generate={generate}
-      buildEvents={(question) => buildQuestionEvents(question, options.tempo)}
+      buildEvents={events}
       isCorrect={isCorrect}
       saveResult={recordLessonResult}
       prompt="Which chord did you hear?"
       verdict={verdict}
-      renderAnswers={(props) => <AnswerGrid {...props} chords={options.chords} />}
+      renderAnswers={(props) => <AnswerGrid {...props} chords={options.chords} events={events} />}
       renderReveal={(question) => <ChordReveal question={question} />}
       revealPlaceholder={REVEAL_PLACEHOLDER}
       summaryNote={(item) => ` — you answered ${chordById(item.answer).name}`}

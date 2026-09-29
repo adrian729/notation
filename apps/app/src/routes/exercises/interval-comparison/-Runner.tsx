@@ -3,9 +3,10 @@ import { cn } from '@/lib/utils';
 import { RevealStaff } from '@/components/lesson/RevealStaff';
 import { LessonRunner, type AnswerRenderProps } from '@/components/lesson/LessonRunner';
 import { answerTileClass, answerTileState } from '@/components/lesson/answerTiles';
-import type { AnsweredQuestion } from '@/exercises/shared';
+import type { AnsweredQuestion, Tempo } from '@/exercises/shared';
 import {
   buildQuestionEvents,
+  choiceEvents,
   generateQuestion,
   questionSignature,
   recordLessonResult,
@@ -72,7 +73,17 @@ const REVEAL_PLACEHOLDER = (
   </>
 );
 
-function AnswerGrid({ question, selected, answered, disabled, answer }: AnswerRenderProps<Question, Answer>) {
+const HEAR_LABEL: Record<Answer, string> = { A: 'Hear A', B: 'Hear B', same: 'Hear both' };
+
+function AnswerGrid({
+  question,
+  selected,
+  answered,
+  disabled,
+  answer,
+  hear,
+  tempo,
+}: AnswerRenderProps<Question, Answer> & { tempo: Tempo }) {
   const correct = question.correct;
   return (
     <div className="mx-auto w-full max-w-lg grid grid-cols-3 gap-3 sm:gap-4">
@@ -81,7 +92,8 @@ function AnswerGrid({ question, selected, answered, disabled, answer }: AnswerRe
           key={choice}
           type="button"
           disabled={disabled}
-          onClick={() => answer(choice)}
+          aria-label={answered ? HEAR_LABEL[choice] : undefined}
+          onClick={() => (answered ? hear(choiceEvents(question, choice, tempo)) : answer(choice))}
           className={cn(
             'flex h-24 items-center justify-center rounded-xl border-2 font-bold',
             choice === 'same' ? 'text-xl' : 'text-3xl',
@@ -109,7 +121,7 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
       saveResult={recordLessonResult}
       prompt="Which interval is larger, or are they the same?"
       verdict={verdict}
-      renderAnswers={(props) => <AnswerGrid {...props} />}
+      renderAnswers={(props) => <AnswerGrid {...props} tempo={options.tempo} />}
       renderReveal={(question) => <IntervalPair question={question} />}
       revealPlaceholder={REVEAL_PLACEHOLDER}
       answerKeys={ANSWER_KEYS}

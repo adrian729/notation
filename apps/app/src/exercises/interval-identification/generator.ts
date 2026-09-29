@@ -1,6 +1,9 @@
 import type { PlayingMode } from '../shared/playing.js';
 import {
   buildTones,
+  direction,
+  pitchAbove,
+  toTones,
   clefForMidis,
   midiOfToken,
   midiToPitch,
@@ -31,6 +34,13 @@ export function questionSignature(q: Question): QuestionSignature {
 
 function sameSignature(a: QuestionSignature, b: QuestionSignature): boolean {
   return a.mode === b.mode && a.from === b.from && a.to === b.to;
+}
+
+export function withAnswer(question: Question, size: IntervalId): Question {
+  const { mode, tones } = question;
+  const dir = direction(mode);
+  const other = pitchAbove(tones.root, intervalById(size), dir);
+  return { ...question, size, tones: toTones(size, mode, dir, tones.root, other) };
 }
 
 const MAX_ATTEMPTS = 400;
