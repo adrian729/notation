@@ -46,6 +46,8 @@ export const RELATIONSHIP_TITLE: Record<ToneRelationship, string> = {
   random: 'Random first tones',
 };
 
+export const EXERCISE_TITLE = 'Interval Comparison';
+
 export const TASK_HELP =
   'You hear two intervals, A then B. Choose the larger one (the one whose two notes are further apart), or Same if they are the same size.';
 

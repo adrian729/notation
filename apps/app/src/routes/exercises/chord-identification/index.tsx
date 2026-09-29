@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
+  EXERCISE_TITLE,
   MODULES,
   OVERVIEW_HELP,
   lessonsForModule,
@@ -17,7 +18,7 @@ export const Route = createFileRoute('/exercises/chord-identification/')({
 function ChordIdentificationWorkshop() {
   return (
     <WorkshopPage
-      title="Chord Identification"
+      title={EXERCISE_TITLE}
       blurb="Hear one chord and name its quality."
       overview={OVERVIEW_HELP}
       modules={MODULES}

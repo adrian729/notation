@@ -8,6 +8,7 @@ import type { AnsweredQuestion } from '@/exercises/shared';
 import {
   buildQuestionEvents,
   chordById,
+  EXERCISE_TITLE,
   generateQuestion,
   questionSignature,
   recordLessonResult,
@@ -47,7 +48,7 @@ function answerGridClass(count: number): string {
 function ChordReveal({ question }: { question: Question }) {
   const chord = chordById(question.quality);
   return (
-    <div className="flex w-full max-w-[30rem] flex-col items-center gap-1">
+    <div className="flex w-full max-w-[46rem] flex-col items-center gap-1">
       <span className="min-h-6 text-center text-base font-medium text-muted-foreground">
         {question.noteNames[0]} {chord.name.toLowerCase()} — {question.noteNames.join(' ')}
       </span>
@@ -59,7 +60,7 @@ function ChordReveal({ question }: { question: Question }) {
 }
 
 const REVEAL_PLACEHOLDER = (
-  <div className="flex w-full max-w-[30rem] flex-col items-center gap-1">
+  <div className="flex w-full max-w-[46rem] flex-col items-center gap-1">
     <span className="min-h-6" />
     <RevealStaff className="rounded-md bg-muted" />
   </div>
@@ -109,6 +110,7 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
   return (
     <LessonRunner<Question, ChordId, ChordOptions>
       options={options}
+      exerciseTitle={EXERCISE_TITLE}
       title={title}
       lessonId={lessonId}
       onBack={onBack}

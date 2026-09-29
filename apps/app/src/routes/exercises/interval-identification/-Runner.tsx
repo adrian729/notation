@@ -8,6 +8,7 @@ import { answerTileClass, answerTileState } from '@/components/lesson/answerTile
 import { intervalById, intervalIdDisplayName, type AnsweredQuestion, type IntervalId } from '@/exercises/shared';
 import {
   buildQuestionEvents,
+  EXERCISE_TITLE,
   generateQuestion,
   questionSignature,
   recordLessonResult,
@@ -46,7 +47,7 @@ function answerGridClass(count: number): string {
 
 function IntervalSingle({ question }: { question: Question }) {
   return (
-    <div className="flex w-full max-w-[30rem] flex-col items-center gap-1">
+    <div className="flex w-full max-w-[46rem] flex-col items-center gap-1">
       <span className="text-base font-medium text-muted-foreground">{question.tones.name}</span>
       <RevealStaff>
         <NotesReveal
@@ -60,7 +61,7 @@ function IntervalSingle({ question }: { question: Question }) {
 }
 
 const REVEAL_PLACEHOLDER = (
-  <div className="flex w-full max-w-[30rem] flex-col items-center gap-1">
+  <div className="flex w-full max-w-[46rem] flex-col items-center gap-1">
     <span className="min-h-6" />
     <RevealStaff className="rounded-md bg-muted" />
   </div>
@@ -112,6 +113,7 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
   return (
     <LessonRunner<Question, IntervalId, IdentificationOptions>
       options={options}
+      exerciseTitle={EXERCISE_TITLE}
       title={title}
       lessonId={lessonId}
       onBack={onBack}

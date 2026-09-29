@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
+  EXERCISE_TITLE,
   MODULES,
   OVERVIEW_HELP,
   lessonsForModule,
@@ -17,7 +18,7 @@ export const Route = createFileRoute('/exercises/interval-comparison/')({
 function IntervalComparisonWorkshop() {
   return (
     <WorkshopPage
-      title="Interval Comparison"
+      title={EXERCISE_TITLE}
       blurb="Which interval is larger, or are they the same? No theory needed — the recommended first exercise."
       overview={OVERVIEW_HELP}
       modules={MODULES}

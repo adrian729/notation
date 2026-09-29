@@ -1,0 +1,139 @@
+# Polyhymnia — design system
+
+Binding contract for every UI change in `apps/app`. Read before writing or editing any component, page, layout or style. If a request conflicts with this document, name the conflict before writing code rather than improvising.
+
+## Design latitude
+
+This document fixes the **system**. It does not fix the **composition**. Two things must be decided by a person or an agent with taste, and delegating them is the point:
+
+- **Structure** — how the home page is built: a list or a grid, the grid geometry, where mass sits, how a promoted entry differs from the rest, the order things appear in, the density.
+- **Ornament** — whether the manuscript idiom is carried by hairline rules, corner brackets, marginalia, rotated labels, a colophon, a folio number, or nothing. Which steps of the type scale go where. How the grain is used: strength, whether it sits over cards as well as the page, whether anything masks it.
+
+These are not constrained by this document, and an implementer who asks for permission to make them has misunderstood it. Everything below — fonts, scales, colour roles, radius, shadows, motion, forbidden patterns — **is** binding.
+
+## Archetype
+
+**Atelier / conservatory manuscript.** Printed matter that someone set by hand: warm paper, iron-gall ink, hairline rules, generous margins, no gloss. It should feel like a well-made edition of a graded exercise book — not like SaaS.
+
+The failure mode this document exists to prevent: a centered logo, a row of identical cards, purple-to-blue gradients, `rounded-2xl` on everything, and a drop shadow under each surface. That is the statistical average of the training data, and it reads as machine-made.
+
+## Typography
+
+Three families, three roles, no overlap. All from `@fontsource-variable`, self-hosted — no Google Fonts CDN.
+
+| Role | Family | Token | Used for |
+| --- | --- | --- | --- |
+| Display | Fraunces Variable | `--font-display` | Wordmark, `h1`–`h3`, exercise titles, hero numerals. Variable `opsz` + `SOFT`/`WONK` axes — use `WONK 1` on display sizes for the hand-set irregularity. |
+| Text | Newsreader Variable | `--font-text` | All prose, body copy, UI labels, buttons, inputs, list rows. Designed for screen reading; readable at 14px. |
+| Data | JetBrains Mono Variable | `--font-mono` | Anything numeric that must align or be compared: interval names and semitone counts, cents, Hz, tempo, timers, counts, version stamps. Tabular figures on. |
+
+`--font-heading` must resolve to Fraunces. It currently aliases `--font-sans`, which makes every heading the same typeface as body copy and is the single largest cause of the app looking undesigned.
+
+**Type scale** — six steps, no others. Sizes outside this list are a violation.
+
+| Token | Size | Line height | Tracking | Role |
+| --- | --- | --- | --- | --- |
+| `--text-display` | 3.5rem | 1.05 | −0.02em | Wordmark only |
+| `--text-title` | 2rem | 1.15 | −0.015em | `h1` |
+| `--text-heading` | 1.3125rem | 1.3 | −0.01em | `h2`, exercise titles |
+| `--text-subhead` | 1.0625rem | 1.4 | 0 | `h3`, card titles |
+| `--text-body` | 1rem | 1.6 | 0 | Prose, list rows |
+| `--text-meta` | 0.8125rem | 1.4 | 0.02em | Labels, captions, small print — uppercase only for section labels |
+
+Weights: 400 and 600 for text; 400/600/700 for display. No 500, no 800, no 900.
+
+**Measure.** Prose columns are `max-width: 64ch`. Never center body copy longer than two lines. Left-align prose; reserve centering for the wordmark block alone.
+
+## Color
+
+**Lineage:** Catppuccin Latte, warmed. Catppuccin Latte neutrals sit at hue 264 (cool, faintly blue). Shift the neutral family to hue ~70 (warm paper) and keep chroma low. The result should read as cream laid paper, never as tinted grey.
+
+**Two accents, with strictly separate semantic roles. There is no third.**
+
+| Role | Token | Value | Exclusive use |
+| --- | --- | --- | --- |
+| **Action pink** | `--primary` / `--primary-strong` | Catppuccin Latte pink, kept | Primary action fills, links, focus rings, active nav. Nothing else. |
+| **Notation oxblood** | `--pn-selected` / `--pn-playing` / `--pn-cursor` | Dark warm red | The sounding, selected or playing pitch on a staff. UI chrome only. |
+| Semantic | `--success` / `--destructive` | green / red, warmed to match | Answer correctness. Never decoration. |
+
+The split is deliberate and domain-justified: a playing note must not look like a button, and a button must not look like a note. They never appear in the same role, and each is used in exactly one.
+
+**`--primary` is a fill.** Text, links, rings and notation highlights use `--primary-strong`. This existing rule is retained.
+
+**Notation engraving** (`--pn-ink`, `--pn-staff`, `--pn-focus`, `--pn-selected`, `--pn-playing`, `--pn-cursor`, `--pn-label-ink`) must hold **≥ 4.5:1** against `--background` in both themes. Staff lines are decorative but note heads and labels are not; verify, do not assume. These tokens override values in `packages/notation-react/styles/notation.css`, which supply their own fallbacks — retuning the values here is safe and does not require touching that package.
+
+## Shape and depth
+
+- **One radius: 4px.** Exposed as `--radius`. One larger radius, 10px, is reserved for the two promoted exercise tiles on the home page and nothing else.
+- **No drop shadows anywhere.** No `shadow-*`, no `box-shadow`, no `drop-shadow`. Paper does not float. Depth is expressed with 1px hairlines tinted toward the ink colour (`--border`), and with surface tint steps.
+- Surface hierarchy comes from tint, not elevation: `--background` → `--surface-raised` → `--surface-sunken`, each a small step in warmth.
+- Borders are hairlines at 1px, and at 2px only for a selected or focused state.
+
+## Texture
+
+A very low opacity paper grain on `body`, from a single inline SVG `feTurbulence` filter, plus a faint warm vignette. Opacity between 0.015 and 0.04 — it must be felt, not seen. This is the hand-made signature of the system; it is what separates this from a clean vector UI. It must not scroll independently of content, and must not intercept pointer events.
+
+## Motion
+
+Named tokens only:
+
+```
+--motion-fast: 120ms   hover, focus, press
+--motion-base: 200ms   state change, disclosure
+--motion-slow: 320ms   page entry
+--ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1)
+```
+
+Transform and opacity only. No bounce, no spring, no scale-pop, no fade-up-on-scroll, no `transition-all` — always name the properties. Motion is slow and few, matching paper: it settles, it does not perform.
+
+## Layout
+
+- **Home page is an index, not a card grid.** A left-weighted wordmark block, then the exercises as a titled list separated by hairline rules — a table of contents. Exercise entries are `max-width: 64ch`, left-aligned, each with title (display face), one line of description, and its entry affordance.
+- **The recommended first exercise is visually distinct** — marked in the rule, not merely described in copy. The current home page says Interval Comparison is recommended while rendering it identically to the other three.
+- No 3-equal-column card grids. Where a grid is genuinely needed, use asymmetric 60/40 or 70/30 splits.
+- Vertical rhythm comes from `--space-*` tokens. No ad hoc `py-24` / `gap-12`.
+
+## Spacing scale
+
+Four steps, multiples of 4. Nothing else.
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--space-tight` | 0.5rem | Within a group, label to value |
+| `--space-base` | 1rem | Between related blocks |
+| `--space-loose` | 2rem | Between groups |
+| `--space-section` | 4rem | Between page sections |
+
+## Copy
+
+- Skeptical, precise, technical. This is an instrument, and it respects the person holding it.
+- No `empower`, `leverage`, `seamless`, `robust`, `harness`, `delve`, `revolutionize`, or "in today's fast-paced".
+- No fabricated testimonials, logos, metrics, customer counts, or streak claims. This is a single-developer tool; inventing social proof is the fastest way to make it feel cheap.
+- Button labels are specific. "Start training" repeated four times is not a label, it is a default.
+
+## Forbidden
+
+Mechanical. A change touching any of these is not done.
+
+- Any raw palette class in app code: no `text-teal-800`, no `bg-neutral-100`, no `text-pink-600`. Semantic tokens and `--pn-*` only. *(This rule already exists in `AGENTS.md`; the home page currently violates it.)*
+- Inter or Geist anywhere. No new font families beyond the three above.
+- Any drop shadow, any `shadow-*` utility.
+- `rounded-2xl`, `rounded-3xl`, `rounded-4xl`, or any radius outside the two named above.
+- `transition-all`.
+- A 3-equal-card grid, a centered logo hero with a floating screenshot, a gradient mesh or blob behind text, emoji used as icons, or a "Trusted by" logo row.
+- Any type size not in the scale table. Any spacing value not in the spacing table.
+- A fourth accent hue, for any reason.
+
+## Definition of done
+
+1. `pnpm --filter @polyhymnia/app typecheck` passes.
+2. `pnpm --filter @polyhymnia/app test` passes.
+3. Every changed file uses semantic tokens only — grep the diff for `text-(teal|pink|blue|neutral|red|green|peach|yellow|lavender|mauve|white|black)-`, `bg-` equivalents, `#`, and `rgb(`.
+4. Every interactive element has hover, focus-visible, active and disabled states.
+5. Focus rings are visible and meet WCAG 2.2 AA.
+6. Both light and dark themes reviewed at 390px, 768px and 1440px.
+7. All `--pn-*` tokens verified ≥ 4.5:1 on `--background` in both themes.
+
+## Scope boundary
+
+This document governs appearance only. Interaction, hit-testing, audio, playback and quiz logic are correct as they stand and must not change. Component props, exported names, event handlers and data flow are fixed. Where this document and a functional requirement appear to conflict, the functional requirement wins and this document should be amended — not the other way round.

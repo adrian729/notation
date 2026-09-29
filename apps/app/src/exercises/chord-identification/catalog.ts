@@ -6,6 +6,8 @@ import { CHORD_SETS, type ChordSetId } from './sets.js';
 
 export type LessonPlayback = 'asc' | 'desc' | 'harmonic' | 'mixed';
 
+export const EXERCISE_TITLE = 'Chord Identification';
+
 export const TASK_HELP = 'You hear one chord in root position. Choose its quality.';
 
 export const LESSON_PLAYBACK_ORDER: readonly LessonPlayback[] = ['asc', 'desc', 'harmonic', 'mixed'];

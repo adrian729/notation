@@ -1,9 +1,16 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
-@import '@fontsource-variable/geist';
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/newsreader';
+@import '@fontsource-variable/eb-garamond';
+@import '@fontsource-variable/jetbrains-mono';
 @import './styles/palette.css';
 @import './styles/theme.css';
+@import './styles/paper.css';
+
+@source '../index.html';
+@source './**/*.{ts,tsx}';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -13,9 +20,54 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-variant-ligatures: common-ligatures;
+    text-rendering: optimizeLegibility;
   }
   html {
-    @apply font-sans;
+    @apply font-sans antialiased;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Scrollbars are drawn as a thin ink rule in the margin, so a system-coloured
+   track never cuts a rectangle out of the paper. Deriving them from
+   --foreground keeps the ink correct in both schemes. */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--foreground) 30%, transparent) transparent;
+  }
+
+  :root {
+    scrollbar-gutter: stable;
+  }
+
+  *::-webkit-scrollbar {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner {
+    background-color: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 4px solid transparent;
+    border-radius: 999px;
+    background-color: color-mix(in oklab, var(--foreground) 30%, transparent);
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklab, var(--foreground) 55%, transparent);
   }
 }
 

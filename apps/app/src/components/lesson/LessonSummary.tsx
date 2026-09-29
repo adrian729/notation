@@ -3,8 +3,10 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { passedLesson, scoreOf, type AnsweredQuestion, type LessonFlowState } from '@/exercises/shared';
 import { LazyReveal } from './LazyReveal';
+import { ExerciseMasthead } from './ExerciseMasthead';
 
 export interface LessonSummaryProps<Q, A> {
+  exerciseTitle: string;
   title: string;
   flow: LessonFlowState<Q, A>;
   onBack: () => void;
@@ -17,6 +19,7 @@ export interface LessonSummaryProps<Q, A> {
 }
 
 export function LessonSummary<Q, A>({
+  exerciseTitle,
   title,
   flow,
   onBack,
@@ -30,8 +33,14 @@ export function LessonSummary<Q, A>({
   const percent = Math.round(scoreOf(flow.answered) * 100);
   const passed = passedLesson(flow);
   return (
-    <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 px-4 py-16 text-center">
-      <h2 className="text-2xl font-semibold">{title} — done</h2>
+    <div className="page-column mx-auto flex w-full max-w-4xl flex-col items-center gap-loose px-base py-section text-center">
+      <nav aria-label="Breadcrumb" className="self-start">
+        <ExerciseMasthead />
+      </nav>
+      <div className="flex flex-col gap-tight">
+        <p className="rubricated text-meta text-rubric-strong">{exerciseTitle}</p>
+        <h2 className="text-2xl font-semibold">{title} — done</h2>
+      </div>
       <p className="text-lg">
         Score: <span className="font-semibold">{percent}%</span>
         {flow.graded && (

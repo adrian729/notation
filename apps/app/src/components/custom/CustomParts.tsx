@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Check, CircleHelp, Infinity, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -34,14 +33,14 @@ export function Section({
   children: ReactNode;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-        {action && <CardAction>{action}</CardAction>}
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">{children}</CardContent>
-    </Card>
+    <section className="flex flex-col gap-base">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-base gap-y-tight border-b border-border pb-tight">
+        <h2 className="font-display text-subhead">{title}</h2>
+        {action}
+      </div>
+      <p className="-mt-2 max-w-[64ch] text-body text-muted-foreground">{description}</p>
+      <div className="flex flex-col gap-4">{children}</div>
+    </section>
   );
 }
 

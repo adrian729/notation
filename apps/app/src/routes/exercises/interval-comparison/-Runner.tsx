@@ -7,6 +7,7 @@ import type { AnsweredQuestion, Tempo } from '@/exercises/shared';
 import {
   buildQuestionEvents,
   choiceEvents,
+  EXERCISE_TITLE,
   generateQuestion,
   questionSignature,
   recordLessonResult,
@@ -40,21 +41,24 @@ const ANSWER_KEYS: Record<string, Answer> = { a: 'A', b: 'B', s: 'same' };
 
 function IntervalPair({ question }: { question: Question }) {
   return (
-    <div className="flex w-full flex-col items-center gap-4">
+    <div className="flex w-full flex-col divide-y divide-border border-y border-border">
       {(['a', 'b'] as const).map((key) => {
         const tone = question[key];
         return (
-          <div key={key} className="flex w-full max-w-[30rem] flex-col items-center gap-1">
-            <span className="text-base font-medium text-muted-foreground">
-              {key.toUpperCase()} — {tone.name}
+          <div key={key} className="flex w-full items-baseline gap-base py-tight">
+            <span aria-hidden="true" className="shrink-0 font-display text-heading">
+              {key.toUpperCase()}
             </span>
-            <RevealStaff>
-              <NotesReveal
-                pitches={[tone.from, tone.to]}
-                clef={question.clef}
-                mode={question.mode === 'harmonic' ? 'harmonic' : 'melodic'}
-              />
-            </RevealStaff>
+            <div className="flex w-full max-w-[46rem] flex-col gap-tight">
+              <span className="rubricated text-meta text-muted-foreground">{tone.name}</span>
+              <RevealStaff>
+                <NotesReveal
+                  pitches={[tone.from, tone.to]}
+                  clef={question.clef}
+                  mode={question.mode === 'harmonic' ? 'harmonic' : 'melodic'}
+                />
+              </RevealStaff>
+            </div>
           </div>
         );
       })}
@@ -63,14 +67,17 @@ function IntervalPair({ question }: { question: Question }) {
 }
 
 const REVEAL_PLACEHOLDER = (
-  <>
-    {[0, 1].map((i) => (
-      <div key={i} className="flex w-full max-w-[30rem] flex-col items-center gap-1">
-        <span className="min-h-6" />
-        <RevealStaff className="rounded-md bg-muted" />
+  <div aria-hidden="true" className="flex w-full flex-col divide-y divide-border border-y border-border">
+    {(['A', 'B'] as const).map((letter) => (
+      <div key={letter} className="flex w-full items-baseline gap-base py-tight">
+        <span className="shrink-0 font-display text-heading text-transparent">{letter}</span>
+        <div className="flex w-full max-w-[46rem] flex-col gap-tight">
+          <span className="rubricated text-meta text-transparent">Placeholder</span>
+          <RevealStaff className="rounded-lg border border-border bg-surface-sunken" />
+        </div>
       </div>
     ))}
-  </>
+  </div>
 );
 
 const HEAR_LABEL: Record<Answer, string> = { A: 'Hear A', B: 'Hear B', same: 'Hear both' };
@@ -86,7 +93,7 @@ function AnswerGrid({
 }: AnswerRenderProps<Question, Answer> & { tempo: Tempo }) {
   const correct = question.correct;
   return (
-    <div className="mx-auto w-full max-w-lg grid grid-cols-3 gap-3 sm:gap-4">
+    <div className="mx-auto grid w-full max-w-xl grid-cols-3 items-stretch gap-base">
       {(['A', 'same', 'B'] as const).map((choice) => (
         <button
           key={choice}
@@ -95,12 +102,19 @@ function AnswerGrid({
           aria-label={answered ? HEAR_LABEL[choice] : undefined}
           onClick={() => (answered ? hear(choiceEvents(question, choice, tempo)) : answer(choice))}
           className={cn(
-            'flex h-24 items-center justify-center rounded-xl border-2 font-bold',
-            choice === 'same' ? 'text-xl' : 'text-3xl',
+            'flex min-h-40 flex-col items-center justify-center gap-tight rounded-lg border bg-card px-tight py-base outline-none transition-colors duration-fast ease-out-quart disabled:cursor-not-allowed',
             answerTileClass(answerTileState(choice, correct, selected, answered)),
+            answered && (choice === correct || choice === selected) ? 'border-2' : 'border',
           )}
         >
-          {choice === 'same' ? 'Same' : choice}
+          <span
+            className={cn('font-specimen leading-none', choice === 'same' ? 'text-title' : 'text-display')}
+          >
+            {choice === 'same' ? 'Same' : choice}
+          </span>
+          {!answered && (
+            <span className="rubricated text-meta text-rubric-strong">key {choice === 'same' ? 'S' : choice}</span>
+          )}
         </button>
       ))}
     </div>
@@ -111,6 +125,7 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
   return (
     <LessonRunner<Question, Answer, ExerciseOptions>
       options={options}
+      exerciseTitle={EXERCISE_TITLE}
       title={title}
       lessonId={lessonId}
       onBack={onBack}

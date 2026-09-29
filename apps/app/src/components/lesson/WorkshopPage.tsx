@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import { Link, type LinkProps } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
+import { InstrumentSelect } from '@/components/custom/InstrumentSelect';
 import type { HelpSection, LessonResult, OverviewSection } from '@/exercises/shared';
+import { WorkshopAside } from './WorkshopAside';
 import { LessonLinkTile, ModuleCard, OverviewHelpPopover } from './LessonListParts';
 
 export function WorkshopPage({
@@ -24,30 +26,37 @@ export function WorkshopPage({
   headerAction?: ReactNode;
 }) {
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-1">
-          <h1 className="text-2xl font-semibold">{title}</h1>
-          <OverviewHelpPopover ariaLabel={`About ${title}`} sections={overview} />
+    <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-section px-base py-loose lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <WorkshopAside modules={modules} />
+
+      <div className="page-column mx-auto flex w-full max-w-3xl flex-col gap-loose">
+        <div className="flex flex-col gap-tight">
+          <div className="flex flex-wrap items-center justify-between gap-base">
+            <div className="flex min-w-0 items-center gap-1">
+              <h1 className="font-display text-title">{title}</h1>
+              <OverviewHelpPopover ariaLabel={`About ${title}`} sections={overview} />
+            </div>
+            <InstrumentSelect />
+          </div>
+          <p className="max-w-[64ch] text-body text-muted-foreground">{blurb}</p>
         </div>
-        <p className="text-muted-foreground">{blurb}</p>
-      </div>
 
-      {headerAction}
+        {headerAction}
 
-      <div className="flex flex-col gap-4">
-        {modules.map((mod) => (
-          <ModuleCard key={mod.id} title={mod.title} help={mod.help}>
-            {lessonsForModule(mod.id).map((lesson) => (
-              <LessonLinkTile
-                key={lesson.id}
-                title={lesson.title}
-                result={getLessonResult(lesson.id)}
-                render={(className, children) => renderLessonLink(lesson.id, className, children)}
-              />
-            ))}
-          </ModuleCard>
-        ))}
+        <div className="flex flex-col gap-base">
+          {modules.map((mod) => (
+            <ModuleCard key={mod.id} id={mod.id} title={mod.title} help={mod.help}>
+              {lessonsForModule(mod.id).map((lesson) => (
+                <LessonLinkTile
+                  key={lesson.id}
+                  title={lesson.title}
+                  result={getLessonResult(lesson.id)}
+                  render={(className, children) => renderLessonLink(lesson.id, className, children)}
+                />
+              ))}
+            </ModuleCard>
+          ))}
+        </div>
       </div>
     </div>
   );

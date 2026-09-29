@@ -4,6 +4,7 @@ import { LessonRunner } from '@/components/lesson/LessonRunner';
 import { writtenIntervalName, type AnsweredQuestion, type IntervalId } from '@/exercises/shared';
 import {
   buildQuestionEvents,
+  EXERCISE_TITLE,
   generateQuestion,
   questionSignature,
   recordLessonResult,
@@ -60,6 +61,7 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
   return (
     <LessonRunner<Question, Answer, MultiIntervalOptions>
       options={options}
+      exerciseTitle={EXERCISE_TITLE}
       title={title}
       lessonId={lessonId}
       onBack={onBack}

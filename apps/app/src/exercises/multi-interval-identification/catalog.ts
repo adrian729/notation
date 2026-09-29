@@ -11,6 +11,8 @@ import type { MultiIntervalOptions, MultiPlayingMode } from './options.js';
 import { rangeForIntervals } from '../shared/intervals.js';
 import { SETS, type SetId } from './sets.js';
 
+export const EXERCISE_TITLE = 'Multi-Note Interval Identification';
+
 export const TASK_HELP = "You hear several notes. Name each note's interval above the lowest note.";
 
 export const MODE_HELP: Record<LessonMode, string> = {

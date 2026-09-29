@@ -16,6 +16,7 @@ import {
   type LessonFlowState,
 } from '@/exercises/shared';
 import { LessonSummary } from './LessonSummary';
+import { ExerciseMasthead } from './ExerciseMasthead';
 
 interface RunnerOptions {
   questionCount: number | 'endless';
@@ -33,6 +34,7 @@ export interface AnswerRenderProps<Q, A> {
 
 export interface LessonRunnerProps<Q, A, O extends RunnerOptions> {
   options: O;
+  exerciseTitle: string;
   title: string;
   lessonId?: string;
   onBack: () => void;
@@ -119,6 +121,7 @@ function makeReducer<Q, A, O extends RunnerOptions>(
 
 export function LessonRunner<Q, A, O extends RunnerOptions>({
   options,
+  exerciseTitle,
   title,
   lessonId,
   onBack,
@@ -285,6 +288,10 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
   if (state.phase === 'error') {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-16 text-center">
+        <nav aria-label="Breadcrumb" className="self-start">
+          <ExerciseMasthead />
+        </nav>
+        <p className="rubricated text-meta text-rubric-strong">{exerciseTitle}</p>
         <p className="text-base font-medium" role="status">
           Couldn&apos;t create a question.
         </p>
@@ -303,6 +310,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
   if (state.phase === 'summary') {
     return (
       <LessonSummary
+        exerciseTitle={exerciseTitle}
         title={title}
         flow={state.flow}
         onBack={onBack}
@@ -320,29 +328,43 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8">
-      <div className="flex items-center justify-between gap-2">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          Back
-        </Button>
-        <h2 className="text-lg font-medium">{title}</h2>
-        {state.flow.endless ? (
-          <Button variant="ghost" size="sm" onClick={() => dispatch({ type: 'finish' })}>
-            Finish
+    <div className="page-column mx-auto flex w-full max-w-4xl flex-col gap-loose px-base py-loose">
+      <nav aria-label="Breadcrumb">
+        <ExerciseMasthead />
+      </nav>
+
+      <header className="flex flex-col gap-tight border-b border-border pb-base">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-base">
+          <Button variant="ghost" size="sm" onClick={onBack} className="rubricated justify-self-start text-subhead">
+            Back
           </Button>
-        ) : (
-          <div className="w-12" />
-        )}
-      </div>
+          <div className="flex flex-col items-center gap-tight text-center">
+            <p className="rubricated text-meta text-rubric-strong">{exerciseTitle}</p>
+            <h2 className="rubricated text-subhead text-foreground">{title}</h2>
+          </div>
+          {state.flow.endless ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => dispatch({ type: 'finish' })}
+              className="rubricated justify-self-end text-subhead"
+            >
+              Finish
+            </Button>
+          ) : (
+            <div />
+          )}
+        </div>
+      </header>
 
       {!state.flow.endless && (
-        <div className="flex gap-1">
+        <div className="flex gap-[3px]" aria-hidden>
           {segments.map((seg, i) => (
             <div
               key={i}
               className={cn(
-                'h-2 flex-1 rounded-full',
-                seg === 'upcoming' && 'bg-muted',
+                'h-[3px] flex-1 transition-colors duration-fast',
+                seg === 'upcoming' && 'bg-border',
                 seg === 'right' && 'bg-success',
                 seg === 'wrong' && 'bg-destructive',
                 state.phase === 'playing' && i === state.flow.answered.length && 'bg-primary',
@@ -352,7 +374,13 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
         </div>
       )}
 
-      <p className="text-center text-base font-medium" role="status">
+      <p
+        className={cn(
+          'mx-auto max-w-[46ch] text-center font-display text-subhead',
+          answeredYet && lastAnswered ? 'text-foreground' : 'text-muted-foreground',
+        )}
+        role="status"
+      >
         {answeredYet && lastAnswered ? verdict(lastAnswered) : prompt}
       </p>
 
@@ -373,19 +401,19 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
         })}
       </Fragment>
 
-      <div className="flex justify-center gap-3">
-        <Button ref={playButtonRef} variant="outline" onClick={replay}>
+      <div className="flex flex-wrap items-center justify-center gap-base">
+        <Button ref={playButtonRef} variant="outline" onClick={replay} className="rubricated text-subhead">
           Play question
         </Button>
         {answeredYet && (
-          <Button ref={newQuestionRef} onClick={goNext}>
+          <Button ref={newQuestionRef} onClick={goNext} className="rubricated text-subhead">
             Next question
           </Button>
         )}
         {autoNextArmed && (
           <Button
             variant="outline"
-            className="relative overflow-hidden"
+            className="rubricated relative overflow-hidden text-subhead"
             aria-label="Stay on this question"
             onClick={() => setAutoPaused(true)}
           >

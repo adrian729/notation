@@ -19,6 +19,8 @@ import {
 import { createCatalog } from '../shared/catalog.js';
 import type { IdentificationOptions } from './options.js';
 
+export const EXERCISE_TITLE = 'Interval Identification';
+
 export const TASK_HELP = 'You hear one interval. Choose its name.';
 
 export interface ModuleDef {

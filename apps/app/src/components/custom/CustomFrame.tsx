@@ -2,6 +2,7 @@ import { Link, type LinkProps } from '@tanstack/react-router';
 import { useState, type ReactNode } from 'react';
 import { ArrowLeft, Play, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ExerciseMasthead } from '@/components/lesson/ExerciseMasthead';
 
 const TITLE = 'Custom exercise';
 
@@ -34,6 +35,9 @@ export function CustomFrame({ lessonsTo, help, summary, errors, onReset, runner,
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 pt-8">
       <div className="flex flex-col gap-3">
+        <nav aria-label="Breadcrumb">
+          <ExerciseMasthead />
+        </nav>
         <div className="-ml-2.5 flex items-center justify-between gap-3">
           <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
             <Link to={lessonsTo}>

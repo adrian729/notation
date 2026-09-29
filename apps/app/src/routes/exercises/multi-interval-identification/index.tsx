@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
+  EXERCISE_TITLE,
   MODULES,
   OVERVIEW_HELP,
   lessonsForModule,
@@ -17,7 +18,7 @@ export const Route = createFileRoute('/exercises/multi-interval-identification/'
 function MultiIntervalWorkshop() {
   return (
     <WorkshopPage
-      title="Multi-Note Interval Identification"
+      title={EXERCISE_TITLE}
       blurb="Hear a stack of notes and name every note's interval above the lowest."
       overview={OVERVIEW_HELP}
       modules={MODULES}

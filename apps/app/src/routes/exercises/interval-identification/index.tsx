@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
+  EXERCISE_TITLE,
   MODULES,
   OVERVIEW_HELP,
   lessonsForModule,
@@ -17,7 +18,7 @@ export const Route = createFileRoute('/exercises/interval-identification/')({
 function IntervalIdentificationWorkshop() {
   return (
     <WorkshopPage
-      title="Interval Identification"
+      title={EXERCISE_TITLE}
       blurb="Hear one interval and name it."
       overview={OVERVIEW_HELP}
       modules={MODULES}

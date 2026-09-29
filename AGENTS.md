@@ -9,7 +9,7 @@
 # App
 - `apps/app` (`@polyhymnia/app`) is the ear-training product SPA: Vite + React 19 + TypeScript, Tailwind CSS v4 (`@tailwindcss/vite`, CSS-first, no `tailwind.config.js`), shadcn/ui, TanStack Router (file-based, `routeTree.gen.ts` committed).
 - shadcn components live in `apps/app/src/components/ui`, generated via the shadcn CLI (`--cwd apps/app`), not hand-written.
-- Class merging uses the npm `cn` package (`src/lib/utils.ts` = `export { cn } from "cn"`), never `clsx`/`tailwind-merge`.
+- Class merging uses the npm `cn` package, never `clsx`/`tailwind-merge`. `src/lib/utils.ts` builds one configured `cn` via `createCn` from `cn/config`, extending `theme.text` with the semantic type scale; import `cn` from `@/lib/utils` everywhere, never straight from `"cn"`. Without that config `cn` reads custom `text-*` size tokens (`text-meta`, `text-title`, …) as text *colors* and silently deletes a co-occurring `text-*-foreground`, so `cn`'s type scale must stay in sync with the `--text-*` tokens in `styles/theme.css` (`test/cn-type-scale.test.ts` guards this).
 - Colors: Catppuccin (Latte light, Mocha dark), primary = pink. `primary` is for fills (exact Latte/Mocha pink); pink text, links, rings and notation highlights use `primary-strong` (AA-safe on light backgrounds). Scales in `apps/app/src/styles/palette.css`, semantic shadcn tokens + notation `--pn-*` mapping in `apps/app/src/styles/theme.css`. Use semantic tokens or palette scales, never raw color values. Never pure black or white (`white`/`black` are remapped to Latte base / Mocha crust).
 - `apps/web` (`@polyhymnia/web`) is the notation demo/playground, not the product app.
 

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { CircleCheck, CircleHelp } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
@@ -66,24 +65,24 @@ export function ModuleHelpPopover({ ariaLabel, help }: { ariaLabel: string; help
 }
 
 export function ModuleCard({
+  id,
   title,
   help,
   children,
 }: {
+  id: string;
   title: string;
   help: readonly HelpSection[];
   children: ReactNode;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-1">
-          <CardTitle>{title}</CardTitle>
-          <ModuleHelpPopover ariaLabel={`About ${title}`} help={help} />
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-wrap gap-2">{children}</CardContent>
-    </Card>
+    <section id={id} className="flex scroll-mt-base flex-col gap-base border-t border-border pt-base">
+      <div className="flex items-center gap-1">
+        <h2 className="rubricated text-subhead text-rubric-strong">{title}</h2>
+        <ModuleHelpPopover ariaLabel={`About ${title}`} help={help} />
+      </div>
+      <div className="flex flex-col">{children}</div>
+    </section>
   );
 }
 
@@ -97,8 +96,8 @@ export function LessonLinkTile({
   render: (className: string, children: ReactNode) => ReactNode;
 }) {
   const className = cn(
-    'flex flex-col items-start gap-1 rounded-lg border px-3 py-2 text-sm',
-    result?.passed ? 'border-success bg-success/25 hover:bg-success/40' : 'hover:bg-muted',
+    'flex flex-col items-start gap-0.5 border-b pb-1.5 text-sm transition-colors hover:text-primary-strong',
+    result?.passed ? 'border-success/60' : 'border-border/70 hover:border-rubric',
   );
   const children = (
     <>
