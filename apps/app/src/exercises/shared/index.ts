@@ -9,3 +9,4 @@ export * from './catalog.js';
 export * from './families.js';
 export * from './customSearch.js';
 export * from './session.js';
+export * from './range.js';

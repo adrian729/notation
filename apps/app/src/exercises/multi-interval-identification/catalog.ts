@@ -7,7 +7,7 @@ import {
   type OverviewSection,
 } from '../shared/families.js';
 import { createCatalog } from '../shared/catalog.js';
-import type { MultiIntervalOptions } from './options.js';
+import type { MultiIntervalOptions, MultiPlayingMode } from './options.js';
 import { rangeForIntervals } from '../shared/intervals.js';
 import { SETS, type SetId } from './sets.js';
 
@@ -18,6 +18,16 @@ export const MODE_HELP: Record<LessonMode, string> = {
   desc: 'The highest note is played first and the lowest note last, one after the other.',
   harmonic: 'All the notes are played together, at the same time.',
   mixed: 'Each question is ascending, descending or harmonic, chosen at random.',
+};
+
+export const CUSTOM_MODE_TITLE: Record<MultiPlayingMode, string> = {
+  ...MODE_TITLE,
+  random: 'Random',
+};
+
+export const CUSTOM_MODE_HELP: Record<MultiPlayingMode, string> = {
+  ...MODE_HELP,
+  random: 'The lowest note first, then the others one after another in random order.',
 };
 
 export interface ModuleDef {

@@ -31,7 +31,7 @@ Workshop lessons fix the options; the custom exercise exposes them [ours].
 | --- | --- | --- |
 | Intervals | Lessons: the interval family of the module. Custom: the same interval picker as E1's custom exercise, with individual tiles for all 24 intervals (minor 2nd to double octave), the set chips Perfect, Imperfect consonant, Dissonant and All intervals, the Second octave chip and the Full names / Short toggle. Pick at least two. Default: all 12 simple intervals | EM (lessons), ours (custom) |
 | Playing mode | Lessons: asc, desc, harmonic, or mixed (random among all three, per question). Custom: tick any of ascending, descending, harmonic; each question picks one of the ticked | EM |
-| Range | C3–C6 when every ticked interval is up to an octave, G2–C6 as soon as one is larger (lessons: simple families and compound follow the same rule) | ours (replaces EarMaster's keys and root movement, as in E1) |
+| Range | Lessons: C3–C6 for simple families, G2–C6 for compound. Custom: lowest and highest tone any question may use, as in E1 (default C3–C6 for the default intervals); the range must be wider than the largest ticked interval | ours (replaces EarMaster's keys and root movement, as in E1) |
 | Tempo | Lessons: Medium (0.7 s note length). Custom: slow, medium, fast (1.0 s, 0.7 s, 0.45 s) | ours |
 | Questions | Lessons: 10. Custom: same control as E1 | ours |
 | Auto new question | Lessons: on, after a correct answer (1.5 s, **Stay** button cancels it, same mechanism as E1). Custom: off by default | EM F12, Stay ours |

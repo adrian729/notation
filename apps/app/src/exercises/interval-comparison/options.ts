@@ -1,5 +1,5 @@
 import { INTERVAL_FAMILIES, type IntervalId } from '../shared/intervals.js';
-import { tokenMidi } from '../shared/spelling.js';
+import { validateRange } from '../shared/range.js';
 import type { PlayingMode, RangeOption } from '../shared/playing.js';
 import {
   DEFAULT_SESSION,
@@ -40,18 +40,7 @@ export function validateOptions(options: Partial<ExerciseOptions>) {
     errors.push('Select a tone relationship.');
   }
   errors.push(...validateSession(options));
-  const range = options.range;
-  if (!range || !range.low || !range.high) {
-    errors.push('Select a range.');
-  } else {
-    const lowMidi = tokenMidi(range.low);
-    const highMidi = tokenMidi(range.high);
-    if (lowMidi === undefined || highMidi === undefined) {
-      errors.push('Enter a valid range.');
-    } else if (lowMidi >= highMidi) {
-      errors.push('The low end of the range must be lower than the high end.');
-    }
-  }
+  errors.push(...validateRange(options.range));
   return validationResult(errors);
 }
 

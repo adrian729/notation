@@ -55,7 +55,7 @@ const CASES: { label: string; options: MultiIntervalOptions }[] = [
       intervals: setById('all').intervals,
       range: rangeForIntervals(setById('all').intervals),
       noteCounts: [3, 4, 5],
-      playingModes: ['asc', 'desc', 'harmonic'],
+      playingModes: ['asc', 'desc', 'harmonic', 'random'],
     },
   },
 ];
@@ -83,7 +83,11 @@ describe('multi-interval generateQuestion', () => {
           expect(spec.degreeOptions).toContain(letterIndex(row.pitch) - letterIndex(q.reference) + 1);
         });
         const ascending = [q.reference, ...q.rows.map((row) => row.pitch)];
-        expect(q.sounding).toEqual(q.mode === 'desc' ? [...ascending].reverse() : ascending);
+        if (q.mode === 'desc') expect(q.sounding).toEqual([...ascending].reverse());
+        else if (q.mode === 'random') {
+          expect(q.sounding[0]).toBe(q.reference);
+          expect([...q.sounding].sort()).toEqual([...ascending].sort());
+        } else expect(q.sounding).toEqual(ascending);
         expect(Math.min(ref, ...midis)).toBeGreaterThanOrEqual(low);
         expect(Math.max(...midis)).toBeLessThanOrEqual(high);
       }

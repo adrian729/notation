@@ -8,6 +8,7 @@ Implementation: `apps/app/src/exercises/multi-interval-identification/` (pure lo
 
 - Three notes in the lessons; three, four or five in the custom exercise [ours]. The lowest note is the reference; every other note is named by its interval from it [ours].
 - Ascending: the reference first, then the other notes upward. Descending: the top note first, the reference last. Harmonic: all notes together [ours].
+- Random (custom only): the lowest note first, then the other notes one after another in a random order, reshuffled every question; the answer rows stay in pitch order from the lowest note [ours].
 - Mixed: each question is uniformly ascending, descending or harmonic, the same meaning as in E1 and E2 [ours].
 - Melodic: each note lasts one note length (tempo option), no gap between notes [ours, same as E1 and E2].
 - Harmonic: all notes together for two note lengths [ours, same as E1 and E2].
@@ -32,15 +33,15 @@ Implementation: `apps/app/src/exercises/multi-interval-identification/` (pure lo
 
 Workshop lessons fix the options; the custom exercise exposes them [ours].
 
-| Option | Values | Tag |
-| --- | --- | --- |
-| Intervals | Lessons: one of nine sets. Custom: the same interval picker as E1's custom exercise, with individual tiles for all 24 intervals (minor 2nd to double octave), the set chips Perfect, Imperfect consonant, Dissonant and All intervals, the Second octave chip and the Full names / Short toggle. Sets combine: a chip is on when all its intervals are ticked and toggles them together. Pick at least one interval fewer than the largest ticked number of notes (the notes above the lowest are all different). Default: the consonant core | ours |
-| Notes | Lessons: 3. Custom: 3 · 4 · 5, tick one or more; each question picks one of the ticked counts | ours |
-| Playing mode | Lessons: ascending, descending, harmonic or mixed. Custom: any of the same | ours (mixed as under Plays) |
-| Range | C3–C6 when every ticked interval is up to an octave, G2–C6 as soon as one is larger (lessons: sets 1–4 and 5–9 follow the same rule) | ours (replaces EarMaster's keys and root movement, as in E1 and E2) |
-| Tempo | Lessons: Medium (0.7 s note length). Custom: slow, medium, fast (1.0 s, 0.7 s, 0.45 s) | EM (shared tempo option), values ours |
-| Questions | Lessons: 10. Custom: same control as E1 | ours |
-| Auto new question | Lessons: on, after a correct answer (1.5 s, **Stay** cancels it, same mechanism as E1). Custom: off by default | EM F12, Stay ours |
+| Option            | Values                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Tag                                                                 |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Intervals         | Lessons: one of nine sets. Custom: the same interval picker as E1's custom exercise, with individual tiles for all 24 intervals (minor 2nd to double octave), the set chips Perfect, Imperfect consonant, Dissonant and All intervals, the Second octave chip and the Full names / Short toggle. Sets combine: a chip is on when all its intervals are ticked and toggles them together. Pick at least one interval fewer than the largest ticked number of notes (the notes above the lowest are all different). Default: the consonant core | ours                                                                |
+| Notes             | Lessons: 3. Custom: 3 · 4 · 5, tick one or more; each question picks one of the ticked counts                                                                                                                                                                                                                                                                                                                                                                                                                                                 | ours                                                                |
+| Playing mode      | Lessons: ascending, descending, harmonic or mixed. Custom: any of the same, plus Random: the lowest note first, then the others one after another in random order (a fresh shuffle each question); the answer rows stay in pitch order                                                                                                                                                                                                                                                                                                        | ours (mixed as under Plays)                                         |
+| Range             | Lessons: C3–C6 for sets 1–4, G2–C6 for sets 5–9. Custom: lowest and highest tone any question may use, as in E1 (default C3–C6 for the default intervals); the range must be wider than the largest ticked interval, all measured from the lowest note                                                                                                                                                                                                                                                                                                                                                                                                          | ours (replaces EarMaster's keys and root movement, as in E1 and E2) |
+| Tempo             | Lessons: Medium (0.7 s note length). Custom: slow, medium, fast (1.0 s, 0.7 s, 0.45 s)                                                                                                                                                                                                                                                                                                                                                                                                                                                        | EM (shared tempo option), values ours                               |
+| Questions         | Lessons: 10. Custom: same control as E1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | ours                                                                |
+| Auto new question | Lessons: on, after a correct answer (1.5 s, **Stay** cancels it, same mechanism as E1). Custom: off by default                                                                                                                                                                                                                                                                                                                                                                                                                                | EM F12, Stay ours                                                   |
 
 The custom exercise screen explains every option inline, reusing the help text of the lessons. The last-used custom options are remembered in the browser (`localStorage`, key `polyhymnia:e3:customOptions`) and restored next time the page opens with no options chosen yet; a **Reset to defaults** button clears back to the defaults above [ours, same as E1].
 
@@ -69,17 +70,17 @@ The custom exercise screen explains every option inline, reusing the help text o
 
 Workshop: 9 interval sets × 4 modes (ascending, descending, harmonic, mixed) = 36 lessons, plus the custom exercise [ours]. Lesson ids are `${set}-${mode}`; sets are `core`, `sixths`, `sevenths`, `simple`, `core-compound`, `thirteenths`, `fourteenths`, `compound`, `all`.
 
-| # | Set | Intervals | What's new |
-| --- | --- | --- | --- |
-| 1 | Consonant core | m3, M3, P4, P5, P8 | none |
-| 2 | Add the sixths | + m6, M6 | the 6ths |
-| 3 | Add the sevenths | + m7, M7 | the 7ths, so the octave stops being free |
-| 4 | Add the seconds and tritone | + m2, M2, TT | all simple, 12 |
-| 5 | Consonant core, second octave | m10, M10, P11, P12, P15 | set 1 an octave up |
-| 6 | Add the 13ths | + m13, M13 | the 13ths |
-| 7 | Add the 14ths | + m14, M14 | so the compound octave stops being free |
-| 8 | Add the 9ths and the tritone | + m9, M9, A11 | all compound, 12 |
-| 9 | All intervals | 1–8 combined | 24 |
+| #   | Set                           | Intervals               | What's new                               |
+| --- | ----------------------------- | ----------------------- | ---------------------------------------- |
+| 1   | Consonant core                | m3, M3, P4, P5, P8      | none                                     |
+| 2   | Add the sixths                | + m6, M6                | the 6ths                                 |
+| 3   | Add the sevenths              | + m7, M7                | the 7ths, so the octave stops being free |
+| 4   | Add the seconds and tritone   | + m2, M2, TT            | all simple, 12                           |
+| 5   | Consonant core, second octave | m10, M10, P11, P12, P15 | set 1 an octave up                       |
+| 6   | Add the 13ths                 | + m13, M13              | the 13ths                                |
+| 7   | Add the 14ths                 | + m14, M14              | so the compound octave stops being free  |
+| 8   | Add the 9ths and the tritone  | + m9, M9, A11           | all compound, 12                         |
+| 9   | All intervals                 | 1–8 combined            | 24                                       |
 
 - Sets 1–4 and 5–8 are the same ladder twice: first octave, then the same intervals an octave higher. Set 9 is the union and is the only set that mixes simple and compound intervals in one question; its help text says so [ours].
 - Module order is the table order [ours]. The two ladders are not equally hard: a 9th is a compound 2nd, so sets 5–7 are easier than set 4.

@@ -8,8 +8,8 @@ Implementation: `apps/app/src/exercises/chord-identification/` (pure logic, incl
 
 - One chord in root position, close voicing, no doublings; every chord tone is inside C3–C6 [ours; EarMaster offers open and closed voicings, here root position only].
 - Arpeggio: one tone at a time, one note length per tone (tempo option), no gap. Ascending goes from the root up; descending goes from the top tone down to the root. Descending is never an inversion: the root is still the lowest tone [ours].
-- Block: all tones together for two note lengths. A block has no direction [ours].
-- Arpeggio then block: the arpeggio, then one note length of silence, then the block [ours].
+- Harmonic: all tones together for two note lengths. A harmonic execution has no direction [ours].
+- Arpeggio, then harmonic: the arpeggio, then one note length of silence, then all tones together [ours].
 - The question plays automatically when it appears. **Play question** replays it [EM: "Play Question"]. There is no automatic replay after answering [ours].
 
 ## Shows
@@ -18,23 +18,23 @@ Implementation: `apps/app/src/exercises/chord-identification/` (pure logic, incl
 - The answer buttons are disabled until the question has started playing [ours, same as E1–E3].
 - Answer labels give the full name with the symbol smaller, and name the quality only; the root is different every time and gives no clue [ours]. The chords and their labels:
 
-| Chord | Label |
-| --- | --- |
-| maj | Major · maj |
-| min | Minor · min |
-| dim | Diminished · dim |
-| aug | Augmented · aug |
-| sus2 | Suspended 2nd · sus2 |
-| sus4 | Suspended 4th · sus4 |
-| 6 | Major 6th · 6 |
-| m6 | Minor 6th · m6 |
-| 7 | Dominant 7th · 7 |
-| maj7 | Major 7th · maj7 |
-| m7 | Minor 7th · m7 |
-| m(maj7) | Minor-major 7th · m(maj7) |
-| m7♭5 | Half-diminished 7th · m7♭5 |
-| dim7 | Diminished 7th · dim7 |
-| maj7♯5 | Augmented major 7th · maj7♯5 |
+| Chord   | Label                        |
+| ------- | ---------------------------- |
+| maj     | Major · maj                  |
+| min     | Minor · m                    |
+| dim     | Diminished · dim             |
+| aug     | Augmented · aug              |
+| sus2    | Suspended 2nd · sus2         |
+| sus4    | Suspended 4th · sus4         |
+| 6       | Major 6th · 6                |
+| m6      | Minor 6th · m6               |
+| 7       | Dominant 7th · 7             |
+| maj7    | Major 7th · maj7             |
+| m7      | Minor 7th · m7               |
+| m(maj7) | Minor-major 7th · m(maj7)    |
+| m7♭5    | Half-diminished 7th · m7♭5   |
+| dim7    | Diminished 7th · dim7        |
+| maj7♯5  | Augmented major 7th · maj7♯5 |
 
 ## Answer
 
@@ -47,21 +47,21 @@ Implementation: `apps/app/src/exercises/chord-identification/` (pure logic, incl
 
 Workshop lessons fix the options; the custom exercise exposes them [EM: chord-type set, execution, direction].
 
-| Option | Values | Tag |
-| --- | --- | --- |
-| Chords | Lessons: the chord set of the module. Custom: set chips plus individual chord toggles, at least two chords | EM (chord-type set), picker ours |
-| Execution | Lessons: see Levels. Custom: arpeggio · arpeggio then block · block, tick one or more (at least one) | EM (execution setting), values ours |
-| Direction | Custom: ascending · descending, tick one or both. Disabled and ignored when only Block is ticked; at least one required when a non-block execution is ticked | EM (playback variations), rules ours |
-| Range | All chord tones within C3–C6 | ours (replaces EarMaster's keys and root placement) |
-| Tempo | Lessons: Medium (0.7 s note length). Custom: slow, medium, fast (1.0 s, 0.7 s, 0.45 s) | EM (shared tempo option), values ours |
-| Questions | Lessons: 10. Custom: same control as E1 | ours |
-| Auto new question | Lessons: on, after a correct answer (1.5 s, **Stay** cancels it, same mechanism as E1). Custom: off by default | EM F12, Stay ours |
+| Option            | Values                                                                                                                                                                        | Tag                                                 |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Chords            | Lessons: the chord set of the module. Custom: set chips plus individual chord toggles, at least two chords                                                                    | EM (chord-type set), picker ours                    |
+| Execution         | Lessons: see Levels. Custom: arpeggio · arpeggio, then harmonic · harmonic, tick one or more (at least one)                                                                   | EM (execution setting), values ours                 |
+| Direction         | Custom: ascending · descending, tick one or both. Disabled and ignored when only Harmonic is ticked; at least one required when a non-harmonic execution is ticked            | EM (playback variations), rules ours                |
+| Range             | Lessons: all chord tones within C3–C6. Custom: lowest and highest tone any chord tone may use, as in E1 (default C3–C6); the range must be wider than the widest ticked chord | ours (replaces EarMaster's keys and root placement) |
+| Tempo             | Lessons: Medium (0.7 s note length). Custom: slow, medium, fast (1.0 s, 0.7 s, 0.45 s)                                                                                        | EM (shared tempo option), values ours               |
+| Questions         | Lessons: 10. Custom: same control as E1                                                                                                                                       | ours                                                |
+| Auto new question | Lessons: on, after a correct answer (1.5 s, **Stay** cancels it, same mechanism as E1). Custom: off by default                                                                | EM F12, Stay ours                                   |
 
 The custom exercise screen explains every option inline, reusing the help text of the lessons. Chords are picked one by one or with chord sets that add or remove their whole group, so sets combine, like the interval picker of E1. Arpeggio alone exists only in the custom exercise; it is the hardest execution and nothing in the workshop drills it [ours]. The last-used custom options are remembered in the browser (`localStorage`, key `polyhymnia:e4:customOptions`) and restored next time the page opens with no options chosen yet; a **Reset to defaults** button clears back to the defaults above [ours, same as E1].
 
 ## Question choice
 
-- Playback: uniform among the lesson's playbacks; in the random lessons, uniform over arpeggio then block ascending, arpeggio then block descending and block [ours].
+- Playback: uniform among the lesson's playbacks; in the Mixed lessons, uniform over ascending, descending and harmonic [ours].
 - Chord: uniform among the enabled chords [ours].
 - Root: chosen so every chord tone fits C3–C6 [ours].
 - The same chord, root and playback are not asked twice in a row [ours].
@@ -72,7 +72,7 @@ The custom exercise screen explains every option inline, reusing the help text o
 
 - After answering, the chosen button turns green if right or red if wrong; the correct button is always green [EM F16, same visual language as E2].
 - The instruction line says "Correct" or "Wrong" with the chord's full name [ours wording, as E2].
-- Reveal: the chord on a single staff as a block chord, whatever the playback. A caption in the style "C major — C E G" names the chord and its tones; the root is named only here. Captions are HTML, not engine text [ours].
+- Reveal: the chord on a single staff as stacked notes, whatever the playback. A caption in the style "C major — C E G" names the chord and its tones; the root is named only here. Captions are HTML, not engine text [ours].
 - Play question still works after answering. **Next question** (`Enter`) continues [EM behaviour, same as E1–E3].
 - Question score: right or wrong. Lesson score: right answers ÷ questions asked, as a percentage [EM F15].
 - Progress bar and endless-run **Finish** button: same mechanics as E1 [EM F5, ours for Finish].
@@ -80,31 +80,31 @@ The custom exercise screen explains every option inline, reusing the help text o
 
 ## Levels
 
-Workshop: 9 chord sets × 4 playbacks = 36 lessons, plus the custom exercise [ours; EarMaster has 22 General Workshop modules and 22 Jazz lessons, EM S9]. Lesson ids are `${set}-${playback}`; sets are `major-minor`, `dim-aug`, `triads`, `sus-added`, `dom-maj7`, `min-minmaj7`, `half-dim-dim7`, `sevenths`, `all`.
+Workshop: 9 chord sets × 4 playbacks = 36 lessons, plus the custom exercise [ours; EarMaster has 22 General Workshop modules and 22 Jazz lessons, EM S9]. Lesson ids are `${set}-${playback}` with playback `asc`, `desc`, `harmonic` or `mixed`; sets are `major-minor`, `dim-aug`, `triads`, `sus-added`, `dom-maj7`, `min-minmaj7`, `half-dim-dim7`, `sevenths`, `all`.
 
-| Set | Chords |
-| --- | --- |
-| Major and minor triads | maj, min |
-| Diminished and augmented triads | dim, aug |
-| All triads | maj, min, dim, aug |
-| Suspended and added-tone chords | sus2, sus4, 6, m6 |
-| Dominant and major sevenths | 7, maj7 |
-| Minor and minor-major sevenths | m7, m(maj7) |
-| Half-diminished and diminished sevenths | m7♭5, dim7 |
-| All sevenths | 7, maj7, m7, m(maj7), m7♭5, dim7, maj7♯5 |
-| All chords | everything above |
+| Set                                     | Chords                                   |
+| --------------------------------------- | ---------------------------------------- |
+| Major and minor triads                  | maj, min                                 |
+| Diminished and augmented triads         | dim, aug                                 |
+| All triads                              | maj, min, dim, aug                       |
+| Suspended and added-tone chords         | sus2, sus4, 6, m6                        |
+| Dominant and major sevenths             | 7, maj7                                  |
+| Minor and minor-major sevenths          | m7, m(maj7)                              |
+| Half-diminished and diminished sevenths | m7♭5, dim7                               |
+| All sevenths                            | 7, maj7, m7, m(maj7), m7♭5, dim7, maj7♯5 |
+| All chords                              | everything above                         |
 
 Playbacks (four per set):
 
-| Playback | Meaning |
-| --- | --- |
-| Arpeggio, then block, ascending | `arp-block-asc` |
-| Arpeggio, then block, descending | `arp-block-desc` |
-| Block | `block` |
-| Random | uniform over the three above, per question |
+| Playback   | Meaning                                                   |
+| ---------- | --------------------------------------------------------- |
+| Ascending  | `arp-harmonic-asc`, id suffix `asc`                       |
+| Descending | `arp-harmonic-desc`, id suffix `desc`                     |
+| Harmonic   | `harmonic`, id suffix `harmonic`                          |
+| Mixed      | uniform over the three above per question, suffix `mixed` |
 
 - Order of drills: one contrastive pair at a time first (maj/min, dim/aug, 7/maj7, m7/m(maj7), m7♭5/dim7), then the full set once the pair members can be told apart. Triads before sevenths, sus and added tones before sevenths, all sevenths and all chords last [ours].
-- The playbacks are two steps, easy to hard. The arpeggio then block lets the block confirm what the arpeggio suggested; the block alone has to be recognised without the arpeggio to lean on. Random closes every chord set [ours].
+- The playbacks are two steps, easy to hard. The arpeggio then harmonic lets the harmonic confirm what the arpeggio suggested; the harmonic alone has to be recognised without the arpeggio to lean on. Mixed closes every chord set [ours].
 - Range per lesson: all tones within C3–C6 [ours].
 - Lesson rules [ours]: a lesson asks exactly 10 questions, then shows the score, and is passed at 80% or more (used for the passed mark and the suggested next lesson). Custom runs ask exactly the selected number, show the score and the per-question review, and are never graded.
 - After the lesson, a summary shows the score, passed or not, and **Retake**, **Next lesson** (suggested when passed) and **Back to lessons** [EM F6], followed by a review of every question asked, each with a **Replay** button [ours, same as E1–E3].

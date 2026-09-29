@@ -1,18 +1,15 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { OptionCard, QuestionsSection, Section, TempoSection } from '@/components/custom/CustomParts';
+import { OptionCard, QuestionsSection, RangeSection, Section, TempoSection } from '@/components/custom/CustomParts';
 import { CustomErrorFallback, CustomFrame } from '@/components/custom/CustomFrame';
 import { IntervalPicker } from '@/components/custom/IntervalPicker';
 import { useStoredSearch } from '@/components/custom/useStoredSearch';
 import {
-  chromaticTokens,
   MODE_HELP,
   describeQuestions,
   MODE_TITLE,
   sessionFromSearch,
   toggleInOrder,
-  tokenMidi,
   type IntervalId,
   type PlayingMode,
 } from '@/exercises/shared';
@@ -31,7 +28,6 @@ import {
 } from '@/exercises/interval-comparison';
 import { Runner } from './-Runner';
 
-const RANGE_TOKENS = chromaticTokens(tokenMidi('E2')!, tokenMidi('C7')!);
 const LESSONS_TO = '/exercises/interval-comparison';
 const CUSTOM_PREFS_KEY = 'polyhymnia:e1:customOptions';
 
@@ -126,29 +122,11 @@ function CustomPage() {
       </Section>
 
       <div className="grid gap-6 sm:grid-cols-2">
-        <Section title="Range" description="Every note of both intervals stays between these two notes.">
-          <div className="grid grid-cols-2 gap-3">
-            {(['low', 'high'] as const).map((end) => (
-              <div key={end} className="flex flex-col gap-1.5">
-                <label id={`range-${end}`} className="text-xs font-medium text-muted-foreground">
-                  {end === 'low' ? 'Lowest note' : 'Highest note'}
-                </label>
-                <Select value={search[end]} onValueChange={(value) => update({ [end]: value })}>
-                  <SelectTrigger className="w-full" aria-labelledby={`range-${end}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RANGE_TOKENS.map((token) => (
-                      <SelectItem key={token} value={token}>
-                        {token}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
-          </div>
-        </Section>
+        <RangeSection
+          search={search}
+          description="Every note of both intervals stays between these two notes."
+          update={update}
+        />
 
         <TempoSection tempo={search.tempo} onSelect={(tempo) => update({ tempo })} />
       </div>

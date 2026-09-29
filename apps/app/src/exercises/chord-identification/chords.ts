@@ -30,7 +30,7 @@ function above(...members: readonly (readonly [degree: number, semitones: number
 
 export const CHORDS: readonly ChordQuality[] = [
   { id: 'maj', name: 'Major', symbol: 'maj', above: above([3, 4], [5, 7]) },
-  { id: 'min', name: 'Minor', symbol: 'min', above: above([3, 3], [5, 7]) },
+  { id: 'min', name: 'Minor', symbol: 'm', above: above([3, 3], [5, 7]) },
   { id: 'dim', name: 'Diminished', symbol: 'dim', above: above([3, 3], [5, 6]) },
   { id: 'aug', name: 'Augmented', symbol: 'aug', above: above([3, 4], [5, 8]) },
   { id: 'sus2', name: 'Suspended 2nd', symbol: 'sus2', above: above([2, 2], [5, 7]) },

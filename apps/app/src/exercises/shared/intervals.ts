@@ -133,6 +133,10 @@ export function intervalIdDisplayName(id: IntervalId): string {
   return intervalDisplayName(spec.degreeOptions[0]!, quality);
 }
 
+export function widestSemitones(intervals: readonly IntervalId[]): number {
+  return Math.max(0, ...intervals.map((id) => intervalById(id).semitones));
+}
+
 const FIRST_OCTAVE_RANGE: RangeOption = { low: 'C3', high: 'C6' };
 const SECOND_OCTAVE_RANGE: RangeOption = { low: 'G2', high: 'C6' };
 

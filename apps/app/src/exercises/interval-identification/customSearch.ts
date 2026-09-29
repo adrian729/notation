@@ -1,10 +1,11 @@
 import { enumParam, listParam, NAME_STYLES, type NameStyle } from '../shared/customSearch.js';
 import type { PlayingMode } from '../shared/playing.js';
+import { parseRangeSearch, type RangeSearch } from '../shared/range.js';
 import { parseSessionSearch, sessionFromSearch, type SessionSearch } from '../shared/session.js';
-import { INTERVAL_SIZES, rangeForIntervals, type IntervalId } from '../shared/intervals.js';
+import { INTERVAL_SIZES, type IntervalId } from '../shared/intervals.js';
 import { DEFAULT_OPTIONS, PLAYING_MODES, type IdentificationOptions } from './options.js';
 
-export interface CustomSearch extends SessionSearch {
+export interface CustomSearch extends SessionSearch, RangeSearch {
   intervals: string;
   modes: string;
   names: NameStyle;
@@ -14,6 +15,7 @@ export function parseCustomSearch(search: Record<string, unknown>): CustomSearch
   return {
     intervals: listParam(search.intervals, DEFAULT_OPTIONS.intervals),
     modes: listParam(search.modes, DEFAULT_OPTIONS.playingModes),
+    ...parseRangeSearch(search, DEFAULT_OPTIONS.range),
     ...parseSessionSearch(search),
     names: enumParam(search.names, NAME_STYLES, 'full'),
   };
@@ -32,7 +34,7 @@ export function optionsFromSearch(search: CustomSearch): Partial<IdentificationO
   const intervals = searchIntervals(search);
   return {
     intervals,
-    range: rangeForIntervals(intervals),
+    range: { low: search.low, high: search.high },
     playingModes: searchModes(search),
     ...sessionFromSearch(search),
   };

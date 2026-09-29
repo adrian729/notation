@@ -1,52 +1,49 @@
 import { createCatalog } from '../shared/catalog.js';
 import type { HelpSection, OverviewSection } from '../shared/families.js';
 import type { ArpeggioDirection, ChordPlayback, Execution } from './playback.js';
-import type { ChordOptions } from './options.js';
+import { DEFAULT_RANGE, type ChordOptions } from './options.js';
 import { CHORD_SETS, type ChordSetId } from './sets.js';
 
-export type LessonPlayback = 'arp-block-asc' | 'arp-block-desc' | 'block' | 'random';
+export type LessonPlayback = 'asc' | 'desc' | 'harmonic' | 'mixed';
 
 export const TASK_HELP = 'You hear one chord in root position. Choose its quality.';
 
-export const LESSON_PLAYBACK_ORDER: readonly LessonPlayback[] = ['arp-block-asc', 'arp-block-desc', 'block', 'random'];
+export const LESSON_PLAYBACK_ORDER: readonly LessonPlayback[] = ['asc', 'desc', 'harmonic', 'mixed'];
 
 const LESSON_PLAYBACKS: Record<LessonPlayback, readonly ChordPlayback[]> = {
-  'arp-block-asc': ['arp-block-asc'],
-  'arp-block-desc': ['arp-block-desc'],
-  block: ['block'],
-  random: ['arp-block-asc', 'arp-block-desc', 'block'],
+  asc: ['arp-harmonic-asc'],
+  desc: ['arp-harmonic-desc'],
+  harmonic: ['harmonic'],
+  mixed: ['arp-harmonic-asc', 'arp-harmonic-desc', 'harmonic'],
 };
 
+export const DIRECTION_TITLE: Record<ArpeggioDirection, string> = { asc: 'Ascending', desc: 'Descending' };
+
 export const LESSON_PLAYBACK_TITLE: Record<LessonPlayback, string> = {
-  'arp-block-asc': 'Arpeggio, then block, ascending',
-  'arp-block-desc': 'Arpeggio, then block, descending',
-  block: 'Block',
-  random: 'Random',
+  asc: DIRECTION_TITLE.asc,
+  desc: DIRECTION_TITLE.desc,
+  harmonic: 'Harmonic',
+  mixed: 'Mixed',
 };
 
 export const LESSON_PLAYBACK_HELP: Record<LessonPlayback, string> = {
-  'arp-block-asc':
-    'The notes are played one after the other from the root up, then all together. The block confirms what the arpeggio suggested.',
-  'arp-block-desc':
-    'The notes are played one after the other from the top note down to the root, then all together. The chord is still in root position; it is just heard upside down first.',
-  block: 'All notes are played together, with no arpeggio to lean on.',
-  random:
-    'Each question is an ascending arpeggio then block, a descending arpeggio then block, or a block, chosen at random.',
+  asc: 'The notes are played one after the other from the root up, then all together (harmonic). The harmonic confirms what the arpeggio suggested.',
+  desc: 'The notes are played one after the other from the top note down to the root, then all together (harmonic). The chord is still in root position; it is just heard upside down first.',
+  harmonic: 'All notes are played together, with no arpeggio to lean on.',
+  mixed: 'Each question is ascending, descending or harmonic, chosen at random.',
 };
 
 export const EXECUTION_TITLE: Record<Execution, string> = {
   arpeggio: 'Arpeggio',
-  'arpeggio-block': 'Arpeggio, then block',
-  block: 'Block',
+  'arpeggio-harmonic': 'Arpeggio, then harmonic',
+  harmonic: 'Harmonic',
 };
 
 export const EXECUTION_HELP: Record<Execution, string> = {
   arpeggio: 'The notes are played one after the other, nothing more. The hardest way to hear a chord.',
-  'arpeggio-block': 'The arpeggio, a short silence, then all the notes together.',
-  block: 'All the notes are played together.',
+  'arpeggio-harmonic': 'The arpeggio, a short silence, then all the notes together.',
+  harmonic: 'All the notes are played together.',
 };
-
-export const DIRECTION_TITLE: Record<ArpeggioDirection, string> = { asc: 'Ascending', desc: 'Descending' };
 
 export const DIRECTION_HELP: Record<ArpeggioDirection, string> = {
   asc: 'The arpeggio goes from the root up.',
@@ -105,6 +102,7 @@ export const LESSONS: readonly LessonDef[] = CHORD_SETS.flatMap((set) =>
     title: LESSON_PLAYBACK_TITLE[playback],
     options: {
       chords: set.chords,
+      range: DEFAULT_RANGE,
       playbacks: LESSON_PLAYBACKS[playback],
       tempo: 'medium' as const,
       questionCount: 10,

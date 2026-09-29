@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo } from 'react';
-import { OptionCard, QuestionsSection, Section, TempoSection } from '@/components/custom/CustomParts';
+import { OptionCard, QuestionsSection, RangeSection, Section, TempoSection } from '@/components/custom/CustomParts';
 import { CustomErrorFallback, CustomFrame } from '@/components/custom/CustomFrame';
 import { IntervalPicker } from '@/components/custom/IntervalPicker';
 import { useStoredSearch } from '@/components/custom/useStoredSearch';
@@ -89,7 +89,15 @@ function CustomPage() {
         </div>
       </Section>
 
-      <TempoSection tempo={search.tempo} onSelect={(tempo) => update({ tempo })} />
+      <div className="grid gap-6 sm:grid-cols-2">
+        <RangeSection
+          search={search}
+          description="Every note of the interval stays between these two notes."
+          update={update}
+        />
+
+        <TempoSection tempo={search.tempo} onSelect={(tempo) => update({ tempo })} />
+      </div>
 
       <QuestionsSection search={search} update={update} />
     </CustomFrame>

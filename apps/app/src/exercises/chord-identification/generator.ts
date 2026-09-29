@@ -13,8 +13,6 @@ export interface Question {
   clef: 'treble' | 'bass';
 }
 
-const LOW = tokenMidi('C3')!;
-const HIGH = tokenMidi('C6')!;
 const MAX_ATTEMPTS = 400;
 
 const ACCIDENTAL_GLYPH: Record<number, string> = { '-2': '𝄫', '-1': '♭', '0': '', '1': '♯', '2': '𝄪' };
@@ -29,12 +27,14 @@ export function questionSignature(q: Question): string {
 }
 
 export function generateQuestion(options: ChordOptions, rng: Rng = Math.random, last?: string): Question {
+  const low = tokenMidi(options.range.low)!;
+  const high = tokenMidi(options.range.high)!;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const playback = pickOne(options.playbacks, rng);
     const quality = pickOne(options.chords, rng);
     const chord = chordById(quality);
 
-    const root = midiToPitch(randomInt(rng, LOW, HIGH - chordSpan(chord)), rng);
+    const root = midiToPitch(randomInt(rng, low, high - chordSpan(chord)), rng);
     const spelled = spellChord(chord, root);
     if (!spelled) continue;
 

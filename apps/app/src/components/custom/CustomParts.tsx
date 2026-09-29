@@ -2,14 +2,17 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Check, CircleHelp, Infinity, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import {
   normalizeQuestionCount,
   QUESTION_COUNT_MAX,
   QUESTION_COUNT_MIN,
+  RANGE_TOKENS,
   TEMPO_NOTE_DURATION,
   TEMPOS,
+  type RangeSearch,
   type SessionSearch,
   type Tempo,
 } from '@/exercises/shared';
@@ -168,6 +171,42 @@ export function TempoSection({ tempo, onSelect }: { tempo: Tempo; onSelect: (tem
               {TEMPO_NOTE_DURATION[option]} s
             </span>
           </button>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+export function RangeSection({
+  search,
+  description,
+  update,
+}: {
+  search: RangeSearch;
+  description: string;
+  update: (patch: Partial<RangeSearch>) => void;
+}) {
+  return (
+    <Section title="Range" description={description}>
+      <div className="grid grid-cols-2 gap-3">
+        {(['low', 'high'] as const).map((end) => (
+          <div key={end} className="flex flex-col gap-1.5">
+            <label id={`range-${end}`} className="text-xs font-medium text-muted-foreground">
+              {end === 'low' ? 'Lowest note' : 'Highest note'}
+            </label>
+            <Select value={search[end]} onValueChange={(value) => update({ [end]: value })}>
+              <SelectTrigger className="w-full" aria-labelledby={`range-${end}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RANGE_TOKENS.map((token) => (
+                  <SelectItem key={token} value={token}>
+                    {token}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         ))}
       </div>
     </Section>

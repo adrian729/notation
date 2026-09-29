@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_CUSTOM_OPTIONS, validateCustomOptions } from '@/exercises/chord-identification';
+import { DEFAULT_OPTIONS as IDENTIFICATION_DEFAULTS, validateOptions } from '@/exercises/interval-identification';
 import { parseCustomSearch } from '@/exercises/interval-comparison/customSearch';
 
 describe('parseCustomSearch', () => {
@@ -52,5 +54,21 @@ describe('parseCustomSearch', () => {
   it('maps the legacy longNames flag to names', () => {
     expect(parseCustomSearch({ longNames: false }).names).toBe('short');
     expect(parseCustomSearch({ longNames: false, names: 'full' }).names).toBe('full');
+  });
+});
+
+describe('range fit validation', () => {
+  it.each([
+    [
+      'chord',
+      validateCustomOptions({ ...DEFAULT_CUSTOM_OPTIONS, chords: ['maj', 'dim7'], range: { low: 'C4', high: 'D4' } }),
+    ],
+    [
+      'interval',
+      validateOptions({ ...IDENTIFICATION_DEFAULTS, intervals: ['m2', 'P8'], range: { low: 'C4', high: 'E4' } }),
+    ],
+  ])('rejects a range narrower than the widest %s', (_, result) => {
+    expect(result.valid).toBe(false);
+    expect(result.errors.join(' ')).toContain('Range too narrow');
   });
 });

@@ -14,7 +14,8 @@ describe('generateQuestion chord spelling', () => {
     for (const chord of CHORDS) {
       const options = {
         chords: [chord.id],
-        playbacks: ['block'],
+        range: { low: 'C3', high: 'C6' },
+        playbacks: ['harmonic'],
         tempo: 'medium',
         questionCount: 10,
         autoNext: false,
@@ -44,10 +45,10 @@ describe('generateQuestion chord spelling', () => {
 
 describe('playbacksFor', () => {
   it.each([
-    [['block'], ['asc', 'desc'], ['block']],
-    [['block'], [], ['block']],
-    [['arpeggio', 'arpeggio-block', 'block'], ['asc'], ['arp-asc', 'arp-block-asc', 'block']],
-    [['arpeggio-block'], ['desc', 'asc'], ['arp-block-asc', 'arp-block-desc']],
+    [['harmonic'], ['asc', 'desc'], ['harmonic']],
+    [['harmonic'], [], ['harmonic']],
+    [['arpeggio', 'arpeggio-harmonic', 'harmonic'], ['asc'], ['arp-asc', 'arp-harmonic-asc', 'harmonic']],
+    [['arpeggio-harmonic'], ['desc', 'asc'], ['arp-harmonic-asc', 'arp-harmonic-desc']],
   ] as const)('%j %j', (executions, directions, expected) => {
     expect(playbacksFor(executions, directions)).toEqual(expected);
   });

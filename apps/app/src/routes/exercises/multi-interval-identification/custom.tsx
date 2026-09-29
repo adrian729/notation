@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMemo } from 'react';
-import { OptionCard, QuestionsSection, Section, TempoSection } from '@/components/custom/CustomParts';
+import { OptionCard, QuestionsSection, RangeSection, Section, TempoSection } from '@/components/custom/CustomParts';
 import { CustomErrorFallback, CustomFrame } from '@/components/custom/CustomFrame';
 import { IntervalPicker } from '@/components/custom/IntervalPicker';
 import { useStoredSearch } from '@/components/custom/useStoredSearch';
-import { describeQuestions, MODE_TITLE, toggleInOrder, type PlayingMode } from '@/exercises/shared';
+import { describeQuestions, toggleInOrder } from '@/exercises/shared';
 import {
-  MODE_HELP,
+  CUSTOM_MODE_HELP,
+  CUSTOM_MODE_TITLE,
   NOTE_COUNTS,
   normalizeOptions,
   optionsFromSearch,
@@ -17,6 +18,7 @@ import {
   searchNoteCounts,
   TASK_HELP,
   validateOptions,
+  type MultiPlayingMode,
   type NoteCount,
 } from '@/exercises/multi-interval-identification';
 import { Runner } from './-Runner';
@@ -56,7 +58,7 @@ function CustomPage() {
   const toggleNoteCount = (count: NoteCount) =>
     update({ notes: toggleInOrder(noteCounts, count, NOTE_COUNTS).join(',') });
 
-  const toggleMode = (mode: PlayingMode) => update({ modes: toggleInOrder(modes, mode, PLAYING_MODES).join(',') });
+  const toggleMode = (mode: MultiPlayingMode) => update({ modes: toggleInOrder(modes, mode, PLAYING_MODES).join(',') });
 
   return (
     <CustomFrame
@@ -65,7 +67,7 @@ function CustomPage() {
       summary={[
         `${intervals.length} intervals`,
         `${noteCounts.join('/')} notes`,
-        modes.map((m) => MODE_TITLE[m].toLowerCase()).join(', '),
+        modes.map((m) => CUSTOM_MODE_TITLE[m].toLowerCase()).join(', '),
         describeQuestions(search),
       ]}
       errors={validation.errors}
@@ -102,21 +104,25 @@ function CustomPage() {
         title="Playing mode"
         description="How the notes are played. Pick one or more; each question uses one of them at random."
       >
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2">
           {PLAYING_MODES.map((mode) => (
             <OptionCard
               key={mode}
               kind="checkbox"
               checked={modes.includes(mode)}
-              title={MODE_TITLE[mode]}
-              text={MODE_HELP[mode]}
+              title={CUSTOM_MODE_TITLE[mode]}
+              text={CUSTOM_MODE_HELP[mode]}
               onSelect={() => toggleMode(mode)}
             />
           ))}
         </div>
       </Section>
 
-      <TempoSection tempo={search.tempo} onSelect={(tempo) => update({ tempo })} />
+      <div className="grid gap-6 sm:grid-cols-2">
+        <RangeSection search={search} description="Every note played stays between these two notes." update={update} />
+
+        <TempoSection tempo={search.tempo} onSelect={(tempo) => update({ tempo })} />
+      </div>
 
       <QuestionsSection search={search} update={update} />
     </CustomFrame>

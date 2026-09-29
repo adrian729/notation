@@ -1,4 +1,10 @@
-import { INTERVAL_FAMILIES, INTERVAL_SIZES, rangeForIntervals, type IntervalId } from '../shared/intervals.js';
+import {
+  INTERVAL_FAMILIES,
+  INTERVAL_SIZES,
+  rangeForIntervals,
+  widestSemitones,
+  type IntervalId,
+} from '../shared/intervals.js';
 import type { PlayingMode, RangeOption } from '../shared/playing.js';
 import {
   DEFAULT_SESSION,
@@ -8,7 +14,7 @@ import {
   type SessionOptions,
   type ValidationResult,
 } from '../shared/session.js';
-import { tokenMidi } from '../shared/spelling.js';
+import { validateRange } from '../shared/range.js';
 
 export const PLAYING_MODES: readonly PlayingMode[] = ['asc', 'desc', 'harmonic'];
 
@@ -36,10 +42,12 @@ export function validateOptions(options: Partial<IdentificationOptions>): Valida
     errors.push('Select at least one playing mode.');
   }
   errors.push(...validateSession(options));
-  const range = options.range;
-  const lowMidi = range && tokenMidi(range.low);
-  const highMidi = range && tokenMidi(range.high);
-  if (lowMidi === undefined || highMidi === undefined || lowMidi >= highMidi) errors.push('Select a valid range.');
+  errors.push(
+    ...validateRange(options.range, {
+      semitones: widestSemitones(validIntervals(options.intervals)),
+      of: 'intervals',
+    }),
+  );
   return validationResult(errors);
 }
 

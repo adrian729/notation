@@ -6,6 +6,7 @@ import {
   HelpPopover,
   OptionCard,
   QuestionsSection,
+  RangeSection,
   Section,
   SetChip,
   SubHeading,
@@ -43,6 +44,7 @@ const CHORD_IDS = CHORDS.map((chord) => chord.id);
 function toRawOptions(search: CustomSearch): Partial<CustomOptions> {
   return {
     chords: search.chords.split(',').filter(isChordId),
+    range: { low: search.low, high: search.high },
     executions: search.exec.split(',').filter(Boolean) as Execution[],
     directions: search.dirs.split(',').filter(Boolean) as ArpeggioDirection[],
     ...sessionFromSearch(search),
@@ -64,7 +66,7 @@ function CustomPage() {
   const chords = raw.chords ?? [];
   const executions = raw.executions ?? [];
   const directions = raw.directions ?? [];
-  const blockOnly = executions.length > 0 && executions.every((execution) => execution === 'block');
+  const harmonicOnly = executions.length > 0 && executions.every((execution) => execution === 'harmonic');
 
   const { update, reset } = useStoredSearch({
     prefsKey: CUSTOM_PREFS_KEY,
@@ -176,11 +178,11 @@ function CustomPage() {
 
       <Section
         title="Direction"
-        description="Which way the arpeggio runs. Not used when only Block is ticked. Pick one or both."
+        description="Which way the arpeggio runs. Not used when only Harmonic is ticked. Pick one or both."
       >
         <fieldset
-          disabled={blockOnly}
-          className={cn('m-0 grid min-w-0 gap-2 border-0 p-0 sm:grid-cols-2', blockOnly && 'opacity-50')}
+          disabled={harmonicOnly}
+          className={cn('m-0 grid min-w-0 gap-2 border-0 p-0 sm:grid-cols-2', harmonicOnly && 'opacity-50')}
         >
           {DIRECTIONS.map((direction) => (
             <OptionCard
@@ -195,7 +197,15 @@ function CustomPage() {
         </fieldset>
       </Section>
 
-      <TempoSection tempo={search.tempo} onSelect={(tempo) => update({ tempo })} />
+      <div className="grid gap-6 sm:grid-cols-2">
+        <RangeSection
+          search={search}
+          description="Every note of the chord stays between these two notes."
+          update={update}
+        />
+
+        <TempoSection tempo={search.tempo} onSelect={(tempo) => update({ tempo })} />
+      </div>
 
       <QuestionsSection search={search} update={update} />
     </CustomFrame>

@@ -7,18 +7,20 @@ import {
   type SessionOptions,
   type ValidationResult,
 } from '../shared/session.js';
-import { INTERVAL_SIZES, rangeForIntervals, type IntervalId } from '../shared/intervals.js';
-import { tokenMidi } from '../shared/spelling.js';
+import { INTERVAL_SIZES, rangeForIntervals, widestSemitones, type IntervalId } from '../shared/intervals.js';
+import { validateRange } from '../shared/range.js';
 import { setById } from './sets.js';
 
 export type NoteCount = 3 | 4 | 5;
 export const NOTE_COUNTS: readonly NoteCount[] = [3, 4, 5];
-export const PLAYING_MODES: readonly PlayingMode[] = ['asc', 'desc', 'harmonic'];
+export type MultiPlayingMode = PlayingMode | 'random';
+export const PLAYING_MODES: readonly MultiPlayingMode[] = ['asc', 'desc', 'harmonic', 'random'];
+const DEFAULT_PLAYING_MODES: readonly MultiPlayingMode[] = ['asc', 'desc', 'harmonic'];
 
 export interface MultiIntervalOptions extends SessionOptions {
   intervals: readonly IntervalId[];
   noteCounts: readonly NoteCount[];
-  playingModes: readonly PlayingMode[];
+  playingModes: readonly MultiPlayingMode[];
   range: RangeOption;
 }
 
@@ -27,7 +29,7 @@ const CORE = setById('core');
 export const DEFAULT_OPTIONS: MultiIntervalOptions = {
   intervals: CORE.intervals,
   noteCounts: [3],
-  playingModes: PLAYING_MODES,
+  playingModes: DEFAULT_PLAYING_MODES,
   range: rangeForIntervals(CORE.intervals),
   ...DEFAULT_SESSION,
 };
@@ -48,10 +50,12 @@ export function validateOptions(options: Partial<MultiIntervalOptions>): Validat
     errors.push('Select at least one playing mode.');
   }
   errors.push(...validateSession(options));
-  const range = options.range;
-  const lowMidi = range && tokenMidi(range.low);
-  const highMidi = range && tokenMidi(range.high);
-  if (lowMidi === undefined || highMidi === undefined || lowMidi >= highMidi) errors.push('Select a valid range.');
+  errors.push(
+    ...validateRange(options.range, {
+      semitones: widestSemitones(validIntervals(options.intervals)),
+      of: 'intervals',
+    }),
+  );
   return validationResult(errors);
 }
 

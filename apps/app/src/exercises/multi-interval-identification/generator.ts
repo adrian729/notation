@@ -1,9 +1,8 @@
 import { pitchToMidi } from '@polyhymnia/notation-model';
-import type { PlayingMode } from '../shared/playing.js';
 import { clefForMidis, midiOfToken, midiToPitch, pickOne, randomInt, type Rng } from '../shared/tones.js';
 import { intervalById, type IntervalId } from '../shared/intervals.js';
 import { pitchToToken, spellRelative } from '../shared/spelling.js';
-import type { MultiIntervalOptions } from './options.js';
+import type { MultiIntervalOptions, MultiPlayingMode } from './options.js';
 
 export interface StackRow {
   size: IntervalId;
@@ -11,7 +10,7 @@ export interface StackRow {
 }
 
 export interface Question {
-  mode: PlayingMode;
+  mode: MultiPlayingMode;
   reference: string;
   rows: readonly StackRow[];
   sounding: readonly string[];
@@ -23,6 +22,16 @@ export function questionSignature(q: Question): string {
 }
 
 const MAX_ATTEMPTS = 400;
+
+function shuffle<T>(items: readonly T[], rng: Rng): T[] {
+  return sampleDistinct(items, items.length, rng);
+}
+
+function soundingOrder(mode: MultiPlayingMode, ascending: readonly string[], rng: Rng): string[] {
+  if (mode === 'desc') return [...ascending].reverse();
+  if (mode === 'random') return [ascending[0]!, ...shuffle(ascending.slice(1), rng)];
+  return [...ascending];
+}
 
 function sampleDistinct<T>(items: readonly T[], count: number, rng: Rng): T[] {
   const pool = [...items];
@@ -57,7 +66,7 @@ export function generateQuestion(options: MultiIntervalOptions, rng: Rng = Math.
       mode,
       reference,
       rows,
-      sounding: mode === 'desc' ? [...ascending].reverse() : ascending,
+      sounding: soundingOrder(mode, ascending, rng),
       clef,
     };
     if (last !== undefined && questionSignature(question) === last && attempt < MAX_ATTEMPTS - 1) continue;
