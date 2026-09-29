@@ -168,7 +168,10 @@ function setPitches(doc: MnxDocument, eventId: string, pitches: readonly Pitch[]
   const slurGoneIds = idsRemovedBy(doc, part, rawMeasures, oldNoteIds);
 
   const newMeasures = rawMeasures.map((pm) => cleanupPartMeasure(pm, staleTieIds, slurGoneIds));
-  const newDoc: MnxDocument = { ...doc, parts: doc.parts.map((p, i) => (i === 0 ? { ...part, measures: newMeasures } : p)) } as MnxDocument;
+  const newDoc: MnxDocument = {
+    ...doc,
+    parts: doc.parts.map((p, i) => (i === 0 ? { ...part, measures: newMeasures } : p)),
+  } as MnxDocument;
   return { doc: newDoc, changed, diagnostics: [] };
 }
 

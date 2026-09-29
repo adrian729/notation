@@ -36,11 +36,7 @@ interface PendingSpan {
   hasRest: boolean;
 }
 
-export function grouping(
-  normalized: NormalizedScore,
-  score: TemporalScore,
-  _options?: NotationOptions,
-): GroupingScore {
+export function grouping(normalized: NormalizedScore, score: TemporalScore, _options?: NotationOptions): GroupingScore {
   const beamIdByElement = new Map<NoteId, string>();
   for (const beam of normalized.beams) {
     for (const id of beam.elements) beamIdByElement.set(id, beam.id);

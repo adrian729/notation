@@ -27,5 +27,4 @@ describe('vendored MNX examples validate against the vendored schema', () => {
     const valid = validate(doc);
     expect(valid, ajv.errorsText(validate.errors, { separator: '\n' })).toBe(true);
   });
-
 });

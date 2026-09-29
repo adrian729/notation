@@ -29,25 +29,29 @@ const finalMetadata = path.join(dist, 'metadata.json');
 
 // 1. Subset — same manifest.UNICODE_RANGES drives this and the metadata filter below.
 execFileSync(venvPython, [
-  '-m', 'fontTools.subset', sourceOtf,
+  '-m',
+  'fontTools.subset',
+  sourceOtf,
   `--unicodes=${UNICODE_RANGES}`,
   `--output-file=${preRename}`,
-  '--no-hinting', '--desubroutinize',
-  '--drop-tables+=GSUB,GPOS,BASE,JSTF,DSIG', "--name-IDs=", '--notdef-outline',
+  '--no-hinting',
+  '--desubroutinize',
+  '--drop-tables+=GSUB,GPOS,BASE,JSTF,DSIG',
+  '--name-IDs=',
+  '--notdef-outline',
 ]);
 
 // 2. Rename CFF fontName + name IDs 1/4/6/16 (OFL rename obligation, font.md) + WOFF2-compress.
-execFileSync(venvPython, [
-  path.join(here, 'rename_and_compress.py'),
-  preRename, finalOtf, finalWoff2, RENAMED_FAMILY,
-]);
+execFileSync(venvPython, [path.join(here, 'rename_and_compress.py'), preRename, finalOtf, finalWoff2, RENAMED_FAMILY]);
 rmSync(preRename);
 rmSync(finalOtf);
 
 // 3. Filter metadata JSON to the same glyph set (engravingDefaults kept in full — it's global).
 execFileSync(venvPython, [
   path.join(here, 'filter_metadata.py'),
-  sourceJson, finalMetadata, RENAMED_FAMILY,
+  sourceJson,
+  finalMetadata,
+  RENAMED_FAMILY,
   ...Object.keys(GLYPHS),
 ]);
 

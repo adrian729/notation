@@ -40,7 +40,8 @@ export function beamGroups(
   for (const ev of events) {
     const onset = pos;
     pos = R.add(pos, ev.length);
-    const beamable = (ev.kind === 'note' || ev.kind === 'chord') && ev.base !== undefined && BEAMABLE_BASES.has(ev.base);
+    const beamable =
+      (ev.kind === 'note' || ev.kind === 'chord') && ev.base !== undefined && BEAMABLE_BASES.has(ev.base);
     if (!beamable) {
       flush();
       prevOnset = null;

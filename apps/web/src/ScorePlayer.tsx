@@ -52,7 +52,9 @@ export function ScorePlayer({ score }: { score: MnxDocument }) {
   return (
     <>
       <div className="exercise-controls">
-        <button type="button" onClick={playing ? stop : play}>{playing ? 'Stop' : 'Play'}</button>
+        <button type="button" onClick={playing ? stop : play}>
+          {playing ? 'Stop' : 'Play'}
+        </button>
       </div>
       <Notation score={score} ref={handleRef}>
         <Notation.Playback view={playing ? CURSOR_VIEW : OFF_VIEW} />

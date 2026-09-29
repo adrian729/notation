@@ -76,10 +76,13 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
     slope = span > EPS ? rise / span : 0;
 
     const mid = (tip(first) + tip(last)) / 2;
-    let yLeft = Math.round((mid - (rise / 2)) * 4) / 4;
+    let yLeft = Math.round((mid - rise / 2) * 4) / 4;
     const beamYAt = (px: number): number => yLeft + slope * (px - x0);
 
-    const levelOf = levelsOf(group, noteOrder.map((p) => p.el.id));
+    const levelOf = levelsOf(
+      group,
+      noteOrder.map((p) => p.el.id),
+    );
 
     let shift = 0;
     for (const p of noteOrder) {
@@ -99,10 +102,7 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
     for (const p of noteOrder) {
       const beamY = beamYAt(x(p)) - dir * thickness;
       const a = attach(p);
-      stemOverrides.set(
-        p.el.id,
-        dir === 1 ? { yTop: beamY, yBottom: a } : { yTop: a, yBottom: beamY },
-      );
+      stemOverrides.set(p.el.id, dir === 1 ? { yTop: beamY, yBottom: a } : { yTop: a, yBottom: beamY });
     }
 
     const xEnd = x1 + stemW;

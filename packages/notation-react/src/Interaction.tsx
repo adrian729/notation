@@ -1,8 +1,6 @@
 import type { HitKind, HitOptions, HitResult, LayoutResult, NotationOptions } from '@polyhymnia/notation-engine';
 
-export type NotationIntent =
-  | { type: 'activate'; target: HitResult }
-  | { type: 'hover'; target: HitResult | null };
+export type NotationIntent = { type: 'activate'; target: HitResult } | { type: 'hover'; target: HitResult | null };
 
 export interface IntentContext {
   layout: LayoutResult;

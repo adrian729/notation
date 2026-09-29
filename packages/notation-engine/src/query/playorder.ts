@@ -38,7 +38,8 @@ export function resolvePlayOrder(flow: MeasureFlows, spans: readonly Span[]): Pl
   });
 
   const active = flow.some(
-    (f) => f.repeatEnd !== undefined || f.ending || f.segno !== undefined || f.fine !== undefined || f.jump || f.invalid,
+    (f) =>
+      f.repeatEnd !== undefined || f.ending || f.segno !== undefined || f.fine !== undefined || f.jump || f.invalid,
   );
   if (!active) return { segments: written, diagnostics: [] };
 

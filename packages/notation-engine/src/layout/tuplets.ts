@@ -54,9 +54,7 @@ export function tuplets(
   const numerals: TupletNumeralGlyph[] = [];
 
   for (const span of spans) {
-    const placed = span.elements
-      .map((id) => placedById.get(id))
-      .filter((p): p is Placed => p !== undefined);
+    const placed = span.elements.map((id) => placedById.get(id)).filter((p): p is Placed => p !== undefined);
     if (placed.length === 0) continue;
 
     const systemIndex = placed[0]!.systemIndex;
@@ -93,9 +91,7 @@ export function tuplets(
       const beamId = coveringBeamId(span, beamGroups);
       const polygon = beamId ? beamsResult.polygons.find((p) => p.el === beamId) : undefined;
       numeralMidX = centerX;
-      lineY = polygon
-        ? beamOuterYAt(polygon, numeralMidX)
-        : extremeY(placed, side, beamsResult.stemOverrides);
+      lineY = polygon ? beamOuterYAt(polygon, numeralMidX) : extremeY(placed, side, beamsResult.stemOverrides);
     }
 
     const names = numeralGlyphs(span, showRatioDefault);
@@ -107,9 +103,7 @@ export function tuplets(
     const bottomOffset = -bbox.bBoxSW[1];
     const edgeThickness = span.showBracket ? thickness / 2 : 0;
     const anchorY =
-      side === 'above'
-        ? lineY - edgeThickness - GAP - bottomOffset
-        : lineY + edgeThickness + GAP + topOffset;
+      side === 'above' ? lineY - edgeThickness - GAP - bottomOffset : lineY + edgeThickness + GAP + topOffset;
 
     let x = numeralMidX - width / 2;
     for (const name of names) {
@@ -231,10 +225,7 @@ function edgeAbutsBeam(
   return beamGroups.some((g) => g.elements.includes(a) && g.elements.includes(b));
 }
 
-function coveringBeamId(
-  span: TupletSpan,
-  beamGroups: readonly NormalizedBeam[],
-): string | undefined {
+function coveringBeamId(span: TupletSpan, beamGroups: readonly NormalizedBeam[]): string | undefined {
   const beam = beamGroups.find((g) => span.elements.every((id) => g.elements.includes(id)));
   return beam?.id;
 }

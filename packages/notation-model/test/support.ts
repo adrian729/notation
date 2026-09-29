@@ -1,5 +1,16 @@
 import { parsePitch } from '../src/mnx/pitch.js';
-import type { Event, MeasureGlobal, MnxDocument, Note, NoteValue, NoteValueBase, PartMeasure, Sequence, SequenceContent, Tuplet } from '../src/mnx/types.js';
+import type {
+  Event,
+  MeasureGlobal,
+  MnxDocument,
+  Note,
+  NoteValue,
+  NoteValueBase,
+  PartMeasure,
+  Sequence,
+  SequenceContent,
+  Tuplet,
+} from '../src/mnx/types.js';
 
 const BASES: Record<string, NoteValueBase> = { w: 'whole', h: 'half', q: 'quarter', '8': 'eighth', '16': '16th' };
 
@@ -9,7 +20,12 @@ export function value(token: string): NoteValue {
   return { base };
 }
 
-export function note(pitch: string, duration: string, extra: Partial<Event> = {}, noteExtra: Partial<Note> = {}): Event {
+export function note(
+  pitch: string,
+  duration: string,
+  extra: Partial<Event> = {},
+  noteExtra: Partial<Note> = {},
+): Event {
   return { duration: value(duration), notes: [{ pitch: parsePitch(pitch), ...noteExtra }], ...extra };
 }
 
@@ -26,7 +42,12 @@ export function grace(...content: SequenceContent): SequenceContent[number] {
 }
 
 export function tremolo(marks: number, outer: [number, string], ...content: Event[]): SequenceContent[number] {
-  return { type: 'tremolo', marks, outer: { multiple: outer[0], duration: value(outer[1]) }, content } as SequenceContent[number];
+  return {
+    type: 'tremolo',
+    marks,
+    outer: { multiple: outer[0], duration: value(outer[1]) },
+    content,
+  } as SequenceContent[number];
 }
 
 export function tuplet(inner: [number, string], outer: [number, string], ...content: SequenceContent): Tuplet {

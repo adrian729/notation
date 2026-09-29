@@ -38,13 +38,8 @@ function letterOf(n: number): Pitch['step'] {
   return STEP_LETTERS[((n % 7) + 7) % 7]!;
 }
 
-export function scalePitches(
-  root: Pitch,
-  scale: ScaleName,
-  descending = false,
-): Pitch[] {
-  const pattern =
-    scale === 'melodicMinor' && descending ? PATTERNS.naturalMinor : PATTERNS[scale];
+export function scalePitches(root: Pitch, scale: ScaleName, descending = false): Pitch[] {
+  const pattern = scale === 'melodicMinor' && descending ? PATTERNS.naturalMinor : PATTERNS[scale];
   const rootStep = stepNumberOf(root.step);
   const rootSemitone = pitchToMidi(root);
 

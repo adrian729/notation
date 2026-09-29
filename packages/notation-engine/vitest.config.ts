@@ -5,8 +5,6 @@ const modelSrc = fileURLToPath(new URL('../notation-model/src/', import.meta.url
 
 export default defineConfig({
   resolve: {
-    alias: [
-      { find: /^@polyhymnia\/notation-model$/, replacement: `${modelSrc}index.ts` },
-    ],
+    alias: [{ find: /^@polyhymnia\/notation-model$/, replacement: `${modelSrc}index.ts` }],
   },
 });

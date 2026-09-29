@@ -75,9 +75,7 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
     systems.push({ index: system.index, x: 0, y: staffTop, w: system.width, h: STAFF_HEIGHT });
 
     for (let line = 0; line < STAFF_LINES; line += 1) {
-      rects.push(
-        centeredRect(0, staffTop + line, system.width, engravingDefaults.staffLineThickness, 'staff-line'),
-      );
+      rects.push(centeredRect(0, staffTop + line, system.width, engravingDefaults.staffLineThickness, 'staff-line'));
     }
 
     for (const measure of system.measures) {
@@ -149,10 +147,7 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
   }
 
   const height =
-    topMargin +
-    Math.max(1, systems.length) * STAFF_HEIGHT +
-    Math.max(0, systems.length - 1) * systemGap +
-    bottomMargin;
+    topMargin + Math.max(1, systems.length) * STAFF_HEIGHT + Math.max(0, systems.length - 1) * systemGap + bottomMargin;
 
   const playOrder = resolvePlayOrder(input.flow, measureTimes);
   const timemap = buildTimeMap({
@@ -180,11 +175,7 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
   };
 }
 
-function emitChrome(
-  measure: PositionedMeasure,
-  staffTop: number,
-  glyphs: GlyphRun[],
-): void {
+function emitChrome(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[]): void {
   let x = measure.x + measure.chrome.startBarlineWidth;
 
   if (measure.chrome.showClef) {
@@ -203,12 +194,7 @@ function emitChrome(
   if (measure.chrome.showTime) emitTimeSignature(measure.time, x, staffTop, glyphs);
 }
 
-function emitTimeSignature(
-  time: TimeSpec,
-  x: number,
-  staffTop: number,
-  glyphs: GlyphRun[],
-): void {
+function emitTimeSignature(time: TimeSpec, x: number, staffTop: number, glyphs: GlyphRun[]): void {
   if (time.symbol === 'common' || time.symbol === 'cut') {
     const name = time.symbol === 'cut' ? 'timeSigCutCommon' : 'timeSigCommon';
     glyphs.push(glyph(name, x, staffTop + 2, 'time-signature'));
@@ -233,12 +219,7 @@ function emitDigits(digits: string, centre: number, y: number, glyphs: GlyphRun[
   }
 }
 
-function emitBarlines(
-  measure: PositionedMeasure,
-  staffTop: number,
-  glyphs: GlyphRun[],
-  rects: RectShape[],
-): void {
+function emitBarlines(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], rects: RectShape[]): void {
   const e = engravingDefaults;
   const bottom = staffTop + STAFF_HEIGHT;
   const line = (x: number, thickness: number): RectShape => ({
@@ -268,12 +249,7 @@ function emitBarlines(
       break;
     case 'double':
       rects.push(line(right - e.thinBarlineThickness, e.thinBarlineThickness));
-      rects.push(
-        line(
-          right - e.thinBarlineThickness * 2 - e.barlineSeparation,
-          e.thinBarlineThickness,
-        ),
-      );
+      rects.push(line(right - e.thinBarlineThickness * 2 - e.barlineSeparation, e.thinBarlineThickness));
       break;
     case 'final':
       rects.push(line(right - e.thickBarlineThickness, e.thickBarlineThickness));
@@ -286,8 +262,7 @@ function emitBarlines(
       break;
     case 'repeat-end': {
       rects.push(line(right - e.thickBarlineThickness, e.thickBarlineThickness));
-      const thinX =
-        right - e.thickBarlineThickness - e.thinThickBarlineSeparation - e.thinBarlineThickness;
+      const thinX = right - e.thickBarlineThickness - e.thinThickBarlineSeparation - e.thinBarlineThickness;
       rects.push(line(thinX, e.thinBarlineThickness));
       const dotX = thinX - e.repeatBarlineDotSeparation - glyphAdvanceWidth('repeatDot');
       glyphs.push(glyph('repeatDot', dotX, staffTop + 1.5, 'repeat-dot'));
@@ -300,8 +275,7 @@ function emitBarlines(
 }
 
 function dashes(x: number, staffTop: number, bottom: number): RectShape[] {
-  const { dashedBarlineThickness, dashedBarlineDashLength, dashedBarlineGapLength } =
-    engravingDefaults;
+  const { dashedBarlineThickness, dashedBarlineDashLength, dashedBarlineGapLength } = engravingDefaults;
   const height = bottom - staffTop;
   const period = dashedBarlineDashLength + dashedBarlineGapLength;
   const count = Math.max(2, Math.round((height + dashedBarlineGapLength) / period));
@@ -346,17 +320,9 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
       const accY = staffTop + head.accidental.y;
       if (head.accidental.parenthesized) {
         ctx.glyphs.push(
-          glyph(
-            'accidentalParensLeft',
-            accX - glyphAdvanceWidth('accidentalParensLeft'),
-            accY,
-            'accidental',
-            head.id,
-          ),
+          glyph('accidentalParensLeft', accX - glyphAdvanceWidth('accidentalParensLeft'), accY, 'accidental', head.id),
         );
-        ctx.glyphs.push(
-          glyph('accidentalParensRight', accX + head.accidental.width, accY, 'accidental', head.id),
-        );
+        ctx.glyphs.push(glyph('accidentalParensRight', accX + head.accidental.width, accY, 'accidental', head.id));
       }
       ctx.glyphs.push(glyph(head.accidental.glyph, accX, accY, 'accidental', head.id));
     }
@@ -404,9 +370,7 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
 
   const breath = element.breath;
   if (breath) {
-    ctx.glyphs.push(
-      glyph(breath.glyph, ctx.x + breath.dx, staffTop + breath.y, 'breath', element.id),
-    );
+    ctx.glyphs.push(glyph(breath.glyph, ctx.x + breath.dx, staffTop + breath.y, 'breath', element.id));
   }
 
   const first = element.noteheads[0];
@@ -421,9 +385,7 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
 
 function emitRest(element: VerticalElement, ctx: ElementContext): void {
   const rest = element.rest!;
-  const x = rest.wholeBar
-    ? (ctx.columnLeft + ctx.columnRight) / 2 - rest.width / 2
-    : ctx.x;
+  const x = rest.wholeBar ? (ctx.columnLeft + ctx.columnRight) / 2 - rest.width / 2 : ctx.x;
   const y = ctx.staffTop + rest.y;
   ctx.glyphs.push(glyph(rest.glyph, x, y, 'rest', element.id));
   for (const dot of rest.dots) {
@@ -454,12 +416,7 @@ function emitRest(element: VerticalElement, ctx: ElementContext): void {
   ctx.placement.set(element.id, { systemIndex: ctx.systemIndex, x, y });
 }
 
-function noteBox(
-  element: VerticalElement,
-  head: NoteheadLayout,
-  headX: number,
-  ctx: ElementContext,
-): ElementBox {
+function noteBox(element: VerticalElement, head: NoteheadLayout, headX: number, ctx: ElementContext): ElementBox {
   const box: Box = {
     x: headX,
     y: ctx.staffTop + head.staffPosition - 0.5,
@@ -596,22 +553,13 @@ function offsetPathY(d: string, dy: number): string {
 }
 
 function pathFrom(points: readonly (readonly [number, number])[], staffTop: number): string {
-  return points
-    .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${(staffTop + y).toFixed(3)}`)
-    .join(' ') + ' Z';
+  return points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${(staffTop + y).toFixed(3)}`).join(' ') + ' Z';
 }
 
 function glyph(name: string, x: number, y: number, cls: string, el?: NoteId): GlyphRun {
   return { x, y, cp: glyphCodepoint(name) ?? 0, cls, ...(el ? { el } : {}) };
 }
 
-function centeredRect(
-  x: number,
-  y: number,
-  w: number,
-  thickness: number,
-  cls: string,
-  el?: NoteId,
-): RectShape {
+function centeredRect(x: number, y: number, w: number, thickness: number, cls: string, el?: NoteId): RectShape {
   return { x, y: y - thickness / 2, w, h: thickness, cls, ...(el ? { el } : {}) };
 }

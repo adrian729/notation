@@ -34,18 +34,10 @@ export function justify(broken: BreakScore, options?: NotationOptions): Justifie
   const systems: JustifiedSystem[] = [];
   for (const system of broken.systems) {
     const isLast = system.index === broken.systems.length - 1;
-    const natural = system.measures.reduce(
-      (sum, m, i) => sum + measureWidth(m, i === 0),
-      0,
-    );
-    const target = isLast
-      ? Math.max(natural, Math.min(widthSp, maxLastFill * widthSp))
-      : Math.max(natural, widthSp);
+    const natural = system.measures.reduce((sum, m, i) => sum + measureWidth(m, i === 0), 0);
+    const target = isLast ? Math.max(natural, Math.min(widthSp, maxLastFill * widthSp)) : Math.max(natural, widthSp);
     const slack = Math.max(0, target - natural);
-    const totalStretch = system.measures.reduce(
-      (sum, m) => sum + m.columns.reduce((s, c) => s + c.stretch, 0),
-      0,
-    );
+    const totalStretch = system.measures.reduce((sum, m) => sum + m.columns.reduce((s, c) => s + c.stretch, 0), 0);
 
     let x = 0;
     const measures: PositionedMeasure[] = [];

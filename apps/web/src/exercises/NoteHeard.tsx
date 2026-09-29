@@ -26,9 +26,12 @@ export function NoteHeard() {
 
   useEffect(() => sound.stop, [sound]);
 
-  const playId = useCallback((id: NoteId, duration?: number) => {
-    sound.playNote(midiOfId(handleRef.current?.getTimeMap(), id, NOTES.find((n) => n.id === id)?.pitch), duration);
-  }, [sound]);
+  const playId = useCallback(
+    (id: NoteId, duration?: number) => {
+      sound.playNote(midiOfId(handleRef.current?.getTimeMap(), id, NOTES.find((n) => n.id === id)?.pitch), duration);
+    },
+    [sound],
+  );
 
   const play = useCallback(() => {
     if (picked === null) {
@@ -77,14 +80,14 @@ export function NoteHeard() {
       <h3>Click the note you heard</h3>
       <p className="caption">A five-note melody. Play sounds one note; click the one you heard.</p>
       <div className="exercise-controls">
-        <button type="button" onClick={play}>Play</button>
-        <button type="button" onClick={next}>Next</button>
+        <button type="button" onClick={play}>
+          Play
+        </button>
+        <button type="button" onClick={next}>
+          Next
+        </button>
         <label className="toggle">
-          <input
-            type="checkbox"
-            checked={hoverToHear}
-            onChange={(event) => setHoverToHear(event.target.checked)}
-          />
+          <input type="checkbox" checked={hoverToHear} onChange={(event) => setHoverToHear(event.target.checked)} />
           Hover to hear
         </label>
       </div>
@@ -92,7 +95,9 @@ export function NoteHeard() {
         <Notation.Interaction targets={['element']} onIntent={onIntent} />
         <Notation.Marks states={states} />
       </Notation>
-      <p className="exercise-feedback" role="status">{message}</p>
+      <p className="exercise-feedback" role="status">
+        {message}
+      </p>
     </section>
   );
 }

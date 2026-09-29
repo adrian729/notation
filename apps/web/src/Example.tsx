@@ -13,8 +13,7 @@ interface ExampleProps {
 export function Example({ title, caption, extra = [], children }: ExampleProps) {
   const [diagnostics, setDiagnostics] = useState<readonly Diagnostic[]>([]);
   const onLayout = useCallback(
-    (layout: LayoutResult) =>
-      setDiagnostics((prev) => (same(prev, layout.diagnostics) ? prev : layout.diagnostics)),
+    (layout: LayoutResult) => setDiagnostics((prev) => (same(prev, layout.diagnostics) ? prev : layout.diagnostics)),
     [],
   );
 
@@ -38,8 +37,5 @@ export function Example({ title, caption, extra = [], children }: ExampleProps) 
 }
 
 function same(a: readonly Diagnostic[], b: readonly Diagnostic[]): boolean {
-  return (
-    a === b ||
-    (a.length === b.length && a.every((d, i) => d.code === b[i]!.code && d.message === b[i]!.message))
-  );
+  return a === b || (a.length === b.length && a.every((d, i) => d.code === b[i]!.code && d.message === b[i]!.message));
 }

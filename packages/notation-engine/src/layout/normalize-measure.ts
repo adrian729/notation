@@ -39,11 +39,7 @@ export function resolveClef(value: unknown, measureIndex: number, reader: Reader
     }
     const fallback = sign === 'F' ? 'bass' : sign === 'C' ? 'alto' : sign === 'G' ? 'treble' : undefined;
     if (!fallback) {
-      reader.unsupported(
-        `unrecognized clef sign ${JSON.stringify(sign)}`,
-        measureIndex,
-        'the previous clef is kept',
-      );
+      reader.unsupported(`unrecognized clef sign ${JSON.stringify(sign)}`, measureIndex, 'the previous clef is kept');
       return null;
     }
     reader.unsupported(
@@ -70,12 +66,7 @@ export function isMidMeasure(position: unknown): boolean {
   return typeof fraction[0] === 'number' && fraction[0] > 0;
 }
 
-export function resolveKey(
-  value: unknown,
-  fallback: KeySpec,
-  measureIndex: number,
-  reader: Reader,
-): KeySpec {
+export function resolveKey(value: unknown, fallback: KeySpec, measureIndex: number, reader: Reader): KeySpec {
   const fifths = asObject(value)?.fifths;
   if (typeof fifths !== 'number' || !Number.isFinite(fifths)) {
     reader.diagnostics.push({
@@ -161,4 +152,3 @@ export function reportPartConstructs(pm: Partial<PartMeasure>, measureIndex: num
   if (asArray(pm.staffConfigs).length > 0) reader.unsupported('staff configs', measureIndex, 'ignored');
   if (pm.measureRepeat) reader.unsupported('measure repeat', measureIndex, 'not drawn');
 }
-

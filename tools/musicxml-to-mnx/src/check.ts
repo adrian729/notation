@@ -10,9 +10,7 @@ export const UNSUPPORTED_ALLOWLIST: readonly string[] = ['part name'];
 
 function isAllowedUnsupported(diagnostic: Diagnostic): boolean {
   if (diagnostic.code !== 'mnx-unsupported') return false;
-  return UNSUPPORTED_ALLOWLIST.some((construct) =>
-    diagnostic.message.startsWith(`Unsupported MNX: ${construct}`),
-  );
+  return UNSUPPORTED_ALLOWLIST.some((construct) => diagnostic.message.startsWith(`Unsupported MNX: ${construct}`));
 }
 
 let validateSchema: ((doc: unknown) => boolean) & { errors?: ErrorObject[] | null };

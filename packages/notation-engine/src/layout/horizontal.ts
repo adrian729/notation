@@ -83,15 +83,11 @@ export function horizontal(
   let previous: NormalizedMeasure | undefined;
 
   for (const measure of staff.measures) {
-    const bounds = temporal.measures.find(
-      (m) => m.staffIndex === staff.index && m.index === measure.index,
-    );
+    const bounds = temporal.measures.find((m) => m.staffIndex === staff.index && m.index === measure.index);
     const startTick = bounds?.startTick ?? 0;
     const endTick = bounds?.endTick ?? startTick + measure.capacityTicks;
 
-    const elements = laidOut.elements.filter(
-      (e) => e.staffIndex === staff.index && e.measureIndex === measure.index,
-    );
+    const elements = laidOut.elements.filter((e) => e.staffIndex === staff.index && e.measureIndex === measure.index);
     const columns = buildColumns(elements, {
       staffIndex: staff.index,
       measureIndex: measure.index,
@@ -134,10 +130,7 @@ interface ColumnContext {
   k: number;
 }
 
-function buildColumns(
-  elements: readonly VerticalElement[],
-  ctx: ColumnContext,
-): HorizontalColumn[] {
+function buildColumns(elements: readonly VerticalElement[], ctx: ColumnContext): HorizontalColumn[] {
   const byTick = new Map<number, VerticalElement[]>();
   for (const el of elements) {
     const bucket = byTick.get(el.tick);
@@ -154,9 +147,7 @@ function buildColumns(
     const rightWidth = members.reduce((max, e) => Math.max(max, e.rightWidth), 0);
     const rodWidth = leftWidth + rightWidth + ROD_PADDING;
     const idealWidth = ctx.base * (spanTicks / ctx.divisions) ** ctx.k;
-    const nextLeftWidth = byTick
-      .get(ticks[i + 1] ?? -1)
-      ?.reduce((max, e) => Math.max(max, e.leftWidth), 0) ?? 0;
+    const nextLeftWidth = byTick.get(ticks[i + 1] ?? -1)?.reduce((max, e) => Math.max(max, e.leftWidth), 0) ?? 0;
     const springWidth = idealWidth + Math.max(0, leftWidth - nextLeftWidth);
     return {
       staffIndex: ctx.staffIndex,
@@ -196,10 +187,7 @@ function chromeOf(
     startBarlineWidth: measure.barlineStart === 'repeat-start' ? repeatStartWidth() : 0,
   };
   const bare =
-    widths.clefWidth === 0 &&
-    widths.keyWidth === 0 &&
-    widths.timeWidth === 0 &&
-    widths.startBarlineWidth === 0;
+    widths.clefWidth === 0 && widths.keyWidth === 0 && widths.timeWidth === 0 && widths.startBarlineWidth === 0;
 
   return {
     showClef,
@@ -223,11 +211,7 @@ function cancellation(from: KeySpec, to: KeySpec): KeySpec | null {
   return { fifths: from.fifths };
 }
 
-function keyWidth(
-  measure: NormalizedMeasure,
-  cancelKey: KeySpec | null,
-  showKey: boolean,
-): number {
+function keyWidth(measure: NormalizedMeasure, cancelKey: KeySpec | null, showKey: boolean): number {
   const { width } = layOutKeyGlyphs(measure.key, measure.clef, cancelKey, showKey, 0);
   return width > 0 ? width + CHROME_GAP : 0;
 }
@@ -275,10 +259,7 @@ function timeWidthOf(time: TimeSpec): number {
 }
 
 export function digitsWidth(value: number): number {
-  return [...String(Math.max(0, Math.round(value)))].reduce(
-    (sum, d) => sum + glyphAdvanceWidth(`timeSig${d}`),
-    0,
-  );
+  return [...String(Math.max(0, Math.round(value)))].reduce((sum, d) => sum + glyphAdvanceWidth(`timeSig${d}`), 0);
 }
 
 export function endBarlineWidth(kind: NormalizedMeasure['barlineEnd']): number {
@@ -319,13 +300,7 @@ export function repeatStartWidth(): number {
 }
 
 export function chromeWidth(chrome: MeasureChrome): number {
-  return (
-    chrome.startBarlineWidth +
-    chrome.clefWidth +
-    chrome.keyWidth +
-    chrome.timeWidth +
-    chrome.leadWidth
-  );
+  return chrome.startBarlineWidth + chrome.clefWidth + chrome.keyWidth + chrome.timeWidth + chrome.leadWidth;
 }
 
 export function measureWidth(measure: HorizontalMeasure, atSystemStart: boolean): number {

@@ -41,9 +41,10 @@ export function Dictation() {
         const answer = ANSWERS[id];
         const answerPitch = answer === undefined ? undefined : parsePitch(answer);
         const enteredPitch = entered[id];
-        result[id] = enteredPitch !== undefined && answerPitch !== undefined && samePitch(enteredPitch, answerPitch)
-          ? 'correct'
-          : 'incorrect';
+        result[id] =
+          enteredPitch !== undefined && answerPitch !== undefined && samePitch(enteredPitch, answerPitch)
+            ? 'correct'
+            : 'incorrect';
       }
     }
     return result;
@@ -106,17 +107,29 @@ export function Dictation() {
     <section className="exercise">
       <h3>Melodic dictation</h3>
       <p className="caption">
-        The first note is given. Click a rest slot at the staff position you hear, then
-        check. Use ♯/♮/♭ for an accidental before clicking.
+        The first note is given. Click a rest slot at the staff position you hear, then check. Use ♯/♮/♭ for an
+        accidental before clicking.
       </p>
       <div className="exercise-controls">
-        <button type="button" onClick={play}>Play</button>
-        <button type="button" onClick={() => setChecked(true)}>Check</button>
-        <button type="button" onClick={reset}>Reset</button>
+        <button type="button" onClick={play}>
+          Play
+        </button>
+        <button type="button" onClick={() => setChecked(true)}>
+          Check
+        </button>
+        <button type="button" onClick={reset}>
+          Reset
+        </button>
         <span className="alter-buttons" role="group" aria-label="Accidental">
-          <button type="button" aria-pressed={alterMode === -1} onClick={() => setAlterMode(-1)}>♭</button>
-          <button type="button" aria-pressed={alterMode === 0} onClick={() => setAlterMode(0)}>♮</button>
-          <button type="button" aria-pressed={alterMode === 1} onClick={() => setAlterMode(1)}>♯</button>
+          <button type="button" aria-pressed={alterMode === -1} onClick={() => setAlterMode(-1)}>
+            ♭
+          </button>
+          <button type="button" aria-pressed={alterMode === 0} onClick={() => setAlterMode(0)}>
+            ♮
+          </button>
+          <button type="button" aria-pressed={alterMode === 1} onClick={() => setAlterMode(1)}>
+            ♯
+          </button>
         </span>
       </div>
       <Notation score={doc}>

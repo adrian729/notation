@@ -10,17 +10,10 @@ describe('normalize — forward inheritance', () => {
   it('carries clef, key and time forward until a measure restates them', () => {
     const measures = normalize(fixture('inheritance')).staves[0]!.measures;
 
-    expect(measures.map((m) => `${m.time.beats}/${m.time.beatType}`)).toEqual([
-      '4/4',
-      '3/4',
-      '3/4',
-      '3/4',
-      '3/4',
-    ]);
+    expect(measures.map((m) => `${m.time.beats}/${m.time.beatType}`)).toEqual(['4/4', '3/4', '3/4', '3/4', '3/4']);
     expect(measures.map((m) => m.clef.kind)).toEqual(['treble', 'treble', 'treble', 'bass', 'bass']);
     expect(measures.map((m) => m.key.fifths)).toEqual([2, 2, 2, -3, -3]);
   });
-
 });
 
 describe('normalize — never throws', () => {
@@ -28,12 +21,7 @@ describe('normalize — never throws', () => {
     id: 42,
     mnx: { version: 1 },
     global: {
-      measures: [
-        { time: { count: 0, unit: 0 }, key: { fifths: 99 } },
-        { time: { count: 3, unit: 4 } },
-        {},
-        null,
-      ],
+      measures: [{ time: { count: 0, unit: 0 }, key: { fifths: 99 } }, { time: { count: 3, unit: 4 } }, {}, null],
     },
     parts: [
       {
@@ -67,9 +55,9 @@ describe('normalize — never throws', () => {
     expect(() => normalize(undefined as unknown as MnxDocument)).not.toThrow();
     expect(() => normalize({} as MnxDocument)).not.toThrow();
     expect(normalize({} as MnxDocument).diagnostics.map((d) => d.code)).toContain('mnx-invalid');
-    expect(normalize({ mnx: { version: 1 }, global: { measures: [] }, parts: [] }).diagnostics.map((d) => d.code)).toContain(
-      'no-parts',
-    );
+    expect(
+      normalize({ mnx: { version: 1 }, global: { measures: [] }, parts: [] }).diagnostics.map((d) => d.code),
+    ).toContain('no-parts');
     expect(() => temporal(normalize(malformed))).not.toThrow();
   });
 
@@ -129,7 +117,6 @@ describe('temporal', () => {
     ]);
     expect(map.diagnostics).toEqual([]);
   });
-
 });
 
 describe('font metrics come from the metadata JSON', () => {

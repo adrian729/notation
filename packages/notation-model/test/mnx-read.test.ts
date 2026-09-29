@@ -20,5 +20,4 @@ describe('readMnx', () => {
     expect(doc).toBeNull();
     expect(diagnostics[0]!.code).toBe('mnx-unsupported-version');
   });
-
 });

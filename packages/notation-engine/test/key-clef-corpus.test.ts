@@ -31,9 +31,7 @@ describe('key signatures across every major key and clef', () => {
         const table = fifths > 0 ? SHARP_POSITIONS[clefName] : FLAT_POSITIONS[clefName];
         const glyph = GLYPH_CODEPOINT[fifths > 0 ? 'accidentalSharp' : 'accidentalFlat']!;
         const top = layout.systems[0]!.y;
-        const drawn = layout.glyphs
-          .filter((g) => g.cls === 'key-accidental')
-          .sort((a, b) => a.x - b.x);
+        const drawn = layout.glyphs.filter((g) => g.cls === 'key-accidental').sort((a, b) => a.x - b.x);
 
         expect(drawn.map((g) => g.cp)).toEqual(Array(Math.abs(fifths)).fill(glyph));
         expect(drawn.map((g) => +(g.y - top).toFixed(3))).toEqual(

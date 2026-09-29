@@ -73,8 +73,7 @@ describe('generateQuestion invariants', () => {
           expect(Math.abs(aRoot - bRoot)).toBeLessThanOrEqual(4);
         }
 
-        const expected =
-          specA.semitones === specB.semitones ? 'same' : specA.semitones > specB.semitones ? 'A' : 'B';
+        const expected = specA.semitones === specB.semitones ? 'same' : specA.semitones > specB.semitones ? 'A' : 'B';
         expect(q.correct).toBe(expected);
         answers.add(q.correct);
       }
@@ -102,14 +101,14 @@ describe('generateQuestion invariants', () => {
         expect(['A', 'G']).toContain(q.a.root.step);
         expect(q.a.root.step).toBe(q.b.root.step);
         expect(q.a.root.alter).toBe(q.b.root.alter);
-        for (const tone of [q.a.root, q.a.other, q.b.root, q.b.other]) expect(Math.abs(tone.alter ?? 0)).toBeLessThanOrEqual(1);
+        for (const tone of [q.a.root, q.a.other, q.b.root, q.b.other])
+          expect(Math.abs(tone.alter ?? 0)).toBeLessThanOrEqual(1);
         break;
       }
     }
     expect(found).toBe(true);
   });
 });
-
 
 describe('validateExerciseOptions', () => {
   const base = {

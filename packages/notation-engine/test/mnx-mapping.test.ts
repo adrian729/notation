@@ -4,19 +4,7 @@ import { GLYPH_CODEPOINT } from '../src/font/glyphs.js';
 import { layoutScore } from '../src/layout/index.js';
 import { normalize } from '../src/layout/normalize.js';
 import { temporal } from '../src/layout/temporal.js';
-import {
-  TREBLE,
-  chord,
-  fixture,
-  measure,
-  mnx,
-  note,
-  rest,
-  tuplet,
-  voices,
-  withGlobal,
-  withPart,
-} from './mnx.js';
+import { TREBLE, chord, fixture, measure, mnx, note, rest, tuplet, voices, withGlobal, withPart } from './mnx.js';
 
 const cp = (name: string): number => GLYPH_CODEPOINT[name]!;
 
@@ -157,7 +145,6 @@ describe('clefs', () => {
     expect(normalize(doc).staves[0]!.measures[1]!.clef).toEqual({ kind: 'treble' });
     expect(unsupported(doc)).toEqual(['Unsupported MNX: percussion clef in measure 1; the previous clef is kept.']);
   });
-
 });
 
 describe('global measure properties', () => {
@@ -239,12 +226,12 @@ describe('unsupported constructs render what they can and say so', () => {
   });
 
   it('lays out only the first part and staff 1', () => {
-    const doc = mnx({}, {
-      sequences: [
-        { content: [note('C5', 'w')] },
-        { staff: 2, content: [note('C3', 'w')] },
-      ],
-    });
+    const doc = mnx(
+      {},
+      {
+        sequences: [{ content: [note('C5', 'w')] }, { staff: 2, content: [note('C3', 'w')] }],
+      },
+    );
     const twoParts: MnxDocument = { ...doc, parts: [...doc.parts, doc.parts[0]!] };
     const layout = layoutScore(twoParts);
 
@@ -297,10 +284,7 @@ describe('unsupported constructs render what they can and say so', () => {
 
 describe('id collisions', () => {
   it('disambiguates a positional id that collides with an explicit id used elsewhere', () => {
-    const doc = mnx(
-      {},
-      measure(note('C4', 'q', { id: 'm0.s0.e1' }), note('D4', 'q'), note('E4', 'q')),
-    );
+    const doc = mnx({}, measure(note('C4', 'q', { id: 'm0.s0.e1' }), note('D4', 'q'), note('E4', 'q')));
     const map = temporal(normalize(doc));
 
     expect(map.elements.map((e) => e.id)).toEqual(['m0.s0.e1', 'm0.s0.e1~2', 'm0.s0.e2']);
@@ -316,17 +300,13 @@ describe('id collisions', () => {
   });
 
   it('reports a warning when two elements explicitly share the same id', () => {
-    const doc = mnx(
-      {},
-      measure(note('C4', 'q', { id: 'dup' }), note('D4', 'q', { id: 'dup' })),
-    );
+    const doc = mnx({}, measure(note('C4', 'q', { id: 'dup' }), note('D4', 'q', { id: 'dup' })));
     const diagnostics = layoutScore(doc).diagnostics;
 
     expect(diagnostics).toContainEqual(
       expect.objectContaining({ severity: 'warning', code: 'id-collision', measureIndex: 0 }),
     );
   });
-
 });
 
 describe('nested tuplets', () => {
@@ -356,21 +336,19 @@ describe('nested tuplets', () => {
     expect(inner2!.durationTicks).toBe(896);
     expect(inner3!.durationTicks).toBe(896);
 
-    expect(unsupported(doc)).toContainEqual(
-      'Unsupported MNX: nested tuplet in measure 0; flattened into one tuplet.',
-    );
+    expect(unsupported(doc)).toContainEqual('Unsupported MNX: nested tuplet in measure 0; flattened into one tuplet.');
   });
 
   it("says nested content keeps only the outer tuplet's ratio when the inner ratio is unsupported", () => {
     const doc = mnx(
       {},
       measure(
-        tuplet(
-          [3, '8'],
-          [2, '8'],
-          note('C4', '8'),
-          { type: 'tuplet', inner: { multiple: 3, duration: { base: '128th' as never } }, outer: { multiple: 2, duration: { base: '128th' as never } }, content: [note('D4', '8'), note('E4', '8')] } as never,
-        ),
+        tuplet([3, '8'], [2, '8'], note('C4', '8'), {
+          type: 'tuplet',
+          inner: { multiple: 3, duration: { base: '128th' as never } },
+          outer: { multiple: 2, duration: { base: '128th' as never } },
+          content: [note('D4', '8'), note('E4', '8')],
+        } as never),
       ),
     );
     expect(unsupported(doc)).toContainEqual(
@@ -389,12 +367,7 @@ describe('beams', () => {
       {},
       withPart(
         { beams: [{ events: ['a', 'b'] }] },
-        measure(
-          note('C4', '8', { id: 'a' }),
-          note('D4', '8', { id: 'b' }),
-          note('E4', 'q'),
-          note('F4', 'q'),
-        ),
+        measure(note('C4', '8', { id: 'a' }), note('D4', '8', { id: 'b' }), note('E4', 'q'), note('F4', 'q')),
       ),
     );
     const beams = normalize(doc).beams;
@@ -411,7 +384,10 @@ describe('beams', () => {
           beams: [
             {
               events: ['a', 'b', 'c'],
-              beams: [{ events: ['a'], direction: 'right' }, { events: ['c'], direction: 'left' }],
+              beams: [
+                { events: ['a'], direction: 'right' },
+                { events: ['c'], direction: 'left' },
+              ],
             },
           ],
         },
@@ -506,17 +482,9 @@ describe('beams', () => {
       {},
       withPart(
         {
-          beams: [
-            { events: ['a', 'b'] },
-            { events: ['b', 'c'] },
-          ],
+          beams: [{ events: ['a', 'b'] }, { events: ['b', 'c'] }],
         },
-        measure(
-          note('C5', '8', { id: 'a' }),
-          note('D5', '8', { id: 'b' }),
-          note('E5', '8', { id: 'c' }),
-          rest('8'),
-        ),
+        measure(note('C5', '8', { id: 'a' }), note('D5', '8', { id: 'b' }), note('E5', '8', { id: 'c' }), rest('8')),
       ),
     );
     const normalized = normalize(doc);
@@ -550,7 +518,10 @@ describe('beams', () => {
   });
 
   it('reports beam-grouping-invalid once for an auto-beamed measure with a bad beatGrouping option', () => {
-    const doc = mnx({ time: { count: 7, unit: 8 } }, measure(...Array.from({ length: 7 }, (_, i) => note('C4', '8', { id: `e${i}` }))));
+    const doc = mnx(
+      { time: { count: 7, unit: 8 } },
+      measure(...Array.from({ length: 7 }, (_, i) => note('C4', '8', { id: `e${i}` }))),
+    );
     const options = { beaming: { beatGrouping: { '7/8': [3, 3] } } };
     const normalized = normalize(doc, options);
     expect(normalized.diagnostics.filter((d) => d.code === 'beam-grouping-invalid')).toHaveLength(1);
@@ -578,15 +549,64 @@ describe('silent-drop constructs', () => {
   const cases: [string, (doc: MnxDocument) => void][] = [
     ['layouts', (d) => Object.assign(d, { layouts: [{ id: 'l', content: [] }] })],
     ['useAccidentalDisplay', (d) => Object.assign(d.mnx, { support: { useAccidentalDisplay: false } })],
-    ['scores', (d) => Object.assign(d, { scores: [{ name: 'T', useWritten: true, layout: 'l', pages: [{ layout: 'l', systems: [{ measure: 'x', layout: 'l' }] }] }] })],
+    [
+      'scores',
+      (d) =>
+        Object.assign(d, {
+          scores: [
+            {
+              name: 'T',
+              useWritten: true,
+              layout: 'l',
+              pages: [{ layout: 'l', systems: [{ measure: 'x', layout: 'l' }] }],
+            },
+          ],
+        }),
+    ],
     ['part name', (d) => Object.assign(d.parts[0]!, { name: 'Piano' })],
     ['global lyrics', (d) => Object.assign(d.global, { lyrics: { lineMetadata: {}, lineOrder: [] } })],
-    ['clef', (d) => Object.assign(d.parts[0]!.measures![0]!.clefs![0]!.clef, { glyph: 'gClef', hide: true, showOctave: true, color: 'red' })],
-    ['clef graceIndex', (d) => Object.assign(d.parts[0]!.measures![0]!.clefs![0]!, { position: { fraction: [0, 1], graceIndex: 0 } })],
-    ['tempo graceIndex', (d) => Object.assign(d.global.measures![0]!, { tempos: [{ bpm: 90, location: { fraction: [0, 1], graceIndex: 1 } }] })],
-    ['accidental force', (d) => Object.assign(d.parts[0]!.measures![0]!.sequences![0]!.content[0]!, { notes: [{ pitch: { step: 'C', octave: 4 }, accidentalDisplay: { show: true, force: true } }] })],
-    ['breath placement', (d) => Object.assign(d.parts[0]!.measures![0]!.sequences![0]!.content[0]!, { markings: { breath: { placement: 'above' } } })],
-    ['visualDuration', (d) => { d.parts[0]!.measures![0]!.sequences![0] = { content: [], fullMeasure: { visualDuration: { base: 'whole' } } } as never; }],
+    [
+      'clef',
+      (d) =>
+        Object.assign(d.parts[0]!.measures![0]!.clefs![0]!.clef, {
+          glyph: 'gClef',
+          hide: true,
+          showOctave: true,
+          color: 'red',
+        }),
+    ],
+    [
+      'clef graceIndex',
+      (d) => Object.assign(d.parts[0]!.measures![0]!.clefs![0]!, { position: { fraction: [0, 1], graceIndex: 0 } }),
+    ],
+    [
+      'tempo graceIndex',
+      (d) =>
+        Object.assign(d.global.measures![0]!, { tempos: [{ bpm: 90, location: { fraction: [0, 1], graceIndex: 1 } }] }),
+    ],
+    [
+      'accidental force',
+      (d) =>
+        Object.assign(d.parts[0]!.measures![0]!.sequences![0]!.content[0]!, {
+          notes: [{ pitch: { step: 'C', octave: 4 }, accidentalDisplay: { show: true, force: true } }],
+        }),
+    ],
+    [
+      'breath placement',
+      (d) =>
+        Object.assign(d.parts[0]!.measures![0]!.sequences![0]!.content[0]!, {
+          markings: { breath: { placement: 'above' } },
+        }),
+    ],
+    [
+      'visualDuration',
+      (d) => {
+        d.parts[0]!.measures![0]!.sequences![0] = {
+          content: [],
+          fullMeasure: { visualDuration: { base: 'whole' } },
+        } as never;
+      },
+    ],
   ];
   it.each(cases)('reports %s', (_name, patch) => {
     const doc = base();
@@ -598,7 +618,13 @@ describe('silent-drop constructs', () => {
 
   it('honors tie side', () => {
     const tied = (side?: 'up' | 'down'): MnxDocument =>
-      mnx({}, measure(note('C4', 'h', {}, { id: 'a', ties: [{ target: 'b', ...(side ? { side } : {}) }] }), note('C4', 'h', {}, { id: 'b' })));
+      mnx(
+        {},
+        measure(
+          note('C4', 'h', {}, { id: 'a', ties: [{ target: 'b', ...(side ? { side } : {}) }] }),
+          note('C4', 'h', {}, { id: 'b' }),
+        ),
+      );
     const d = (side?: 'up' | 'down'): string => layoutScore(tied(side)).paths.find((p) => p.cls === 'tie')!.d;
     expect(d('up')).not.toBe(d('down'));
   });

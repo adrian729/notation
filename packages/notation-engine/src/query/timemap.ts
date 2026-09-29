@@ -1,5 +1,12 @@
 import { pitchToMidi, Rational as R } from '@polyhymnia/notation-model';
-import { noteValueSpecLength, toMnxPitch, type NoteId, type NoteValueSpec, type TempoEvent, type TempoMap } from '../layout/records.js';
+import {
+  noteValueSpecLength,
+  toMnxPitch,
+  type NoteId,
+  type NoteValueSpec,
+  type TempoEvent,
+  type TempoMap,
+} from '../layout/records.js';
 import type { TemporalElement } from '../layout/temporal.js';
 import type { SystemBox } from '../layout/types.js';
 import type { PlaySegment } from './playorder.js';
@@ -36,9 +43,7 @@ export interface TimeMap {
   tempo: TempoMap;
   tickToSeconds(tick: number, tempo?: TempoOverride): number;
   secondsToTick(seconds: number, tempo?: TempoOverride): number;
-  positionAtTick(
-    tick: number,
-  ): { systemIndex: number; x: number; yTop: number; yBottom: number } | null;
+  positionAtTick(tick: number): { systemIndex: number; x: number; yTop: number; yBottom: number } | null;
   activeAt(tick: number): readonly NoteId[];
   byId(id: NoteId): TimeMapEntry | undefined;
   playOrder(): readonly PlaySegment[];
@@ -106,8 +111,7 @@ export function buildTimeMap(input: TimeMapInput): TimeMap {
     return segment.tick + (s - segment.seconds) / segment.secondsPerTick;
   };
 
-  const systemOf = (index: number): SystemBox | undefined =>
-    input.systems.find((s) => s.index === index);
+  const systemOf = (index: number): SystemBox | undefined => input.systems.find((s) => s.index === index);
 
   const positionAtTick: TimeMap['positionAtTick'] = (tick) => {
     if (byTick.length === 0) return null;
@@ -122,10 +126,7 @@ export function buildTimeMap(input: TimeMapInput): TimeMap {
       const span = Math.max(1, (next ? next.tick : end) - entry.tick);
       const ratio = Math.min(1, Math.max(0, (tick - entry.tick) / span));
       const system = systemOf(entry.systemIndex);
-      const targetX =
-        next && next.systemIndex === entry.systemIndex
-          ? next.x
-          : (system ? system.x + system.w : entry.x);
+      const targetX = next && next.systemIndex === entry.systemIndex ? next.x : system ? system.x + system.w : entry.x;
       return at(entry.systemIndex, entry.x + (targetX - entry.x) * ratio);
     }
     const last = byTick[byTick.length - 1]!;
@@ -204,9 +205,7 @@ function toEntry(head: TemporalElement, input: TimeMapInput, durationTicks: numb
     y: place?.y ?? 0,
     kind: head.kind,
     ...(head.kind === 'note' && notes[0] ? { midi: pitchToMidi(toMnxPitch(notes[0].pitch)) } : {}),
-    ...(head.kind === 'chord'
-      ? { midiNotes: notes.map((n) => pitchToMidi(toMnxPitch(n.pitch))) }
-      : {}),
+    ...(head.kind === 'chord' ? { midiNotes: notes.map((n) => pitchToMidi(toMnxPitch(n.pitch))) } : {}),
   };
 }
 
@@ -232,7 +231,12 @@ function buildEntries(input: TimeMapInput): TimeMapEntry[] {
   const all = orderElements(input);
   const entries: TimeMapEntry[] = [];
   for (const voice of [0, 1] as const) {
-    entries.push(...mergeTies(all.filter((e) => e.voice === voice), input));
+    entries.push(
+      ...mergeTies(
+        all.filter((e) => e.voice === voice),
+        input,
+      ),
+    );
   }
   return entries.sort((a, b) => a.tick - b.tick || a.voice - b.voice);
 }
@@ -244,15 +248,10 @@ function mergeTies(ordered: readonly TemporalElement[], input: TimeMapInput): Ti
   while (i < ordered.length) {
     const head = ordered[i]!;
     let last = i;
-    while (
-      last + 1 < ordered.length &&
-      tiesInto(ordered[last]!, ordered[last + 1]!)
-    ) {
+    while (last + 1 < ordered.length && tiesInto(ordered[last]!, ordered[last + 1]!)) {
       last += 1;
     }
-    const durationTicks = ordered
-      .slice(i, last + 1)
-      .reduce((sum, e) => sum + e.durationTicks, 0);
+    const durationTicks = ordered.slice(i, last + 1).reduce((sum, e) => sum + e.durationTicks, 0);
     entries.push(toEntry(head, input, durationTicks));
     i = last + 1;
   }
@@ -276,11 +275,7 @@ function tiesInto(a: TemporalElement, b: TemporalElement): boolean {
 }
 
 function samePitch(a: TemporalElement['notes'][number], b: TemporalElement['notes'][number]): boolean {
-  return (
-    a.pitch.step === b.pitch.step &&
-    a.pitch.alter === b.pitch.alter &&
-    a.pitch.octave === b.pitch.octave
-  );
+  return a.pitch.step === b.pitch.step && a.pitch.alter === b.pitch.alter && a.pitch.octave === b.pitch.octave;
 }
 
 interface TempoSegment {
@@ -290,9 +285,7 @@ interface TempoSegment {
 }
 
 function buildTempoSegments(tempo: TempoMap, divisions: number): TempoSegment[] {
-  const events = [...(tempo ?? [])]
-    .filter((e) => Number.isFinite(e?.bpm) && e.bpm > 0)
-    .sort((a, b) => a.tick - b.tick);
+  const events = [...(tempo ?? [])].filter((e) => Number.isFinite(e?.bpm) && e.bpm > 0).sort((a, b) => a.tick - b.tick);
   if (events.length === 0 || (events[0]?.tick ?? 0) > 0) {
     events.unshift({ tick: 0, bpm: DEFAULT_TEMPO_BPM, beatUnit: DEFAULT_BEAT_UNIT });
   }

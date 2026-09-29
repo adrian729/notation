@@ -34,9 +34,7 @@ async function getCommitDate(sha) {
 }
 
 async function listExamplePaths(sha) {
-  const data = await fetchJson(
-    `https://api.github.com/repos/w3c-cg/mnx/git/trees/${sha}?recursive=1`,
-  );
+  const data = await fetchJson(`https://api.github.com/repos/w3c-cg/mnx/git/trees/${sha}?recursive=1`);
   return data.tree
     .filter((item) => item.type === 'blob' && item.path.startsWith(EXAMPLES_PATH_PREFIX))
     .map((item) => item.path);
@@ -105,4 +103,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-

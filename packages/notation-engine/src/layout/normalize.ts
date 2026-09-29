@@ -84,9 +84,7 @@ export function normalize(doc: MnxDocument, options?: NotationOptions): Normaliz
 
   const read = readMnx(doc);
   diagnostics.push(...read.diagnostics);
-  const source =
-    read.doc ??
-    (read.diagnostics.some((d) => d.code === 'mnx-unsupported-version') ? doc : null);
+  const source = read.doc ?? (read.diagnostics.some((d) => d.code === 'mnx-unsupported-version') ? doc : null);
   if (!source) return empty();
 
   const ids = elementIds(source);
@@ -183,14 +181,9 @@ export function normalize(doc: MnxDocument, options?: NotationOptions): Normaliz
     const voices = readSequences(asArray(pm.sequences), index, reader);
     const meterCapacity = R.of(currentTime.beats, currentTime.beatType);
     const longest = voices.reduce((max, v) => R.max(max, voiceLength(v.events)), R.ZERO);
-    const hasWholeBar = voices.some((v) =>
-      v.events.some((e) => e.kind === 'rest' && e.wholeBar === true),
-    );
+    const hasWholeBar = voices.some((v) => v.events.some((e) => e.kind === 'rest' && e.wholeBar === true));
     const pickup =
-      index === 0 &&
-      !hasWholeBar &&
-      R.compare(longest, R.ZERO) > 0 &&
-      R.compare(longest, meterCapacity) < 0;
+      index === 0 && !hasWholeBar && R.compare(longest, R.ZERO) > 0 && R.compare(longest, meterCapacity) < 0;
     const capacity = pickup ? longest : meterCapacity;
 
     firstClef ??= currentClef;
@@ -291,9 +284,7 @@ function readSequences(sequences: readonly unknown[], measureIndex: number, read
         length: R.ONE,
         notes: [],
         wholeBar: true,
-        ...(typeof full.staffPosition === 'number'
-          ? { staffPosition: MIDDLE_LINE - full.staffPosition / 2 }
-          : {}),
+        ...(typeof full.staffPosition === 'number' ? { staffPosition: MIDDLE_LINE - full.staffPosition / 2 } : {}),
       });
     }
     return { index: voice, events };
@@ -397,7 +388,11 @@ function readEvent(
   const { measureIndex, sequenceIndex } = scope;
   const index = scope.eventCount;
   scope.eventCount += 1;
-  const id: NoteId = idFor(reader, { measureIndex, sequenceIndex, path }, `m${measureIndex}.s${sequenceIndex}.e${index}`);
+  const id: NoteId = idFor(
+    reader,
+    { measureIndex, sequenceIndex, path },
+    `m${measureIndex}.s${sequenceIndex}.e${index}`,
+  );
 
   const value = readNoteValue(event.duration, measureIndex, reader);
   if (!value) return undefined;
@@ -515,7 +510,8 @@ function breathOf(event: MnxEvent, measureIndex: number, reader: Reader): 'comma
     return 'caesura';
   }
   if (!breath) return undefined;
-  if (breath.placement !== undefined) reader.unsupported('breath mark placement', measureIndex, 'drawn at the default position');
+  if (breath.placement !== undefined)
+    reader.unsupported('breath mark placement', measureIndex, 'drawn at the default position');
   if (breath.symbol !== undefined && breath.symbol !== 'comma' && breath.symbol !== 'auto') {
     reader.unsupported(`${String(breath.symbol)} breath mark`, measureIndex, 'drawn as a comma');
   }
@@ -570,11 +566,7 @@ function readPitch(value: unknown, measureIndex: number, reader: Reader): StaffP
   return { step, alter, octave };
 }
 
-function accidentalPolicyOf(
-  note: MnxNote,
-  measureIndex: number,
-  reader: Reader,
-): AccidentalPolicy | undefined {
+function accidentalPolicyOf(note: MnxNote, measureIndex: number, reader: Reader): AccidentalPolicy | undefined {
   const display = asObject(note.accidentalDisplay);
   if (!display) return undefined;
   if (display.force !== undefined) reader.unsupported('accidental display force', measureIndex, 'ignored');
@@ -592,7 +584,11 @@ function reportDocumentConstructs(source: MnxDocument, part: Record<string, unkn
   const root = source as unknown as Record<string, unknown>;
   const support = asObject(asObject(root.mnx)?.support);
   if (support?.useAccidentalDisplay === false) {
-    reader.unsupported('mnx.support.useAccidentalDisplay false', undefined, 'accidental display settings are applied regardless');
+    reader.unsupported(
+      'mnx.support.useAccidentalDisplay false',
+      undefined,
+      'accidental display settings are applied regardless',
+    );
   }
   if (asArray(root.layouts).length > 0) {
     reader.unsupported('layouts', undefined, 'staff-group layouts are ignored');
@@ -720,13 +716,7 @@ function resolveSlurNote(
   return null;
 }
 
-function slurUnresolved(
-  reader: Reader,
-  measureIndex: number,
-  fromEventId: NoteId,
-  kind: string,
-  value: unknown,
-): void {
+function slurUnresolved(reader: Reader, measureIndex: number, fromEventId: NoteId, kind: string, value: unknown): void {
   reader.diagnostics.push({
     severity: 'warning',
     code: 'slur-target-unresolved',
@@ -889,9 +879,5 @@ function scaled(length: Rational, tuplet: TupletRef | undefined): Rational {
 }
 
 function voiceLength(events: readonly NormalizedEvent[]): Rational {
-  return events.reduce(
-    (sum, e) => (e.kind === 'rest' && e.wholeBar ? sum : R.add(sum, e.length)),
-    R.ZERO,
-  );
+  return events.reduce((sum, e) => (e.kind === 'rest' && e.wholeBar ? sum : R.add(sum, e.length)), R.ZERO);
 }
-

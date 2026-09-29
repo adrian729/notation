@@ -21,7 +21,10 @@ describe('official MNX examples lay out without throwing', () => {
     expect(examples.length).toBeGreaterThan(0);
     for (const name of examples) {
       const layout = layoutScore(load(name));
-      expect(layout.diagnostics.filter((d) => d.severity === 'error'), name).toEqual([]);
+      expect(
+        layout.diagnostics.filter((d) => d.severity === 'error'),
+        name,
+      ).toEqual([]);
       if (WITHOUT_MEASURES.has(name)) expect(layout.systems, name).toEqual([]);
       else expect(layout.systems.length, name).toBeGreaterThan(0);
     }

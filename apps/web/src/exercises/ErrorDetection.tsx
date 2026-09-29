@@ -58,31 +58,47 @@ export function ErrorDetection() {
     sound.playEvents(melodic(VARIANT, { noteDuration: 0.45, gap: 0.05 }));
   }, [sound]);
 
-  const onIntent = useCallback((intent: NotationIntent) => {
-    if (intent.type !== 'activate' || intent.target.kind !== 'element') return;
-    const id = intent.target.id;
-    sound.playNote(midiOfId(handleRef.current?.getTimeMap(), id, intent.target.pitch), 0.35);
-    setSelection((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-    setChecked(false);
-  }, [sound]);
+  const onIntent = useCallback(
+    (intent: NotationIntent) => {
+      if (intent.type !== 'activate' || intent.target.kind !== 'element') return;
+      const id = intent.target.id;
+      sound.playNote(midiOfId(handleRef.current?.getTimeMap(), id, intent.target.pitch), 0.35);
+      setSelection((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+      setChecked(false);
+    },
+    [sound],
+  );
 
   return (
     <section className="exercise">
       <h3>Error detection</h3>
       <p className="caption">
-        The printed melody is correct. Play sounds a version with two changed pitches;
-        click the notes you think differ.
+        The printed melody is correct. Play sounds a version with two changed pitches; click the notes you think differ.
       </p>
       <div className="exercise-controls">
-        <button type="button" onClick={play}>Play</button>
-        <button type="button" onClick={() => setChecked(true)}>Check</button>
-        <button type="button" onClick={() => { setSelection([]); setChecked(false); }}>Reset</button>
+        <button type="button" onClick={play}>
+          Play
+        </button>
+        <button type="button" onClick={() => setChecked(true)}>
+          Check
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSelection([]);
+            setChecked(false);
+          }}
+        >
+          Reset
+        </button>
       </div>
       <Notation score={score as MnxDocument} ref={handleRef}>
         <Notation.Interaction targets={['element']} onIntent={onIntent} />
         <Notation.Marks states={states} selection={selection} />
       </Notation>
-      <p className="exercise-feedback" role="status">{feedback}</p>
+      <p className="exercise-feedback" role="status">
+        {feedback}
+      </p>
     </section>
   );
 }

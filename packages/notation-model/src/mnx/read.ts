@@ -20,9 +20,7 @@ export function readMnx(json: unknown): ReadMnxResult {
   if (typeof json !== 'object' || json === null) {
     return {
       doc: null,
-      diagnostics: [
-        { severity: 'error', code: 'mnx-invalid', message: 'MNX document must be an object' },
-      ],
+      diagnostics: [{ severity: 'error', code: 'mnx-invalid', message: 'MNX document must be an object' }],
     };
   }
 
@@ -30,9 +28,7 @@ export function readMnx(json: unknown): ReadMnxResult {
   if (typeof mnx !== 'object' || mnx === null) {
     return {
       doc: null,
-      diagnostics: [
-        { severity: 'error', code: 'mnx-invalid', message: 'MNX document is missing "mnx"' },
-      ],
+      diagnostics: [{ severity: 'error', code: 'mnx-invalid', message: 'MNX document is missing "mnx"' }],
     };
   }
 

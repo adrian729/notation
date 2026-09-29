@@ -39,16 +39,13 @@ describe('underfull', () => {
       voice: 0,
     });
   });
-
 });
 
 describe('overfull', () => {
   it('is an error diagnostic, never a throw', () => {
     const doc = mnx({}, measure(note('C4', 'q'), note('D4', 'q'), note('E4', 'q'), note('F4', 'q'), note('G4', 'q')));
     expect(() => layoutScore(doc)).not.toThrow();
-    expect(run(doc).diagnostics).toEqual([
-      expect.objectContaining({ severity: 'error', code: 'measure-overfull' }),
-    ]);
+    expect(run(doc).diagnostics).toEqual([expect.objectContaining({ severity: 'error', code: 'measure-overfull' })]);
   });
 
   it('carries a diagnostic naming the measure and voice', () => {
@@ -76,7 +73,6 @@ describe('pickup measures', () => {
     expect(map.measures[1]!.endTick).toBe(3360 + 13440);
     expect(map.diagnostics).toHaveLength(0);
   });
-
 });
 
 describe('whole-bar rests in unrepresentable meters', () => {
@@ -116,7 +112,11 @@ describe('chords and tuplets', () => {
       {},
       measure(tuplet([3, 'q'], [2, 'q'], note('C4', 'q'), note('D4', 'q'), note('E4', 'q')), note('F4', 'h')),
     );
-    const ids = new Set(elementsOf(doc).slice(0, 3).map((e) => e.tuplet?.id));
+    const ids = new Set(
+      elementsOf(doc)
+        .slice(0, 3)
+        .map((e) => e.tuplet?.id),
+    );
 
     expect(ids.size).toBe(1);
     expect([...ids][0]).toBeDefined();

@@ -60,9 +60,7 @@ describe('elementIds', () => {
     expect(ids.idAt(pos([0]))).toBe('m0.s0.e1');
     expect(ids.idAt(pos([1]))).toBe('m0.s0.e1~2');
     expect(ids.idAt(pos([2]))).toBe('m0.s0.e2');
-    expect(ids.diagnostics).toEqual([
-      expect.objectContaining({ severity: 'warning', code: 'id-collision' }),
-    ]);
+    expect(ids.diagnostics).toEqual([expect.objectContaining({ severity: 'warning', code: 'id-collision' })]);
   });
 
   it('mint continues the same used-id set as the main pass', () => {

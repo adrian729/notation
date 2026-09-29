@@ -83,12 +83,7 @@ export function synthId(candidate: string, reader: Reader): NoteId {
   return id;
 }
 
-export function resolveId(
-  explicit: unknown,
-  candidate: string,
-  reader: Reader,
-  measureIndex?: number,
-): NoteId {
+export function resolveId(explicit: unknown, candidate: string, reader: Reader, measureIndex?: number): NoteId {
   if (typeof explicit === 'string') {
     if (reader.usedIds.has(explicit)) {
       reader.diagnostics.push({

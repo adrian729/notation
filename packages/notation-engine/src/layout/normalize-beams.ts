@@ -63,10 +63,7 @@ export function resolveBeams(
   return beams;
 }
 
-function capacityCutoffIndex(
-  measure: NormalizedMeasure,
-  events: readonly NormalizedEvent[],
-): number {
+function capacityCutoffIndex(measure: NormalizedMeasure, events: readonly NormalizedEvent[]): number {
   if (measure.pickup) return events.length;
   let onset = R.ZERO;
   for (let i = 0; i < events.length; i += 1) {
@@ -112,9 +109,7 @@ function resolveExplicitBeam(
   const voiceEvents = measure.voices.find((v) => v.index === voice)!.events;
 
   const cutoff = capacityCutoffIndex(measure, voiceEvents);
-  const inRange = resolved
-    .map((loc, i) => ({ id: ids[i]!, loc }))
-    .filter(({ loc }) => loc.index < cutoff);
+  const inRange = resolved.map((loc, i) => ({ id: ids[i]!, loc })).filter(({ loc }) => loc.index < cutoff);
   if (inRange.length < 2) return invalidBeam(measureIndex, reader);
 
   const groupElements = inRange.map(({ loc }) => voiceEvents[loc.index] as NormalizedElement);
@@ -125,9 +120,7 @@ function resolveExplicitBeam(
   );
   if (unbeamable) return invalidBeam(measureIndex, reader);
 
-  const order = inRange
-    .map(({ id, loc }) => ({ id, idx: loc.index }))
-    .sort((a, b2) => a.idx - b2.idx);
+  const order = inRange.map(({ id, loc }) => ({ id, idx: loc.index })).sort((a, b2) => a.idx - b2.idx);
   const minIdx = order[0]!.idx;
   const maxIdx = order[order.length - 1]!.idx;
   const groupIds = new Set(order.map((o) => o.id));
@@ -142,8 +135,8 @@ function resolveExplicitBeam(
   for (const id of span) claimed.add(id);
 
   const beamId = resolveId(b?.id, `${order[0]!.id}.beam`, reader, measureIndex);
-  const spanElements = span.map(
-    (id) => voiceEvents.find((e): e is NormalizedElement => e.kind !== 'space' && e.id === id)!,
+  const spanElements = span.map((id) =>
+    voiceEvents.find((e): e is NormalizedElement => e.kind !== 'space' && e.id === id)!,
   );
   const noteSpan = spanElements.filter((el) => el.kind !== 'rest');
 
@@ -158,9 +151,7 @@ function resolveExplicitBeam(
 
   const nested = asArray(b?.beams);
   const segments =
-    nested.length > 0
-      ? resolveExplicitSegments(nested, 2, groupIds, onsetById)
-      : deriveSegments(spanElements);
+    nested.length > 0 ? resolveExplicitSegments(nested, 2, groupIds, onsetById) : deriveSegments(spanElements);
 
   return { id: beamId, measureIndex, voice, elements: span, segments };
 }
@@ -175,9 +166,7 @@ function resolveExplicitSegments(
   const parentOrder = [...parentIds];
   for (const raw of list) {
     const b = asObject(raw);
-    const unordered = asArray(b?.events).filter(
-      (v): v is string => typeof v === 'string' && parentIds.has(v),
-    );
+    const unordered = asArray(b?.events).filter((v): v is string => typeof v === 'string' && parentIds.has(v));
     if (unordered.length === 0) continue;
     const ids = [...unordered].sort((a, c) => {
       const oa = onsetById.get(a);
@@ -248,13 +237,7 @@ function deriveSegments(span: readonly NormalizedElement[]): BeamSegment[] {
         segments.push({ level, first: span[i]!.id, last: span[j]!.id });
       } else {
         const hook: BeamSegment['hook'] =
-          i === firstNote
-            ? 'right'
-            : i === lastNote
-              ? 'left'
-              : startsSubdivision(onsets[i]!, level)
-                ? 'right'
-                : 'left';
+          i === firstNote ? 'right' : i === lastNote ? 'left' : startsSubdivision(onsets[i]!, level) ? 'right' : 'left';
         segments.push({ level, first: span[i]!.id, last: span[i]!.id, hook });
       }
       i = j + 1;
@@ -299,9 +282,7 @@ function autoBeamVoice(
 
   const groups = beamGroups(measure.time, events, options?.beaming, offset);
   const byId = new Map(
-    voice.events
-      .filter((e): e is NormalizedElement => e.kind !== 'space')
-      .map((e) => [e.id, e] as const),
+    voice.events.filter((e): e is NormalizedElement => e.kind !== 'space').map((e) => [e.id, e] as const),
   );
 
   return groups.map((group) => {

@@ -34,9 +34,7 @@ function boxes(layout: LayoutResult): ElementBox[] {
 
 describe('chords are addressable per member', () => {
   it('emits one ElementBox per notehead, sharing x and tick', () => {
-    const layout = layoutScore(
-      mnx({}, measure(chord(['C4', 'E4', 'G4', 'B4'], 'w'))),
-    );
+    const layout = layoutScore(mnx({}, measure(chord(['C4', 'E4', 'G4', 'B4'], 'w'))));
     const members = boxes(layout).filter((b) => b.kind === 'chord');
 
     expect(members).toHaveLength(4);
@@ -57,15 +55,11 @@ describe('chords are addressable per member', () => {
     expect(layout.slots).toHaveLength(1);
     expect(new Set(members.map((b) => b.eventId)).size).toBe(1);
     expect(layout.slots[0]!.eventId).toBe(members[0]!.eventId);
-    expect(layout.slots[0]!.elementIds.slice().sort()).toEqual(
-      members.map((b) => b.id).sort(),
-    );
+    expect(layout.slots[0]!.elementIds.slice().sort()).toEqual(members.map((b) => b.id).sort());
   });
 
   it('shifts a chord member a second above its neighbour off the stem', () => {
-    const layout = layoutScore(
-      mnx({}, measure(chord(['C4', 'D4'], 'q'), rest('h.'))),
-    );
+    const layout = layoutScore(mnx({}, measure(chord(['C4', 'D4'], 'q'), rest('h.'))));
     const members = boxes(layout)
       .filter((b) => b.kind === 'chord')
       .sort((a, b) => a.staffPosition - b.staffPosition);
@@ -87,9 +81,7 @@ describe('accidentals', () => {
 
     expect(glyphsOf(layout, 'accidental')).toHaveLength(0);
     expect(glyphsOf(layout, 'key-accidental')).toHaveLength(2);
-    expect(glyphsOf(layout, 'key-accidental').every((g) => g.cp === cp('accidentalSharp'))).toBe(
-      true,
-    );
+    expect(glyphsOf(layout, 'key-accidental').every((g) => g.cp === cp('accidentalSharp'))).toBe(true);
   });
 
   it('writes an accidental once per measure, again in the next, never on a tie-stop', () => {
@@ -118,9 +110,7 @@ describe('accidentals', () => {
   });
 
   it('stacks a chord’s accidentals into non-overlapping columns left of the notehead', () => {
-    const layout = layoutScore(
-      mnx({}, measure(chord(['C#4', 'Eb4', 'G#4'], 'w'))),
-    );
+    const layout = layoutScore(mnx({}, measure(chord(['C#4', 'Eb4', 'G#4'], 'w'))));
     const accidentals = glyphsOf(layout, 'accidental');
     const noteX = boxes(layout)[0]!.x;
 
@@ -130,9 +120,7 @@ describe('accidentals', () => {
   });
 });
 
-const GLYPH_NAME_BY_CP = new Map<number, string>(
-  Object.entries(GLYPH_CODEPOINT).map(([name, code]) => [code, name]),
-);
+const GLYPH_NAME_BY_CP = new Map<number, string>(Object.entries(GLYPH_CODEPOINT).map(([name, code]) => [code, name]));
 
 interface InkBox {
   l: number;
@@ -178,9 +166,7 @@ function expectClearOfNoteheads(layout: LayoutResult, glyphs: readonly GlyphRun[
 
 describe('accidental stacking', () => {
   it('keeps a six-note chromatic cluster’s accidentals off each other and off every notehead', () => {
-    const layout = layoutScore(
-      mnx({}, measure(chord(['C#4', 'Db4', 'D#4', 'Eb4', 'F#4', 'Gb4'], 'w'))),
-    );
+    const layout = layoutScore(mnx({}, measure(chord(['C#4', 'Db4', 'D#4', 'Eb4', 'F#4', 'Gb4'], 'w'))));
     const accidentals = glyphsOf(layout, 'accidental');
 
     expect(accidentals).toHaveLength(6);
@@ -190,9 +176,7 @@ describe('accidental stacking', () => {
   });
 
   it('keeps the whole block left of the leftmost notehead in a stem-down chord with a second', () => {
-    const layout = layoutScore(
-      mnx({}, measure(chord(['G#4', 'A#4', 'D5'], 'h'), rest('h'))),
-    );
+    const layout = layoutScore(mnx({}, measure(chord(['G#4', 'A#4', 'D5'], 'h'), rest('h'))));
     const members = boxes(layout)
       .filter((b) => b.kind === 'chord')
       .sort((a, b) => a.staffPosition - b.staffPosition);
@@ -223,15 +207,11 @@ describe('accidental stacking', () => {
   it('makes a parenthesized cautionary column wide enough for its parentheses', () => {
     const parenthesized = { accidentalDisplay: { show: true, enclosure: { symbol: 'parentheses' as const } } };
     const layout = layoutScore(
-      mnx(
-        {},
-        measure(chord(['G4', 'A4'], 'h', {}, [parenthesized, parenthesized]), rest('h')),
-      ),
+      mnx({}, measure(chord(['G4', 'A4'], 'h', {}, [parenthesized, parenthesized]), rest('h'))),
       { accidentals: { parenthesizeCautionary: true } },
     );
     const accidentals = glyphsOf(layout, 'accidental');
-    const byCp = (name: string): readonly GlyphRun[] =>
-      accidentals.filter((g) => g.cp === cp(name));
+    const byCp = (name: string): readonly GlyphRun[] => accidentals.filter((g) => g.cp === cp(name));
 
     expect(byCp('accidentalNatural')).toHaveLength(2);
     expect(byCp('accidentalParensLeft')).toHaveLength(2);
@@ -249,10 +229,7 @@ describe('accidental stacking', () => {
       mnx(
         {},
         voices(
-          [
-            note('G#4', 'h', {}, { id: 'v0a' }),
-            note('B4', 'h', {}, { id: 'v0b', accidentalDisplay: { show: true } }),
-          ],
+          [note('G#4', 'h', {}, { id: 'v0a' }), note('B4', 'h', {}, { id: 'v0b', accidentalDisplay: { show: true } })],
           [note('F#4', 'h', {}, { id: 'v1a' }), note('Bb4', 'h', {}, { id: 'v1b' })],
         ),
       ),
@@ -269,27 +246,20 @@ describe('accidental stacking', () => {
 
 describe('ledger lines', () => {
   it('draws every line crossed above and below the staff, but none for a note in a space', () => {
-    const layout = layoutScore(
-      mnx({}, measure(note('C6', 'h'), note('C3', 'h'))),
-    );
+    const layout = layoutScore(mnx({}, measure(note('C6', 'h'), note('C3', 'h'))));
     const ledgers = layout.rects.filter((r) => r.cls === 'ledger-line');
     const staffTop = layout.systems[0]!.y;
-    const byPosition = ledgers
-      .map((r) => +(r.y + r.h / 2 - staffTop).toFixed(3))
-      .sort((a, b) => a - b);
+    const byPosition = ledgers.map((r) => +(r.y + r.h / 2 - staffTop).toFixed(3)).sort((a, b) => a - b);
 
     expect(byPosition).toEqual([-2, -1, 5, 6, 7, 8]);
     expect(ledgers.every((r) => Math.abs(r.h - 0.16) < 1e-9)).toBe(true);
     expect(ledgers.every((r) => Math.abs(r.w - (1.18 + 0.8)) < 1e-9)).toBe(true);
   });
-
 });
 
 describe('rests', () => {
   it('draws one centred whole rest for a whole-bar rest in 9/8', () => {
-    const layout = layoutScore(
-      mnx({ time: { count: 9, unit: 8 } }, { sequences: [{ content: [], fullMeasure: {} }] }),
-    );
+    const layout = layoutScore(mnx({ time: { count: 9, unit: 8 } }, { sequences: [{ content: [], fullMeasure: {} }] }));
     const rests = glyphsOf(layout, 'rest');
     const box = boxes(layout)[0]!;
 
@@ -306,11 +276,7 @@ describe('rests', () => {
 
   it('anchors rests where the Bravura glyph metadata says, not where engraving.md guesses', () => {
     const layout = layoutScore(
-      mnx(
-        {},
-        measure(rest('q'), rest('q'), rest('h')),
-        measure(rest('8'), rest('8'), rest('q'), rest('h')),
-      ),
+      mnx({}, measure(rest('q'), rest('q'), rest('h')), measure(rest('8'), rest('8'), rest('q'), rest('h'))),
     );
     const restY = (name: string): number => {
       const staffTop = layout.systems[0]!.y;
@@ -336,9 +302,7 @@ describe('systems', () => {
   it('breaks greedily at options.widthSp and keeps column x strictly increasing', () => {
     const doc = mnx(
       {},
-      ...Array.from({ length: 8 }, () =>
-        measure(note('C4', 'q'), note('D4', 'q'), note('E4', 'q'), note('F4', 'q')),
-      ),
+      ...Array.from({ length: 8 }, () => measure(note('C4', 'q'), note('D4', 'q'), note('E4', 'q'), note('F4', 'q'))),
     );
     const layout = layoutScore(doc, { widthSp: 40 });
 
@@ -351,16 +315,18 @@ describe('systems', () => {
       for (let i = 1; i < xs.length; i += 1) expect(xs[i]!).toBeGreaterThan(xs[i - 1]!);
       expect(system.w).toBeLessThanOrEqual(40 + 1e-6);
     }
-    expect(layout.rects.filter((r) => r.cls === 'staff-line')).toHaveLength(
-      5 * layout.systems.length,
-    );
+    expect(layout.rects.filter((r) => r.cls === 'staff-line')).toHaveLength(5 * layout.systems.length);
     expect(glyphsOf(layout, 'clef')).toHaveLength(layout.systems.length);
   });
 
   it('honours the systems of the score layout', () => {
     const layout = layoutScore(fixture('system-break'));
     expect(layout.systems).toHaveLength(2);
-    expect(boxes(layout).map((b) => b.systemIndex).sort()).toEqual([0, 1]);
+    expect(
+      boxes(layout)
+        .map((b) => b.systemIndex)
+        .sort(),
+    ).toEqual([0, 1]);
   });
 
   it('does not force the last system to the full width', () => {
@@ -383,14 +349,9 @@ describe('chrome', () => {
     expect(keyGlyphs.filter((g) => g.cp === cp('accidentalFlat'))).toHaveLength(2);
   });
 
-
-
   it('draws an octave-up bass clef with its own glyph', () => {
     const glyphAt = (octave: -1 | 0 | 1): number =>
-      glyphsOf(
-        layoutScore(mnx({ clef: { ...BASS, octave } }, measure(note('D3', 'w')))),
-        'clef',
-      )[0]!.cp;
+      glyphsOf(layoutScore(mnx({ clef: { ...BASS, octave } }, measure(note('D3', 'w')))), 'clef')[0]!.cp;
 
     expect(glyphAt(1)).toBe(0xe065);
     expect(glyphAt(1)).toBe(cp('fClef8va'));
@@ -399,11 +360,8 @@ describe('chrome', () => {
     expect(glyphAt(-1)).toBe(cp('fClef8vb'));
   });
 
-
   it('draws a dashed barline as dash segments spanning the staff, not one rect', () => {
-    const layout = layoutScore(
-      mnx({}, withGlobal({ barline: { type: 'dashed' } }, measure(note('C4', 'w')))),
-    );
+    const layout = layoutScore(mnx({}, withGlobal({ barline: { type: 'dashed' } }, measure(note('C4', 'w')))));
     const staffTop = layout.systems[0]!.y;
     const dashes = layout.rects.filter((r) => r.cls === 'barline').sort((a, b) => a.y - b.y);
 
@@ -420,14 +378,11 @@ describe('chrome', () => {
       expect(gap).toBeCloseTo(0.25, 6);
     }
   });
-
 });
 
 describe('stems and flags', () => {
   it('points stems away from the middle line and down when on it', () => {
-    const layout = layoutScore(
-      mnx({}, measure(note('C4', 'q'), note('B4', 'q'), note('G5', 'h'))),
-    );
+    const layout = layoutScore(mnx({}, measure(note('C4', 'q'), note('B4', 'q'), note('G5', 'h'))));
     const staffTop = layout.systems[0]!.y;
     const stems = layout.rects.filter((r) => r.cls === 'stem').sort((a, b) => a.x - b.x);
 
@@ -462,11 +417,8 @@ function beamLineAt(points: readonly [number, number][], x: number): number {
 }
 
 describe('beaming', () => {
-
-  it('ends every beamed stem on its beam\'s outer edge', () => {
-    const layout = layoutScore(
-      mnx({}, measure(note('C4', '8'), note('A5', '8'), note('D4', '8'), note('E4', '8'))),
-    );
+  it("ends every beamed stem on its beam's outer edge", () => {
+    const layout = layoutScore(mnx({}, measure(note('C4', '8'), note('A5', '8'), note('D4', '8'), note('E4', '8'))));
     const staffTop = layout.systems[0]!.y;
     const beamPath = layout.paths.find((p) => p.cls === 'beam')!;
     const [, , far1, far0] = pathPoints(beamPath.d);
@@ -483,9 +435,7 @@ describe('beaming', () => {
   });
 
   it('never shortens a beamed stem past MIN_STEM (3.0sp)', () => {
-    const layout = layoutScore(
-      mnx({}, measure(note('A4', '8'), note('B4', '8'), note('C5', '8'), note('C5', '8'))),
-    );
+    const layout = layoutScore(mnx({}, measure(note('A4', '8'), note('B4', '8'), note('C5', '8'), note('C5', '8'))));
     const stems = layout.rects.filter((r) => r.cls === 'stem');
     expect(stems.length).toBeGreaterThan(0);
     for (const stem of stems) expect(stem.h).toBeGreaterThanOrEqual(3.0 - 1e-6);
@@ -550,7 +500,6 @@ describe('beaming', () => {
     expect(hookWidth).toBeLessThan(1.0 - 1e-6);
     expect(hookWidth).toBeCloseTo(halfGap + engravingDefaults.stemThickness, 5);
   });
-
 });
 
 describe('breath marks', () => {
@@ -571,18 +520,13 @@ describe('breath marks', () => {
     expect(layout.diagnostics).toEqual([]);
   });
 
-
   it('widens the note’s column so the following one moves right', () => {
     const xs = (breath: boolean): number[] =>
       boxes(
         layoutScore(
           mnx(
             {},
-            measure(
-              note('C4', '8', breath ? { markings: { breath: {} } } : {}),
-              note('A4', '8'),
-              note('E4', 'h.'),
-            ),
+            measure(note('C4', '8', breath ? { markings: { breath: {} } } : {}), note('A4', '8'), note('E4', 'h.')),
           ),
         ),
       )
@@ -665,10 +609,7 @@ describe('two voices', () => {
     const layout = layoutScore(
       mnx(
         {},
-        voices(
-          [n('A5', '8', 'a'), n('B5', '8', 'b'), rest('h.')],
-          [n('C4', '8', 'c'), n('D4', '8', 'd'), rest('h.')],
-        ),
+        voices([n('A5', '8', 'a'), n('B5', '8', 'b'), rest('h.')], [n('C4', '8', 'c'), n('D4', '8', 'd'), rest('h.')]),
       ),
     );
     const staffTop = layout.systems[0]!.y;
@@ -738,15 +679,9 @@ describe('two voices', () => {
   });
 
   it('puts the dot of a v1 note on a line in the space below', () => {
-    const layout = layoutScore(
-      mnx(
-        {},
-        voices([n('B4', 'h.', 'up'), rest('q')], [n('G4', 'h.', 'down'), rest('q')]),
-      ),
-    );
+    const layout = layoutScore(mnx({}, voices([n('B4', 'h.', 'up'), rest('q')], [n('G4', 'h.', 'down'), rest('q')])));
     const staffTop = layout.systems[0]!.y;
-    const dotY = (id: string): number =>
-      +(glyphsOf(layout, 'dot').find((g) => g.el === id)!.y - staffTop).toFixed(3);
+    const dotY = (id: string): number => +(glyphsOf(layout, 'dot').find((g) => g.el === id)!.y - staffTop).toFixed(3);
 
     expect(dotY('up')).toBe(1.5);
     expect(dotY('down')).toBe(3.5);
@@ -762,11 +697,8 @@ describe('two voices', () => {
     expect(box(layout, 'top').tick).toBe(box(layout, 'bottom').tick);
   });
 
-
   it('keeps a same-glyph unison on one x, each voice with its own ElementBox', () => {
-    const layout = layoutScore(
-      mnx({}, voices([n('C5', 'h', 'u0'), rest('h')], [n('C5', 'h', 'u1'), rest('h')])),
-    );
+    const layout = layoutScore(mnx({}, voices([n('C5', 'h', 'u0'), rest('h')], [n('C5', 'h', 'u1'), rest('h')])));
     const heads = glyphsOf(layout, 'notehead');
 
     expect(box(layout, 'u0').x).toBeCloseTo(box(layout, 'u1').x, 6);
@@ -791,7 +723,6 @@ describe('two voices', () => {
     const dot = glyphsOf(dots, 'dot').find((g) => g.el === 'd0')!;
     expect(dot.x).toBeGreaterThan(box(dots, 'd1').x + box(dots, 'd1').w);
   });
-
 });
 
 describe('diagnostics', () => {
@@ -815,9 +746,7 @@ describe('diagnostics', () => {
 
 describe('timemap', () => {
   it('mirrors ElementBox addressing and defaults to 120bpm', () => {
-    const layout = layoutScore(
-      mnx({}, measure(chord(['C4', 'E4'], 'h'), note('G4', 'h'))),
-    );
+    const layout = layoutScore(mnx({}, measure(chord(['C4', 'E4'], 'h'), note('G4', 'h'))));
     const tm = layout.timemap;
 
     expect(tm.divisions).toBe(3360);
@@ -837,7 +766,6 @@ describe('timemap', () => {
     expect(position.x).toBeCloseTo(tm.entries[0]!.x, 6);
     expect(position.yBottom - position.yTop).toBe(4);
   });
-
 
   it('highlights the tie continuation on its own written span, not the tie head', () => {
     const layout = layoutScore(fixture('tie-merge'));
@@ -874,10 +802,7 @@ describe('timemap', () => {
     const layout = layoutScore(
       mnx(
         {},
-        voices(
-          [n('C5', 'h', 't0'), n('C5', 'h', 't1')],
-          [n('E4', 'q', 'm0'), n('F4', 'q', 'm1'), n('G4', 'h', 'm2')],
-        ),
+        voices([n('C5', 'h', 't0'), n('C5', 'h', 't1')], [n('E4', 'q', 'm0'), n('F4', 'q', 'm1'), n('G4', 'h', 'm2')]),
       ),
     );
     const tied = layoutScore(
@@ -913,11 +838,9 @@ describe('timemap', () => {
     expect(tm.tickToSeconds(6720)).toBeCloseTo(2, 6);
     expect(tm.secondsToTick(2)).toBeCloseTo(6720, 6);
   });
-
 });
 
 describe('purity and glyph coverage', () => {
-
   it('resolves every emitted glyph to a real codepoint', () => {
     const layout = layoutScore(fixture('repeat-alto'));
     expect(layout.glyphs.length).toBeGreaterThan(0);
@@ -926,10 +849,16 @@ describe('purity and glyph coverage', () => {
 });
 
 describe('tuplets', () => {
-
   it('draws a bracket when the span cannot beam (quarters)', () => {
     const layout = layoutScore(
-      mnx({}, measure(tuplet([3, 'q'], [2, 'q'], note('C4', 'q'), note('D4', 'q'), note('E4', 'q')), note('F4', 'q'), note('G4', 'q'))),
+      mnx(
+        {},
+        measure(
+          tuplet([3, 'q'], [2, 'q'], note('C4', 'q'), note('D4', 'q'), note('E4', 'q')),
+          note('F4', 'q'),
+          note('G4', 'q'),
+        ),
+      ),
     );
     expect(layout.rects.filter((r) => r.cls === 'tuplet-bracket')).not.toHaveLength(0);
     expect(layout.glyphs.filter((g) => g.cls === 'tuplet-number')).not.toHaveLength(0);
@@ -937,14 +866,7 @@ describe('tuplets', () => {
 
   it('draws a bracket when a rest sits inside an otherwise-beamable span', () => {
     const layout = layoutScore(
-      mnx(
-        {},
-        measure(
-          tuplet([3, '8'], [2, '8'], note('C4', '8'), rest('8'), note('D4', '8')),
-          rest('h'),
-          rest('q'),
-        ),
-      ),
+      mnx({}, measure(tuplet([3, '8'], [2, '8'], note('C4', '8'), rest('8'), note('D4', '8')), rest('h'), rest('q'))),
     );
     expect(layout.rects.filter((r) => r.cls === 'tuplet-bracket')).not.toHaveLength(0);
   });
@@ -973,7 +895,10 @@ describe('tuplets', () => {
   });
 
   it("MNX bracket: 'yes' forces a bracket even on a fully-beamed run", () => {
-    const forced = { ...tuplet([3, '8'], [2, '8'], note('C4', '8'), note('D4', '8'), note('E4', '8')), bracket: 'yes' as const };
+    const forced = {
+      ...tuplet([3, '8'], [2, '8'], note('C4', '8'), note('D4', '8'), note('E4', '8')),
+      bracket: 'yes' as const,
+    };
     const layout = layoutScore(mnx({}, measure(forced, rest('h'), rest('q'))));
     expect(layout.rects.filter((r) => r.cls === 'tuplet-bracket')).not.toHaveLength(0);
   });
@@ -1012,9 +937,7 @@ describe('viewBox', () => {
     const layout = layoutScore(fixture('system-break'));
     const last = layout.systems[layout.systems.length - 1]!;
     expect(layout.viewBox.h).toBeGreaterThanOrEqual(last.y + last.h);
-    expect(layout.viewBox.w).toBeGreaterThanOrEqual(
-      Math.max(...layout.systems.map((s) => s.w)),
-    );
+    expect(layout.viewBox.w).toBeGreaterThanOrEqual(Math.max(...layout.systems.map((s) => s.w)));
   });
 });
 
@@ -1063,7 +986,7 @@ describe('ties', () => {
       const points = curvePoints(d);
       return points[1]![1]! - points[0]![1]!;
     };
-    const [top, mid, bottom] = ties as [typeof ties[0], typeof ties[0], typeof ties[0]];
+    const [top, mid, bottom] = ties as [(typeof ties)[0], (typeof ties)[0], (typeof ties)[0]];
     expect(arch(top.d)).toBeLessThan(0);
     expect(arch(bottom.d)).toBeGreaterThan(0);
     expect(arch(mid.d)).toBeLessThan(0);
@@ -1071,8 +994,12 @@ describe('ties', () => {
 
   it('keeps tie ids stable across a re-layout of the same document', () => {
     const doc = fixture('golden-ties-barline');
-    const a = layoutScore(doc).paths.filter((p) => p.cls === 'tie').map((p) => p.el);
-    const b = layoutScore(doc).paths.filter((p) => p.cls === 'tie').map((p) => p.el);
+    const a = layoutScore(doc)
+      .paths.filter((p) => p.cls === 'tie')
+      .map((p) => p.el);
+    const b = layoutScore(doc)
+      .paths.filter((p) => p.cls === 'tie')
+      .map((p) => p.el);
     expect(a).toEqual(b);
   });
 
@@ -1098,7 +1025,11 @@ describe('ties', () => {
     );
     const ties = layout.paths.filter((p) => p.cls === 'tie');
     expect(ties).toHaveLength(1);
-    expect(boxes(layout).filter((b) => b.kind === 'note').map((b) => b.staffPosition)).toEqual([2.5, 2.5]);
+    expect(
+      boxes(layout)
+        .filter((b) => b.kind === 'note')
+        .map((b) => b.staffPosition),
+    ).toEqual([2.5, 2.5]);
     const lines = staffLineYs(layout);
     expect(lines).toHaveLength(5);
     for (const y of tieEndYs(ties[0]!.d)) {
@@ -1204,13 +1135,23 @@ describe('slurs', () => {
     const up = layoutScore(
       mnx(
         {},
-        measure(note('C4', 'q', { slurs: [{ target: 'e2', side: 'up' }] }), rest('q'), note('E4', 'q', { id: 'e2' }), rest('q')),
+        measure(
+          note('C4', 'q', { slurs: [{ target: 'e2', side: 'up' }] }),
+          rest('q'),
+          note('E4', 'q', { id: 'e2' }),
+          rest('q'),
+        ),
       ),
     );
     const down = layoutScore(
       mnx(
         {},
-        measure(note('C4', 'q', { slurs: [{ target: 'e2', side: 'down' }] }), rest('q'), note('E4', 'q', { id: 'e2' }), rest('q')),
+        measure(
+          note('C4', 'q', { slurs: [{ target: 'e2', side: 'down' }] }),
+          rest('q'),
+          note('E4', 'q', { id: 'e2' }),
+          rest('q'),
+        ),
       ),
     );
     expect(tieArchFromPath(up.paths.find((p) => p.cls === 'slur')!.d)).toBeGreaterThan(0);
@@ -1222,7 +1163,11 @@ describe('slurs', () => {
       mnx(
         {},
         measure(
-          chord(['C4', 'E4', 'G4'], 'q', { slurs: [{ target: 'e2', startNote: 'low', side: 'up' }] }, [{ id: 'low' }, {}, {}]),
+          chord(['C4', 'E4', 'G4'], 'q', { slurs: [{ target: 'e2', startNote: 'low', side: 'up' }] }, [
+            { id: 'low' },
+            {},
+            {},
+          ]),
           rest('q'),
           note('C5', 'q', { id: 'e2' }),
           rest('q'),
@@ -1347,6 +1292,8 @@ describe('slur clearance and anchors', () => {
     const doc = mnx({}, measure(note('C4', 'w')));
     doc.global.measures[0]!.tempos = [{ bpm: -5 }] as never;
     const layout = layoutScore(doc);
-    expect(layout.diagnostics.some((d) => d.code === 'mnx-unsupported' && d.message.includes('invalid tempo bpm'))).toBe(true);
+    expect(
+      layout.diagnostics.some((d) => d.code === 'mnx-unsupported' && d.message.includes('invalid tempo bpm')),
+    ).toBe(true);
   });
 });

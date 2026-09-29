@@ -1,4 +1,9 @@
-import { INTERVAL_FAMILIES, INTERVAL_FAMILY_ORDER, type IntervalFamilyId, type IntervalId } from '../shared/intervals.js';
+import {
+  INTERVAL_FAMILIES,
+  INTERVAL_FAMILY_ORDER,
+  type IntervalFamilyId,
+  type IntervalId,
+} from '../shared/intervals.js';
 import {
   FAMILY_TITLE,
   FAMILY_HELP,

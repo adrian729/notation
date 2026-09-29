@@ -37,7 +37,12 @@ export function value(token: string): NoteValue {
   return dots > 0 ? { base, dots } : { base };
 }
 
-export function note(pitch: string, duration: string, extra: Partial<Event> = {}, noteExtra: Partial<Note> = {}): Event {
+export function note(
+  pitch: string,
+  duration: string,
+  extra: Partial<Event> = {},
+  noteExtra: Partial<Note> = {},
+): Event {
   return { duration: value(duration), notes: [{ pitch: parsePitch(pitch), ...noteExtra }], ...extra };
 }
 

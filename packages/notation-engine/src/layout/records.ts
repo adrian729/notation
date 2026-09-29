@@ -12,15 +12,7 @@ export interface StaffPitch {
   octave: number;
 }
 
-export type DurationBase =
-  | 'breve'
-  | 'whole'
-  | 'half'
-  | 'quarter'
-  | 'eighth'
-  | '16th'
-  | '32nd'
-  | '64th';
+export type DurationBase = 'breve' | 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th';
 
 export type Dots = 0 | 1 | 2;
 

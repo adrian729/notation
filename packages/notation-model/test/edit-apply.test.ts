@@ -80,9 +80,7 @@ describe('applyIntent setPitches', () => {
     const result = applyIntent(doc, { type: 'setPitches', event: 'nope', pitches: pitches('D4') });
     expect(result.doc).toBe(doc);
     expect(result.changed).toEqual([]);
-    expect(result.diagnostics).toEqual([
-      expect.objectContaining({ code: 'intent-target-missing' }),
-    ]);
+    expect(result.diagnostics).toEqual([expect.objectContaining({ code: 'intent-target-missing' })]);
     expectValid(result.doc);
   });
 
@@ -92,9 +90,7 @@ describe('applyIntent setPitches', () => {
     const result = applyIntent(doc, { type: 'setPitches', event: fullId, pitches: pitches('C4') });
     expect(result.doc).toBe(doc);
     expect(result.changed).toEqual([]);
-    expect(result.diagnostics).toEqual([
-      expect.objectContaining({ code: 'intent-target-unsupported' }),
-    ]);
+    expect(result.diagnostics).toEqual([expect.objectContaining({ code: 'intent-target-unsupported' })]);
     expectValid(result.doc);
   });
 
@@ -145,10 +141,7 @@ describe('applyIntent setPitches', () => {
 
   it('drops a slur endpoint targeting a removed chord member', () => {
     const doc = mnx(
-      measure(
-        chord(['C4', 'E4'], 'q', { id: 'ev0' }),
-        note('D4', 'q', { slurs: [{ target: 'ev0.n1' }] }),
-      ),
+      measure(chord(['C4', 'E4'], 'q', { id: 'ev0' }), note('D4', 'q', { slurs: [{ target: 'ev0.n1' }] })),
     );
     const result = applyIntent(doc, { type: 'setPitches', event: 'ev0', pitches: pitches('C4') });
     const content = result.doc.parts[0].measures[0].sequences[0].content as any[];

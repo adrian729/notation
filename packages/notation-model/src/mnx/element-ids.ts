@@ -180,7 +180,11 @@ export function elementIds(doc: MnxDocument): ElementIds {
           const index = scope.eventCount;
           scope.eventCount += 1;
           const id = resolve(item.id, `m${scope.measureIndex}.s${scope.sequenceIndex}.e${index}`, scope.measureIndex);
-          const pos: ElementPosition = { measureIndex: scope.measureIndex, sequenceIndex: scope.sequenceIndex, path: itemPath };
+          const pos: ElementPosition = {
+            measureIndex: scope.measureIndex,
+            sequenceIndex: scope.sequenceIndex,
+            path: itemPath,
+          };
           register({ kind: 'event', node: item as unknown as Event }, pos, id);
           const notes = asArray(item.notes)
             .map((n) => asObject(n))

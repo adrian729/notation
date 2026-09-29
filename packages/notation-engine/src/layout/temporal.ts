@@ -52,9 +52,7 @@ export function elementsByStaffMeasureKey(staffIndex: number, measureIndex: numb
   return `${staffIndex}:${measureIndex}`;
 }
 
-export function indexElementsByStaffMeasure(
-  score: TemporalScore,
-): ReadonlyMap<string, readonly TemporalElement[]> {
+export function indexElementsByStaffMeasure(score: TemporalScore): ReadonlyMap<string, readonly TemporalElement[]> {
   const byMeasure = new Map<string, TemporalElement[]>();
   for (const el of score.elements) {
     const key = elementsByStaffMeasureKey(el.staffIndex, el.measureIndex);

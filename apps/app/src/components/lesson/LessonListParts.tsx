@@ -6,7 +6,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import type { HelpSection, LessonResult, OverviewSection } from '@/exercises/shared';
 
-export function OverviewHelpPopover({ ariaLabel, sections }: { ariaLabel: string; sections: readonly OverviewSection[] }) {
+export function OverviewHelpPopover({
+  ariaLabel,
+  sections,
+}: {
+  ariaLabel: string;
+  sections: readonly OverviewSection[];
+}) {
   return (
     <Popover>
       <PopoverTrigger asChild>

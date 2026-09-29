@@ -30,12 +30,7 @@ export interface LessonDef {
   options: ExerciseOptions;
 }
 
-const RELATIONSHIP_ORDER: readonly ToneRelationship[] = [
-  'common-first',
-  'common-either',
-  'nearby',
-  'random',
-];
+const RELATIONSHIP_ORDER: readonly ToneRelationship[] = ['common-first', 'common-either', 'nearby', 'random'];
 
 const RELATIONSHIP_SLUG: Record<ToneRelationship, string> = {
   'common-first': 'common-first',
@@ -65,11 +60,14 @@ export const RELATIONSHIP_HELP: Record<ToneRelationship, string> = {
     'A and B each start on a random note anywhere in the range, so you must judge each size on its own. This is the hardest setting.',
 };
 
-export const FIRST_NOTE_HELP = 'The first note is the one you hear first: the upper note when the interval is played descending, the lower one otherwise.';
+export const FIRST_NOTE_HELP =
+  'The first note is the one you hear first: the upper note when the interval is played descending, the lower one otherwise.';
 
 function moduleHelp(family: IntervalFamilyId, relationship: ToneRelationship): HelpSection[] {
   const relationshipText =
-    relationship === 'random' ? RELATIONSHIP_HELP[relationship] : `${RELATIONSHIP_HELP[relationship]} ${FIRST_NOTE_HELP}`;
+    relationship === 'random'
+      ? RELATIONSHIP_HELP[relationship]
+      : `${RELATIONSHIP_HELP[relationship]} ${FIRST_NOTE_HELP}`;
   return [
     { heading: 'Interval Comparison', text: TASK_HELP },
     { heading: FAMILY_TITLE[family], text: FAMILY_HELP[family] },
