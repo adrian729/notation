@@ -545,7 +545,7 @@ Grounded in `AGENTS.md`, `notation/interaction.md`, `notation/audio.md`, `notati
 ### 2.1 What exists today
 
 - **Notation:** MNX render with `hitTest` (element, slot and point), `<Notation.Interaction>` activate and hover intents, `<Notation.Marks>` (states, selection, preview ghost), `<Notation.Playback>` (notes, cursor, manual), and `applyIntent` with `setPitches` (set, re-pitch, clear, chord). Two voices are addressable. Handle: `getLayout`, `getTimeMap`, `hitTest`, `setPlaybackTick`, `exportSVG`, `focus`.
-- **Presets:** `ChordReveal`, `IntervalReveal` (harmonic/melodic), `ScaleReveal` (major, natural/harmonic/melodic minor). They build MNX internally and only render.
+- **Presets:** `NotesReveal` (any pitches, harmonic or melodic), `ScaleReveal` (major, natural/harmonic/melodic minor). They build MNX internally and only render.
 - **Audio builders:** `melodic`, `harmonic`, `concat`, `shift` and `transpose` (pure `.` entry). Builder events carry no ids. `midi` may be fractional; `NoteEvent.velocity` is optional.
 - **Score playback:** `eventsFromTimeMap` follows repeats, voltas and D.S. al Fine through `playOrder`, and drives a cursor via `tickAtSeconds` → `setPlaybackTick`.
 - **Instrument:** one `synthInstrument`, with an `Instrument` seam (`noteOn`, `stopAll`) for samples and drones. Count-in and metronome are deferred in `audio.md`.

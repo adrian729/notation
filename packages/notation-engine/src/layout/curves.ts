@@ -57,9 +57,7 @@ export function curves(
 ): CurvesResult {
   const noteMap = buildNoteMap(justified);
   const elementsBySystem = buildElementsBySystem(justified);
-  const twoVoiceMeasures = new Set(
-    placedScore.elements.filter((e) => e.voice === 1).map((e) => e.measureIndex),
-  );
+  const twoVoiceMeasures = new Set(placedScore.elements.filter((e) => e.voice === 1).map((e) => e.measureIndex));
   const chordTies = new Map<NoteId, NormalizedTie[]>();
   for (const tie of ties) {
     const from = noteMap.get(tie.from);
@@ -86,11 +84,13 @@ export function curves(
     }
 
     const siblingTies = from.el.kind === 'chord' ? (chordTies.get(from.el.id) ?? [tie]) : [tie];
-    const siblings = siblingTies
-      .map((t) => noteMap.get(t.from))
-      .filter((p): p is PlacedNote => p !== undefined);
+    const siblings = siblingTies.map((t) => noteMap.get(t.from)).filter((p): p is PlacedNote => p !== undefined);
     const dir =
-      tie.side === 'up' ? 1 : tie.side === 'down' ? -1 : directionFor(from, siblings, twoVoiceMeasures.has(tie.measureIndex));
+      tie.side === 'up'
+        ? 1
+        : tie.side === 'down'
+          ? -1
+          : directionFor(from, siblings, twoVoiceMeasures.has(tie.measureIndex));
 
     for (const span of spansBetween(from, to, justified)) shapes.push(tieShape(tie.id, span, dir));
   }
@@ -161,13 +161,15 @@ interface Obstacle {
   y1: number;
 }
 
-function directionFor(
-  from: PlacedNote,
-  siblings: readonly PlacedNote[],
-  twoVoice: boolean,
-): 1 | -1 {
+function directionFor(from: PlacedNote, siblings: readonly PlacedNote[], twoVoice: boolean): 1 | -1 {
   if (twoVoice) return from.el.voice === 0 ? 1 : -1;
   if (from.el.kind === 'chord' && siblings.length > 1) {
+    const coincident = siblings.filter((s) => s.head.staffPosition === from.head.staffPosition);
+    if (coincident.length > 1) {
+      const alters = coincident.map((s) => s.head.pitch.alter);
+      if (from.head.pitch.alter === Math.max(...alters)) return 1;
+      if (from.head.pitch.alter === Math.min(...alters)) return -1;
+    }
     const positions = siblings.map((s) => s.head.staffPosition);
     const top = Math.min(...positions);
     const bottom = Math.max(...positions);
@@ -258,7 +260,15 @@ function curveSpan(span: CurveSpan, endpointYOf: (note: PlacedNote) => number): 
       const { from, to } = span;
       const x0 = rightEdge(from) + GAP;
       const x3 = Math.max(leftEdge(to) - GAP, x0 + MIN_SPAN);
-      return { systemIndex: from.systemIndex, x0, x3, y0: endpointYOf(from), y3: endpointYOf(to), lo: from.x, hi: to.x };
+      return {
+        systemIndex: from.systemIndex,
+        x0,
+        x3,
+        y0: endpointYOf(from),
+        y3: endpointYOf(to),
+        lo: from.x,
+        hi: to.x,
+      };
     }
     case 'start': {
       const { from, system } = span;
@@ -277,16 +287,12 @@ function curveSpan(span: CurveSpan, endpointYOf: (note: PlacedNote) => number): 
   }
 }
 
-function curveShape(
-  id: string,
-  cls: CurveShape['cls'],
-  g: CurveGeometry,
-  dir: 1 | -1,
-  arch: number,
-): CurveShape {
+function curveShape(id: string, cls: CurveShape['cls'], g: CurveGeometry, dir: 1 | -1, arch: number): CurveShape {
   const e = engravingDefaults;
   const [endT, midT] =
-    cls === 'tie' ? [e.tieEndpointThickness, e.tieMidpointThickness] : [e.slurEndpointThickness, e.slurMidpointThickness];
+    cls === 'tie'
+      ? [e.tieEndpointThickness, e.tieMidpointThickness]
+      : [e.slurEndpointThickness, e.slurMidpointThickness];
   return {
     el: id,
     systemIndex: g.systemIndex,
@@ -314,11 +320,7 @@ function slurDirection(
   return anyStemDownInSpan(from, to, elementsBySystem) ? 1 : -1;
 }
 
-function anyStemDownInSpan(
-  from: PlacedNote,
-  to: PlacedNote,
-  elementsBySystem: ElementsBySystem,
-): boolean {
+function anyStemDownInSpan(from: PlacedNote, to: PlacedNote, elementsBySystem: ElementsBySystem): boolean {
   if (from.systemIndex === to.systemIndex) {
     const bucket = elementsBySystem.get(from.systemIndex) ?? [];
     for (const pe of bucket) {

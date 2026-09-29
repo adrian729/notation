@@ -9,6 +9,7 @@ describe('parseCustomSearch', () => {
     expect(search.count).toBe('10');
     expect(search.endless).toBe('0');
     expect(search.auto).toBe('0');
+    expect(search.names).toBe('full');
   });
 
   it('falls back to defaults for stale or invalid enum and numeric values', () => {
@@ -46,5 +47,10 @@ describe('parseCustomSearch', () => {
     expect(search.count).toBe('25');
     expect(search.endless).toBe('1');
     expect(search.auto).toBe('1');
+  });
+
+  it('maps the legacy longNames flag to names', () => {
+    expect(parseCustomSearch({ longNames: false }).names).toBe('short');
+    expect(parseCustomSearch({ longNames: false, names: 'full' }).names).toBe('full');
   });
 });

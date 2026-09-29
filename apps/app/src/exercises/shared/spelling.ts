@@ -1,9 +1,14 @@
+import { intervalDisplayName } from './intervals.js';
 import { parsePitch, pitchToMidi, STEP_LETTERS, stepNumberOf, type Pitch } from '@polyhymnia/notation-model';
 
 export type SpelledPitch = Pick<Required<Pitch>, 'step' | 'alter' | 'octave'>;
 
 const ACCIDENTAL_TOKEN: Record<number, string> = {
-  '-2': 'bb', '-1': 'b', '0': '', '1': '#', '2': '##',
+  '-2': 'bb',
+  '-1': 'b',
+  '0': '',
+  '1': '#',
+  '2': '##',
 };
 
 export const PREFERRED_ROOT_PITCHES: readonly SpelledPitch[] = [
@@ -83,101 +88,84 @@ function spellAtDegree(root: SpelledPitch, degree: number, semitones: number, di
   return { step: targetLetter, alter, octave: targetOctave };
 }
 
-export interface SpellIntervalResult {
-  root: SpelledPitch;
-  other: SpelledPitch;
-  degree: number;
-}
-
-export function spellInterval(
-  root: SpelledPitch,
-  degreeOptions: readonly number[],
-  semitones: number,
-  direction: 1 | -1,
-): SpellIntervalResult {
-  const rootCandidates = [root, enharmonicAlternate(root)].filter((p): p is SpelledPitch => p !== undefined);
-  let best: SpellIntervalResult | undefined;
-  let bestScore = Infinity;
-  for (const rootCandidate of rootCandidates) {
-    for (const degree of degreeOptions) {
-      const other = spellAtDegree(rootCandidate, degree, semitones, direction);
-      const score = Math.abs(other.alter) + Math.abs(rootCandidate.alter) * 0.01;
-      if (Math.abs(other.alter) <= 2 && score < bestScore) {
-        bestScore = score;
-        best = { root: rootCandidate, other, degree };
-      }
-    }
-  }
-  if (!best) throw new RangeError('could not spell interval without a double accidental');
-  return best;
-}
-
-interface DegreeMatch {
-  computed: SpelledPitch;
-  degree: number;
-}
-
-function bestDegreeFor(
-  pinned: SpelledPitch,
-  pinnedRole: 'root' | 'other',
-  degreeOptions: readonly number[],
-  semitones: number,
-  direction: 1 | -1,
-  maxAlter: number,
-): DegreeMatch | undefined {
-  const effectiveDirection = pinnedRole === 'root' ? direction : ((-direction) as 1 | -1);
-  let best: DegreeMatch | undefined;
-  let bestAbs = Infinity;
-  for (const degree of degreeOptions) {
-    const computed = spellAtDegree(pinned, degree, semitones, effectiveDirection);
-    if (Math.abs(computed.alter) <= maxAlter && Math.abs(computed.alter) < bestAbs) {
-      bestAbs = Math.abs(computed.alter);
-      best = { computed, degree };
-    }
-  }
-  return best;
-}
-
 export interface IntervalSpec {
   degreeOptions: readonly number[];
   semitones: number;
 }
 
-export interface SharedPairResult {
-  pinned: SpelledPitch;
-  a: DegreeMatch;
-  b: DegreeMatch;
+export interface SpelledMember {
+  pitch: SpelledPitch;
+  degree: number;
 }
 
-export function spellSharedPair(
+export interface RelativeSpelling {
+  pinned: SpelledPitch;
+  members: SpelledMember[];
+}
+
+function spellMember(
   pinned: SpelledPitch,
-  pinnedRole: 'root' | 'other',
-  specA: IntervalSpec,
-  specB: IntervalSpec,
+  spec: IntervalSpec,
   direction: 1 | -1,
-): SharedPairResult | undefined {
-  const candidates = [pinned, enharmonicAlternate(pinned)].filter((p): p is SpelledPitch => p !== undefined);
-  let best: SharedPairResult | undefined;
-  let bestCost = Infinity;
-  for (const candidate of candidates) {
-    const a = bestDegreeFor(candidate, pinnedRole, specA.degreeOptions, specA.semitones, direction, 1);
-    const b = a && bestDegreeFor(candidate, pinnedRole, specB.degreeOptions, specB.semitones, direction, 1);
-    if (a && b) {
-      const cost = Math.abs(a.computed.alter) + Math.abs(b.computed.alter) + Math.abs(candidate.alter) * 0.01;
-      if (cost < bestCost) {
-        bestCost = cost;
-        best = { pinned: candidate, a, b };
-      }
+  maxAlter: number,
+): SpelledMember | undefined {
+  let best: SpelledMember | undefined;
+  let bestAbs = Infinity;
+  for (const degree of spec.degreeOptions) {
+    const pitch = spellAtDegree(pinned, degree, spec.semitones, direction);
+    if (Math.abs(pitch.alter) <= maxAlter && Math.abs(pitch.alter) < bestAbs) {
+      bestAbs = Math.abs(pitch.alter);
+      best = { pitch, degree };
     }
   }
   return best;
 }
 
-export function qualityForIntervalId(id: string, degree: number): 'm' | 'M' | 'P' | 'A' | 'd' {
-  if (id === 'TT') return degree === 4 ? 'A' : 'd';
-  if (id === 'A11') return degree === 11 ? 'A' : 'd';
-  const letter = id[0]!;
-  return letter as 'm' | 'M' | 'P';
+export function spellRelative(
+  pinned: SpelledPitch,
+  specs: readonly IntervalSpec[],
+  direction: 1 | -1,
+  maxAlter: number,
+): RelativeSpelling | undefined {
+  const candidates = [pinned, enharmonicAlternate(pinned)].filter((p): p is SpelledPitch => p !== undefined);
+  let best: RelativeSpelling | undefined;
+  let bestCost = Infinity;
+  for (const candidate of candidates) {
+    const members: SpelledMember[] = [];
+    let accidentals = 0;
+    for (const spec of specs) {
+      const member = spellMember(candidate, spec, direction, maxAlter);
+      if (!member) break;
+      members.push(member);
+      accidentals += Math.abs(member.pitch.alter);
+    }
+    if (members.length < specs.length) continue;
+    const cost = accidentals + Math.abs(candidate.alter) * 0.01;
+    if (cost < bestCost) {
+      bestCost = cost;
+      best = { pinned: candidate, members };
+    }
+  }
+  return best;
+}
+
+const MAJOR_SCALE_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
+
+function letterIndex(pitch: Pitch): number {
+  return (pitch.octave ?? 4) * 7 + stepNumberOf(pitch.step);
+}
+
+export function writtenIntervalName(lowerToken: string, upperToken: string): string {
+  const lower = parsePitch(lowerToken);
+  const upper = parsePitch(upperToken);
+  const degree = letterIndex(upper) - letterIndex(lower) + 1;
+  const simple = (degree - 1) % 7;
+  const octaves = Math.floor((degree - 1) / 7);
+  const offset = pitchToMidi(upper) - pitchToMidi(lower) - MAJOR_SCALE_SEMITONES[simple]! - 12 * octaves;
+  const perfect = simple === 0 || simple === 3 || simple === 4;
+  const quality =
+    offset > 0 ? 'A' : perfect ? (offset === 0 ? 'P' : 'd') : offset === 0 ? 'M' : offset === -1 ? 'm' : 'd';
+  return intervalDisplayName(degree, quality);
 }
 
 export function pickPreferredRoot(pitchClass: number, octave: number, rng: () => number): SpelledPitch {

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Notation } from '@polyhymnia/notation-react';
 import type { MnxDocument } from '@polyhymnia/notation-model';
-import { ChordReveal, IntervalReveal, ScaleReveal } from '@polyhymnia/notation-react/presets';
+import { NotesReveal, ScaleReveal } from '@polyhymnia/notation-react/presets';
 import { NoteHeard, Dictation, ErrorDetection, IntervalId } from './exercises/index.js';
 import { Example } from './Example.js';
 import { ScorePlayer } from './ScorePlayer.js';
@@ -62,35 +62,34 @@ export function App() {
     <main>
       <h1>Polyhymnia notation — renderer gallery</h1>
       <p className="lede">
-        Every stave below is <code>@polyhymnia/notation-engine</code>&rsquo;s{' '}
-        <code>layoutScore()</code> rendered by <code>&lt;Notation&gt;</code>: SVG in staff-space
-        units, glyphs from the subsetted Bravura build, no colour anywhere but the
-        stylesheet. Beams and tuplet brackets are drawn, auto-grouped per the meter when a
-        score doesn&rsquo;t specify <code>support.useBeams</code>; ties, slurs and second voices
-        are drawn too, and the exercises further down exercise hit-testing and answer entry.
+        Every stave below is <code>@polyhymnia/notation-engine</code>&rsquo;s <code>layoutScore()</code> rendered by{' '}
+        <code>&lt;Notation&gt;</code>: SVG in staff-space units, glyphs from the subsetted Bravura build, no colour
+        anywhere but the stylesheet. Beams and tuplet brackets are drawn, auto-grouped per the meter when a score
+        doesn&rsquo;t specify <code>support.useBeams</code>; ties, slurs and second voices are drawn too, and the
+        exercises further down exercise hit-testing and answer entry.
       </p>
 
       <h2>Chords</h2>
       <div className="row">
-        <Example title="C major triad" caption="ChordReveal, treble">
-          {(onLayout) => (
-            <ChordReveal pitches={['C4', 'E4', 'G4']} clef="treble" onLayout={onLayout} />
-          )}
+        <Example title="C major triad" caption="NotesReveal, treble">
+          {(onLayout) => <NotesReveal pitches={['C4', 'E4', 'G4']} mode="harmonic" clef="treble" onLayout={onLayout} />}
         </Example>
-        <Example title="G dominant 7th" caption="ChordReveal, bass, seconds shifted across the stem">
+        <Example title="G dominant 7th" caption="NotesReveal, bass, seconds shifted across the stem">
           {(onLayout) => (
-            <ChordReveal
+            <NotesReveal
               pitches={['G2', 'B2', 'D3', 'F3']}
+              mode="harmonic"
               clef="bass"
               duration={{ base: 'whole' }}
               onLayout={onLayout}
             />
           )}
         </Example>
-        <Example title="D♭ major 7th" caption="ChordReveal — accidentals packed into columns">
+        <Example title="D♭ major 7th" caption="NotesReveal — accidentals packed into columns">
           {(onLayout) => (
-            <ChordReveal
+            <NotesReveal
               pitches={['Db4', 'F4', 'Ab4', 'C5']}
+              mode="harmonic"
               clef="treble"
               duration={{ base: 'half' }}
               onLayout={onLayout}
@@ -101,33 +100,24 @@ export function App() {
 
       <h2>Intervals</h2>
       <div className="row">
-        <Example title="Major 3rd, harmonic" caption="IntervalReveal — both pitches on one stem">
-          {(onLayout) => (
-            <IntervalReveal from="C4" to="E4" clef="treble" mode="harmonic" onLayout={onLayout} />
-          )}
+        <Example title="Major 3rd, harmonic" caption="NotesReveal — both pitches on one stem">
+          {(onLayout) => <NotesReveal pitches={['C4', 'E4']} clef="treble" mode="harmonic" onLayout={onLayout} />}
         </Example>
-        <Example title="Major 6th, melodic" caption="IntervalReveal — two successive beats">
-          {(onLayout) => (
-            <IntervalReveal from="C4" to="A4" clef="treble" mode="melodic" onLayout={onLayout} />
-          )}
+        <Example title="Major 6th, melodic" caption="NotesReveal — two successive beats">
+          {(onLayout) => <NotesReveal pitches={['C4', 'A4']} clef="treble" mode="melodic" onLayout={onLayout} />}
         </Example>
         <Example title="Tritone, harmonic" caption="A second apart? No — F4 to B4, bass clef">
-          {(onLayout) => (
-            <IntervalReveal from="F2" to="B2" clef="bass" mode="harmonic" onLayout={onLayout} />
-          )}
+          {(onLayout) => <NotesReveal pitches={['F2', 'B2']} clef="bass" mode="harmonic" onLayout={onLayout} />}
         </Example>
-        <Example title="Descending minor 6th" caption="IntervalReveal, melodic, high to low">
-          {(onLayout) => (
-            <IntervalReveal from="A4" to="C4" clef="treble" mode="melodic" onLayout={onLayout} />
-          )}
+        <Example title="Descending minor 6th" caption="NotesReveal, melodic, high to low">
+          {(onLayout) => <NotesReveal pitches={['A4', 'C4']} clef="treble" mode="melodic" onLayout={onLayout} />}
         </Example>
       </div>
 
       <h2>Scales</h2>
       <p className="note">
-        Scales are spelled, not transposed: one letter per degree, the accidental derived
-        from the interval pattern. No key signature — every alteration is written on the
-        note, which is what an ear-training reveal wants to show.
+        Scales are spelled, not transposed: one letter per degree, the accidental derived from the interval pattern. No
+        key signature — every alteration is written on the note, which is what an ear-training reveal wants to show.
       </p>
       <Example title="C major" caption="ScaleReveal — root C4, ascending">
         {(onLayout) => <ScaleReveal root="C4" scale="major" clef="treble" onLayout={onLayout} />}
@@ -136,39 +126,28 @@ export function App() {
         {(onLayout) => <ScaleReveal root="Eb4" scale="major" clef="treble" onLayout={onLayout} />}
       </Example>
       <Example title="A natural minor" caption="No accidentals at all">
-        {(onLayout) => (
-          <ScaleReveal root="A3" scale="naturalMinor" clef="treble" onLayout={onLayout} />
-        )}
+        {(onLayout) => <ScaleReveal root="A3" scale="naturalMinor" clef="treble" onLayout={onLayout} />}
       </Example>
       <Example title="A harmonic minor" caption="Raised 7th only — G♯, and the augmented 2nd F→G♯">
-        {(onLayout) => (
-          <ScaleReveal root="A3" scale="harmonicMinor" clef="treble" onLayout={onLayout} />
-        )}
+        {(onLayout) => <ScaleReveal root="A3" scale="harmonicMinor" clef="treble" onLayout={onLayout} />}
       </Example>
       <Example title="A melodic minor, ascending" caption="Raised 6th and 7th — F♯ and G♯">
-        {(onLayout) => (
-          <ScaleReveal root="A3" scale="melodicMinor" clef="treble" onLayout={onLayout} />
-        )}
+        {(onLayout) => <ScaleReveal root="A3" scale="melodicMinor" clef="treble" onLayout={onLayout} />}
       </Example>
       <Example
         title="A melodic minor, descending"
         caption="The classical descending form: natural-minor pitches, F♮ and G♮ — a different pitch set, not the ascending notes reversed"
       >
-        {(onLayout) => (
-          <ScaleReveal root="A3" scale="melodicMinor" clef="treble" descending onLayout={onLayout} />
-        )}
+        {(onLayout) => <ScaleReveal root="A3" scale="melodicMinor" clef="treble" descending onLayout={onLayout} />}
       </Example>
       <Example title="D major, descending, bass clef" caption="Direction-independent: the same pitches, reversed">
-        {(onLayout) => (
-          <ScaleReveal root="D2" scale="major" clef="bass" descending onLayout={onLayout} />
-        )}
+        {(onLayout) => <ScaleReveal root="D2" scale="major" clef="bass" descending onLayout={onLayout} />}
       </Example>
 
       <h2>A melody, from a hand-written MNX file</h2>
       <p className="note">
-        Four bars of 3/4 in F major, <code>src/scores/melody.mnx.json</code>: barlines, a
-        final barline, dotted values, a rest mid-bar, and spacing/justification across the
-        system.
+        Four bars of 3/4 in F major, <code>src/scores/melody.mnx.json</code>: barlines, a final barline, dotted values,
+        a rest mid-bar, and spacing/justification across the system.
       </p>
       <Example title="F major, 3/4" caption="B♭ comes from the key signature, so no accidental is written">
         {(onLayout) => <Notation score={MELODY} onLayout={onLayout} />}
@@ -176,10 +155,13 @@ export function App() {
 
       <h2>Playback</h2>
       <p className="note">
-        The same melody played through <code>@polyhymnia/audio</code>: the app builds the clip
-        from the layout timemap and drives the cursor from its own animation-frame loop.
+        The same melody played through <code>@polyhymnia/audio</code>: the app builds the clip from the layout timemap
+        and drives the cursor from its own animation-frame loop.
       </p>
-      <Example title="F major, 3/4 — play whole score" caption="Cursor and active-note highlight follow the audio clock">
+      <Example
+        title="F major, 3/4 — play whole score"
+        caption="Cursor and active-note highlight follow the audio clock"
+      >
         {() => <ScorePlayer score={MELODY} />}
       </Example>
 
@@ -195,9 +177,8 @@ export function App() {
 
       <h2>Clefs</h2>
       <p className="note">
-        C4&ndash;E4&ndash;G4&ndash;C5 in each clef. Tenor is the irregular one: its C4 sits on the
-        fourth line, a third below the alto placement rather than the octave a naive rule
-        would give.
+        C4&ndash;E4&ndash;G4&ndash;C5 in each clef. Tenor is the irregular one: its C4 sits on the fourth line, a third
+        below the alto placement rather than the octave a naive rule would give.
       </p>
       <div className="row">
         {CLEF_EXAMPLES.map((c) => (
@@ -214,7 +195,10 @@ export function App() {
       >
         {(onLayout) => <Notation score={WHOLE_BAR_REST} onLayout={onLayout} />}
       </Example>
-      <Example title="Mixed rests" caption="Quarter, eighth, half and dotted-half rests on their conventional staff positions">
+      <Example
+        title="Mixed rests"
+        caption="Quarter, eighth, half and dotted-half rests on their conventional staff positions"
+      >
         {(onLayout) => <Notation score={MIXED_RESTS} onLayout={onLayout} />}
       </Example>
       <Example title="Ledger lines above and below" caption="C6 and A6 above the staff, C4 and E3 and C3 below it">
@@ -223,13 +207,10 @@ export function App() {
 
       <h2>Beams and tuplets</h2>
       <p className="note">
-        Beams are auto-grouped from the meter&rsquo;s beat structure; tuplet brackets are drawn
-        from <code>type: &quot;tuplet&quot;</code> events.
+        Beams are auto-grouped from the meter&rsquo;s beat structure; tuplet brackets are drawn from{' '}
+        <code>type: &quot;tuplet&quot;</code> events.
       </p>
-      <Example
-        title="4/4 — 8ths, 16ths, dotted 8th+16th"
-        caption="Mixed subdivisions beamed per beat"
-      >
+      <Example title="4/4 — 8ths, 16ths, dotted 8th+16th" caption="Mixed subdivisions beamed per beat">
         {(onLayout) => <Notation score={RHYTHM_4_4} onLayout={onLayout} />}
       </Example>
       <Example
@@ -238,18 +219,15 @@ export function App() {
       >
         {(onLayout) => <Notation score={RHYTHM_6_8} onLayout={onLayout} />}
       </Example>
-      <Example
-        title="Triplets"
-        caption="Two beamed eighth-note triplets, then a quarter-note triplet"
-      >
+      <Example title="Triplets" caption="Two beamed eighth-note triplets, then a quarter-note triplet">
         {(onLayout) => <Notation score={TRIPLETS} onLayout={onLayout} />}
       </Example>
 
       <h2>Two voices</h2>
       <p className="note">
-        A second sequence in a part lays out as a second voice on the same staff: voice 0
-        stems up, voice 1 stems down; simultaneous rests offset apart; a second between the
-        voices shifts the upper notehead right, a true unison overlaps.
+        A second sequence in a part lays out as a second voice on the same staff: voice 0 stems up, voice 1 stems down;
+        simultaneous rests offset apart; a second between the voices shifts the upper notehead right, a true unison
+        overlaps.
       </p>
       <Example
         title="Two voices, one staff"
@@ -260,9 +238,8 @@ export function App() {
 
       <h2>Ties</h2>
       <p className="note">
-        A tie curves opposite the stem for a single note; a chord ties each member
-        separately, outer notes arching outward and inner notes following the nearest
-        outer one.
+        A tie curves opposite the stem for a single note; a chord ties each member separately, outer notes arching
+        outward and inner notes following the nearest outer one.
       </p>
       <Example
         title="Ties across a barline and a chord"
@@ -273,9 +250,9 @@ export function App() {
 
       <h2>Slurs</h2>
       <p className="note">
-        A slur's direction follows MNX <code>side</code> when given, else the voice or the
-        stems in its span; the arch raises to clear any notehead, stem, or beam sitting
-        between its endpoints. <code>startNote</code> anchors it to a specific chord member.
+        A slur's direction follows MNX <code>side</code> when given, else the voice or the stems in its span; the arch
+        raises to clear any notehead, stem, or beam sitting between its endpoints. <code>startNote</code> anchors it to
+        a specific chord member.
       </p>
       <Example
         title="A phrase slur and a chord's startNote"
@@ -286,9 +263,8 @@ export function App() {
 
       <h2>Diagnostics</h2>
       <p className="note">
-        A malformed score degrades visibly instead of throwing. This bar holds one quarter
-        note in 4/4; the engine pads it to length and attaches the warning below, which this
-        page renders exactly as any app would.
+        A malformed score degrades visibly instead of throwing. This bar holds one quarter note in 4/4; the engine pads
+        it to length and attaches the warning below, which this page renders exactly as any app would.
       </p>
       <Example title="Underfull bar, auto-padded">
         {(onLayout) => <Notation score={UNDERFULL} onLayout={onLayout} />}
@@ -296,10 +272,9 @@ export function App() {
 
       <h2>Ear-training exercises</h2>
       <p className="note">
-        Three exercises built on the answer-entry primitives: hit-testing through{' '}
-        <code>Notation.Interaction</code>, per-note state through <code>Notation.Marks</code>,
-        and document edits through <code>applyIntent</code>. All sound comes from{' '}
-        <code>@polyhymnia/audio</code> — the notation packages never produce audio.
+        Three exercises built on the answer-entry primitives: hit-testing through <code>Notation.Interaction</code>,
+        per-note state through <code>Notation.Marks</code>, and document edits through <code>applyIntent</code>. All
+        sound comes from <code>@polyhymnia/audio</code> — the notation packages never produce audio.
       </p>
       <section className="exercises">
         <NoteHeard />
@@ -309,10 +284,9 @@ export function App() {
       </section>
 
       <footer>
-        Interaction is opt-in: hit-testing and answer entry come from the{' '}
-        <code>Notation.Interaction</code> and <code>Notation.Marks</code> children, and playback
-        highlighting from <code>Notation.Playback</code>, all driven by the app. The notation
-        packages never produce sound and never run a clock.
+        Interaction is opt-in: hit-testing and answer entry come from the <code>Notation.Interaction</code> and{' '}
+        <code>Notation.Marks</code> children, and playback highlighting from <code>Notation.Playback</code>, all driven
+        by the app. The notation packages never produce sound and never run a clock.
       </footer>
     </main>
   );

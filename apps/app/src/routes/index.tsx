@@ -1,12 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LOGO_URL } from '@/lib/logo';
 
 export const Route = createFileRoute('/')({
@@ -19,21 +13,16 @@ function HomePage() {
       <div className="flex flex-col items-center gap-3 text-center">
         <img src={LOGO_URL} alt="" className="mb-3 size-32" />
         <h1 className="text-4xl font-semibold tracking-tight text-teal-800">Polyhymnia</h1>
-        <p className="text-lg text-teal-600">
-          Train your ear, one phrase at a time.
-        </p>
+        <p className="text-lg text-teal-600">Train your ear, one phrase at a time.</p>
       </div>
       <section className="flex flex-col gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-primary-strong">
-          Exercises
-        </h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-primary-strong">Exercises</h2>
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Interval Comparison</CardTitle>
             <CardDescription>
-              Hear two intervals and tell which is larger, or whether they are
-              the same. No theory needed —
-              the recommended first exercise.
+              Hear two intervals and tell which is larger, or whether they are the same. No theory needed — the
+              recommended first exercise.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -46,13 +35,38 @@ function HomePage() {
           <CardHeader>
             <CardTitle className="text-lg">Interval Identification</CardTitle>
             <CardDescription>
-              Hear one interval and name it, from perfect 4ths and 5ths up to
-              compound intervals.
+              Hear one interval and name it, from perfect 4ths and 5ths up to compound intervals.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild>
               <Link to="/exercises/interval-identification">Start training</Link>
+            </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Multi-Note Interval Identification</CardTitle>
+            <CardDescription>
+              Hear a stack of three to five notes and name every note's interval above the lowest.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link to="/exercises/multi-interval-identification">Start training</Link>
+            </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Chord Identification</CardTitle>
+            <CardDescription>
+              Hear one chord and name its quality, from major and minor up to seventh chords.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link to="/exercises/chord-identification">Start training</Link>
             </Button>
           </CardContent>
         </Card>

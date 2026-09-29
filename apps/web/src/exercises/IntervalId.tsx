@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { IntervalReveal } from '@polyhymnia/notation-react/presets';
+import { NotesReveal } from '@polyhymnia/notation-react/presets';
 import { melodic } from '@polyhymnia/audio';
 import { createSound } from '../sound.js';
 
@@ -49,7 +49,9 @@ export function IntervalId() {
       <h3>Identify the interval</h3>
       <p className="caption">Two notes played ascending. Click the interval you heard.</p>
       <div className="exercise-controls">
-        <button type="button" onClick={play}>Play</button>
+        <button type="button" onClick={play}>
+          Play
+        </button>
         {QUESTIONS.map((q) => (
           <button key={q.label} type="button" disabled={question === null} onClick={() => answer(q.label)}>
             {q.label}
@@ -57,9 +59,11 @@ export function IntervalId() {
         ))}
       </div>
       {checked && question !== null && (
-        <IntervalReveal from={question.from} to={question.to} clef="treble" mode="melodic" />
+        <NotesReveal pitches={[question.from, question.to]} clef="treble" mode="melodic" />
       )}
-      <p className="exercise-feedback" role="status">{message}</p>
+      <p className="exercise-feedback" role="status">
+        {message}
+      </p>
     </section>
   );
 }

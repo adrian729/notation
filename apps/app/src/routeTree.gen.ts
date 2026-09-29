@@ -10,17 +10,36 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ExercisesChordIdentificationIndexRouteImport } from './routes/exercises/chord-identification/index'
+import { Route as ExercisesChordIdentificationCustomRouteImport } from './routes/exercises/chord-identification/custom'
 import { Route as ExercisesIntervalComparisonIndexRouteImport } from './routes/exercises/interval-comparison/index'
 import { Route as ExercisesIntervalComparisonCustomRouteImport } from './routes/exercises/interval-comparison/custom'
 import { Route as ExercisesIntervalIdentificationIndexRouteImport } from './routes/exercises/interval-identification/index'
+import { Route as ExercisesIntervalIdentificationCustomRouteImport } from './routes/exercises/interval-identification/custom'
+import { Route as ExercisesMultiIntervalIdentificationIndexRouteImport } from './routes/exercises/multi-interval-identification/index'
+import { Route as ExercisesMultiIntervalIdentificationCustomRouteImport } from './routes/exercises/multi-interval-identification/custom'
+import { Route as ExercisesChordIdentificationLessonLessonIdRouteImport } from './routes/exercises/chord-identification/lesson.$lessonId'
 import { Route as ExercisesIntervalComparisonLessonLessonIdRouteImport } from './routes/exercises/interval-comparison/lesson.$lessonId'
 import { Route as ExercisesIntervalIdentificationLessonLessonIdRouteImport } from './routes/exercises/interval-identification/lesson.$lessonId'
+import { Route as ExercisesMultiIntervalIdentificationLessonLessonIdRouteImport } from './routes/exercises/multi-interval-identification/lesson.$lessonId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExercisesChordIdentificationIndexRoute =
+  ExercisesChordIdentificationIndexRouteImport.update({
+    id: '/exercises/chord-identification/',
+    path: '/exercises/chord-identification/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ExercisesChordIdentificationCustomRoute =
+  ExercisesChordIdentificationCustomRouteImport.update({
+    id: '/exercises/chord-identification/custom',
+    path: '/exercises/chord-identification/custom',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ExercisesIntervalComparisonIndexRoute =
   ExercisesIntervalComparisonIndexRouteImport.update({
     id: '/exercises/interval-comparison/',
@@ -39,6 +58,30 @@ const ExercisesIntervalIdentificationIndexRoute =
     path: '/exercises/interval-identification/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ExercisesIntervalIdentificationCustomRoute =
+  ExercisesIntervalIdentificationCustomRouteImport.update({
+    id: '/exercises/interval-identification/custom',
+    path: '/exercises/interval-identification/custom',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ExercisesMultiIntervalIdentificationIndexRoute =
+  ExercisesMultiIntervalIdentificationIndexRouteImport.update({
+    id: '/exercises/multi-interval-identification/',
+    path: '/exercises/multi-interval-identification/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ExercisesMultiIntervalIdentificationCustomRoute =
+  ExercisesMultiIntervalIdentificationCustomRouteImport.update({
+    id: '/exercises/multi-interval-identification/custom',
+    path: '/exercises/multi-interval-identification/custom',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ExercisesChordIdentificationLessonLessonIdRoute =
+  ExercisesChordIdentificationLessonLessonIdRouteImport.update({
+    id: '/exercises/chord-identification/lesson/$lessonId',
+    path: '/exercises/chord-identification/lesson/$lessonId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ExercisesIntervalComparisonLessonLessonIdRoute =
   ExercisesIntervalComparisonLessonLessonIdRouteImport.update({
     id: '/exercises/interval-comparison/lesson/$lessonId',
@@ -51,66 +94,121 @@ const ExercisesIntervalIdentificationLessonLessonIdRoute =
     path: '/exercises/interval-identification/lesson/$lessonId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ExercisesMultiIntervalIdentificationLessonLessonIdRoute =
+  ExercisesMultiIntervalIdentificationLessonLessonIdRouteImport.update({
+    id: '/exercises/multi-interval-identification/lesson/$lessonId',
+    path: '/exercises/multi-interval-identification/lesson/$lessonId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/exercises/chord-identification/custom': typeof ExercisesChordIdentificationCustomRoute
   '/exercises/interval-comparison/custom': typeof ExercisesIntervalComparisonCustomRoute
+  '/exercises/interval-identification/custom': typeof ExercisesIntervalIdentificationCustomRoute
+  '/exercises/multi-interval-identification/custom': typeof ExercisesMultiIntervalIdentificationCustomRoute
+  '/exercises/chord-identification/': typeof ExercisesChordIdentificationIndexRoute
   '/exercises/interval-comparison/': typeof ExercisesIntervalComparisonIndexRoute
   '/exercises/interval-identification/': typeof ExercisesIntervalIdentificationIndexRoute
+  '/exercises/multi-interval-identification/': typeof ExercisesMultiIntervalIdentificationIndexRoute
+  '/exercises/chord-identification/lesson/$lessonId': typeof ExercisesChordIdentificationLessonLessonIdRoute
   '/exercises/interval-comparison/lesson/$lessonId': typeof ExercisesIntervalComparisonLessonLessonIdRoute
   '/exercises/interval-identification/lesson/$lessonId': typeof ExercisesIntervalIdentificationLessonLessonIdRoute
+  '/exercises/multi-interval-identification/lesson/$lessonId': typeof ExercisesMultiIntervalIdentificationLessonLessonIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/exercises/chord-identification/custom': typeof ExercisesChordIdentificationCustomRoute
   '/exercises/interval-comparison/custom': typeof ExercisesIntervalComparisonCustomRoute
+  '/exercises/interval-identification/custom': typeof ExercisesIntervalIdentificationCustomRoute
+  '/exercises/multi-interval-identification/custom': typeof ExercisesMultiIntervalIdentificationCustomRoute
+  '/exercises/chord-identification': typeof ExercisesChordIdentificationIndexRoute
   '/exercises/interval-comparison': typeof ExercisesIntervalComparisonIndexRoute
   '/exercises/interval-identification': typeof ExercisesIntervalIdentificationIndexRoute
+  '/exercises/multi-interval-identification': typeof ExercisesMultiIntervalIdentificationIndexRoute
+  '/exercises/chord-identification/lesson/$lessonId': typeof ExercisesChordIdentificationLessonLessonIdRoute
   '/exercises/interval-comparison/lesson/$lessonId': typeof ExercisesIntervalComparisonLessonLessonIdRoute
   '/exercises/interval-identification/lesson/$lessonId': typeof ExercisesIntervalIdentificationLessonLessonIdRoute
+  '/exercises/multi-interval-identification/lesson/$lessonId': typeof ExercisesMultiIntervalIdentificationLessonLessonIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/exercises/chord-identification/custom': typeof ExercisesChordIdentificationCustomRoute
   '/exercises/interval-comparison/custom': typeof ExercisesIntervalComparisonCustomRoute
+  '/exercises/interval-identification/custom': typeof ExercisesIntervalIdentificationCustomRoute
+  '/exercises/multi-interval-identification/custom': typeof ExercisesMultiIntervalIdentificationCustomRoute
+  '/exercises/chord-identification/': typeof ExercisesChordIdentificationIndexRoute
   '/exercises/interval-comparison/': typeof ExercisesIntervalComparisonIndexRoute
   '/exercises/interval-identification/': typeof ExercisesIntervalIdentificationIndexRoute
+  '/exercises/multi-interval-identification/': typeof ExercisesMultiIntervalIdentificationIndexRoute
+  '/exercises/chord-identification/lesson/$lessonId': typeof ExercisesChordIdentificationLessonLessonIdRoute
   '/exercises/interval-comparison/lesson/$lessonId': typeof ExercisesIntervalComparisonLessonLessonIdRoute
   '/exercises/interval-identification/lesson/$lessonId': typeof ExercisesIntervalIdentificationLessonLessonIdRoute
+  '/exercises/multi-interval-identification/lesson/$lessonId': typeof ExercisesMultiIntervalIdentificationLessonLessonIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/exercises/chord-identification/custom'
     | '/exercises/interval-comparison/custom'
+    | '/exercises/interval-identification/custom'
+    | '/exercises/multi-interval-identification/custom'
+    | '/exercises/chord-identification/'
     | '/exercises/interval-comparison/'
     | '/exercises/interval-identification/'
+    | '/exercises/multi-interval-identification/'
+    | '/exercises/chord-identification/lesson/$lessonId'
     | '/exercises/interval-comparison/lesson/$lessonId'
     | '/exercises/interval-identification/lesson/$lessonId'
+    | '/exercises/multi-interval-identification/lesson/$lessonId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/exercises/chord-identification/custom'
     | '/exercises/interval-comparison/custom'
+    | '/exercises/interval-identification/custom'
+    | '/exercises/multi-interval-identification/custom'
+    | '/exercises/chord-identification'
     | '/exercises/interval-comparison'
     | '/exercises/interval-identification'
+    | '/exercises/multi-interval-identification'
+    | '/exercises/chord-identification/lesson/$lessonId'
     | '/exercises/interval-comparison/lesson/$lessonId'
     | '/exercises/interval-identification/lesson/$lessonId'
+    | '/exercises/multi-interval-identification/lesson/$lessonId'
   id:
     | '__root__'
     | '/'
+    | '/exercises/chord-identification/custom'
     | '/exercises/interval-comparison/custom'
+    | '/exercises/interval-identification/custom'
+    | '/exercises/multi-interval-identification/custom'
+    | '/exercises/chord-identification/'
     | '/exercises/interval-comparison/'
     | '/exercises/interval-identification/'
+    | '/exercises/multi-interval-identification/'
+    | '/exercises/chord-identification/lesson/$lessonId'
     | '/exercises/interval-comparison/lesson/$lessonId'
     | '/exercises/interval-identification/lesson/$lessonId'
+    | '/exercises/multi-interval-identification/lesson/$lessonId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ExercisesChordIdentificationCustomRoute: typeof ExercisesChordIdentificationCustomRoute
   ExercisesIntervalComparisonCustomRoute: typeof ExercisesIntervalComparisonCustomRoute
+  ExercisesIntervalIdentificationCustomRoute: typeof ExercisesIntervalIdentificationCustomRoute
+  ExercisesMultiIntervalIdentificationCustomRoute: typeof ExercisesMultiIntervalIdentificationCustomRoute
+  ExercisesChordIdentificationIndexRoute: typeof ExercisesChordIdentificationIndexRoute
   ExercisesIntervalComparisonIndexRoute: typeof ExercisesIntervalComparisonIndexRoute
   ExercisesIntervalIdentificationIndexRoute: typeof ExercisesIntervalIdentificationIndexRoute
+  ExercisesMultiIntervalIdentificationIndexRoute: typeof ExercisesMultiIntervalIdentificationIndexRoute
+  ExercisesChordIdentificationLessonLessonIdRoute: typeof ExercisesChordIdentificationLessonLessonIdRoute
   ExercisesIntervalComparisonLessonLessonIdRoute: typeof ExercisesIntervalComparisonLessonLessonIdRoute
   ExercisesIntervalIdentificationLessonLessonIdRoute: typeof ExercisesIntervalIdentificationLessonLessonIdRoute
+  ExercisesMultiIntervalIdentificationLessonLessonIdRoute: typeof ExercisesMultiIntervalIdentificationLessonLessonIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -120,6 +218,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exercises/chord-identification/': {
+      id: '/exercises/chord-identification/'
+      path: '/exercises/chord-identification'
+      fullPath: '/exercises/chord-identification/'
+      preLoaderRoute: typeof ExercisesChordIdentificationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exercises/chord-identification/custom': {
+      id: '/exercises/chord-identification/custom'
+      path: '/exercises/chord-identification/custom'
+      fullPath: '/exercises/chord-identification/custom'
+      preLoaderRoute: typeof ExercisesChordIdentificationCustomRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exercises/interval-comparison/': {
@@ -143,6 +255,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExercisesIntervalIdentificationIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/exercises/interval-identification/custom': {
+      id: '/exercises/interval-identification/custom'
+      path: '/exercises/interval-identification/custom'
+      fullPath: '/exercises/interval-identification/custom'
+      preLoaderRoute: typeof ExercisesIntervalIdentificationCustomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exercises/multi-interval-identification/': {
+      id: '/exercises/multi-interval-identification/'
+      path: '/exercises/multi-interval-identification'
+      fullPath: '/exercises/multi-interval-identification/'
+      preLoaderRoute: typeof ExercisesMultiIntervalIdentificationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exercises/multi-interval-identification/custom': {
+      id: '/exercises/multi-interval-identification/custom'
+      path: '/exercises/multi-interval-identification/custom'
+      fullPath: '/exercises/multi-interval-identification/custom'
+      preLoaderRoute: typeof ExercisesMultiIntervalIdentificationCustomRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exercises/chord-identification/lesson/$lessonId': {
+      id: '/exercises/chord-identification/lesson/$lessonId'
+      path: '/exercises/chord-identification/lesson/$lessonId'
+      fullPath: '/exercises/chord-identification/lesson/$lessonId'
+      preLoaderRoute: typeof ExercisesChordIdentificationLessonLessonIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/exercises/interval-comparison/lesson/$lessonId': {
       id: '/exercises/interval-comparison/lesson/$lessonId'
       path: '/exercises/interval-comparison/lesson/$lessonId'
@@ -157,20 +297,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExercisesIntervalIdentificationLessonLessonIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/exercises/multi-interval-identification/lesson/$lessonId': {
+      id: '/exercises/multi-interval-identification/lesson/$lessonId'
+      path: '/exercises/multi-interval-identification/lesson/$lessonId'
+      fullPath: '/exercises/multi-interval-identification/lesson/$lessonId'
+      preLoaderRoute: typeof ExercisesMultiIntervalIdentificationLessonLessonIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ExercisesChordIdentificationCustomRoute:
+    ExercisesChordIdentificationCustomRoute,
   ExercisesIntervalComparisonCustomRoute:
     ExercisesIntervalComparisonCustomRoute,
+  ExercisesIntervalIdentificationCustomRoute:
+    ExercisesIntervalIdentificationCustomRoute,
+  ExercisesMultiIntervalIdentificationCustomRoute:
+    ExercisesMultiIntervalIdentificationCustomRoute,
+  ExercisesChordIdentificationIndexRoute:
+    ExercisesChordIdentificationIndexRoute,
   ExercisesIntervalComparisonIndexRoute: ExercisesIntervalComparisonIndexRoute,
   ExercisesIntervalIdentificationIndexRoute:
     ExercisesIntervalIdentificationIndexRoute,
+  ExercisesMultiIntervalIdentificationIndexRoute:
+    ExercisesMultiIntervalIdentificationIndexRoute,
+  ExercisesChordIdentificationLessonLessonIdRoute:
+    ExercisesChordIdentificationLessonLessonIdRoute,
   ExercisesIntervalComparisonLessonLessonIdRoute:
     ExercisesIntervalComparisonLessonLessonIdRoute,
   ExercisesIntervalIdentificationLessonLessonIdRoute:
     ExercisesIntervalIdentificationLessonLessonIdRoute,
+  ExercisesMultiIntervalIdentificationLessonLessonIdRoute:
+    ExercisesMultiIntervalIdentificationLessonLessonIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

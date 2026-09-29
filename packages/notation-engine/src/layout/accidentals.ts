@@ -24,11 +24,9 @@ export function accidentals(
   score: TemporalScore,
   options?: NotationOptions,
 ): AccidentalScore {
-  const courtesyPolicy =
-    options?.accidentals?.courtesyPolicy ?? DEFAULT_OPTIONS.accidentals.courtesyPolicy;
+  const courtesyPolicy = options?.accidentals?.courtesyPolicy ?? DEFAULT_OPTIONS.accidentals.courtesyPolicy;
   const parenthesize =
-    options?.accidentals?.parenthesizeCautionary ??
-    DEFAULT_OPTIONS.accidentals.parenthesizeCautionary;
+    options?.accidentals?.parenthesizeCautionary ?? DEFAULT_OPTIONS.accidentals.parenthesizeCautionary;
 
   const byNote = new Map<NoteId, ResolvedAccidental>();
   const diagnostics: Diagnostic[] = [];
@@ -43,6 +41,10 @@ export function accidentals(
       const state = new Map<string, number>();
       const writtenHere = new Map<string, number>();
       const elements = elementIndex.get(elementsByStaffMeasureKey(staff.index, measure.index)) ?? [];
+      const notesAtTick = new Map<number, { pitch: StaffPitch }[]>();
+      for (const el of elements) {
+        notesAtTick.set(el.tick, [...(notesAtTick.get(el.tick) ?? []), ...el.notes]);
+      }
 
       for (const el of elements) {
         for (const note of el.notes) {
@@ -52,8 +54,7 @@ export function accidentals(
           const policy = note.accidentalPolicy ?? 'auto';
 
           const tieSlot = tieKey(pitch);
-          const tiedIn =
-            (note.tie === 'stop' || note.tie === 'continue') && openTies.has(tieSlot);
+          const tiedIn = (note.tie === 'stop' || note.tie === 'continue') && openTies.has(tieSlot);
 
           let written = false;
           let parenthesized = false;
@@ -65,7 +66,7 @@ export function accidentals(
             written = true;
             parenthesized = parenthesize;
           } else {
-            written = pitch.alter !== effective;
+            written = pitch.alter !== effective || sharesPositionWithOtherAlter(notesAtTick.get(el.tick)!, pitch);
             if (!written && courtesyPolicy !== 'none' && carriedAlterations.has(slot)) {
               const carried = carriedAlterations.get(slot)!;
               if (carried !== pitch.alter) {
@@ -104,14 +105,17 @@ export function accidentals(
   return { byNote, diagnostics };
 }
 
-export function accidentalOf(
-  resolved: AccidentalScore,
-  id: NoteId,
-): ResolvedAccidental {
+export function accidentalOf(resolved: AccidentalScore, id: NoteId): ResolvedAccidental {
   return resolved.byNote.get(id) ?? NONE;
+}
+
+function sharesPositionWithOtherAlter(notes: readonly { pitch: StaffPitch }[], pitch: StaffPitch): boolean {
+  return notes.some(
+    (other) =>
+      other.pitch.step === pitch.step && other.pitch.octave === pitch.octave && other.pitch.alter !== pitch.alter,
+  );
 }
 
 function tieKey(p: StaffPitch): string {
   return `${p.step}:${p.alter}:${p.octave}`;
 }
-

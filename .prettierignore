@@ -1,0 +1,13 @@
+.worktrees/
+*.md
+apps/app/src/routeTree.gen.ts
+packages/notation-model/schema/
+packages/notation-model/src/mnx/types.ts
+**/test/__golden__/
+**/test/__snapshots__/
+**/test/fixtures/
+pnpm-lock.yaml
+apps/app/src/components/ui/
+**/*.mnx.json
+packages/notation-engine/src/font/metadata.*
+packages/notation-font/dist/

@@ -8,6 +8,7 @@ import type { Event, MnxDocument, NoteValue } from '@polyhymnia/notation-model';
 import { Notation } from '../src/Notation.js';
 import type { NotationHandle } from '../src/Notation.js';
 import type { PlaybackView } from '../src/Notation.js';
+import { NotesReveal } from '../src/presets/NotesReveal.js';
 import { ScaleReveal } from '../src/presets/ScaleReveal.js';
 import { scalePitches, fittingMeter } from '../src/presets/shared.js';
 
@@ -83,9 +84,7 @@ describe('<Notation>', () => {
     });
 
     expect(heads[0]!.textContent!.codePointAt(0)).toBe(NOTEHEAD_BLACK);
-    expect(
-      container.querySelector('[data-pn="clef"]')!.textContent!.codePointAt(0),
-    ).toBe(TREBLE_CLEF);
+    expect(container.querySelector('[data-pn="clef"]')!.textContent!.codePointAt(0)).toBe(TREBLE_CLEF);
   });
 
   it('wraps each element in a <g> labelled from ElementBox.label', () => {
@@ -102,7 +101,7 @@ describe('<Notation>', () => {
     expect(groups[0]!.getAttribute('aria-label')).toBe('C 4, quarter note, measure 1');
   });
 
-  it('keeps an element\'s DOM node stable when an earlier event shifts its position', () => {
+  it("keeps an element's DOM node stable when an earlier event shifts its position", () => {
     const noteA: Event = { id: 'note-a', duration: QUARTER, notes: [{ pitch: parsePitch('C4') }] };
     const noteB: Event = { id: 'note-b', duration: QUARTER, notes: [{ pitch: parsePitch('E4') }] };
     const noteC: Event = { id: 'note-c', duration: QUARTER, notes: [{ pitch: parsePitch('G4') }] };
@@ -125,7 +124,6 @@ describe('<Notation>', () => {
     const after_a = container.querySelector('g[data-pn="element"][data-pn-el="note-a"]')!;
     expect(after_a).toBe(before_a);
   });
-
 });
 
 describe('NotationHandle', () => {
@@ -185,10 +183,18 @@ describe('playback highlighting', () => {
       </Notation>,
     );
 
-    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn1"]')?.getAttribute('data-pn-playing')).toBe('true');
-    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn3"]')?.getAttribute('data-pn-playing')).toBe('true');
-    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn2"]')?.hasAttribute('data-pn-playing')).toBe(false);
-    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn4"]')?.hasAttribute('data-pn-playing')).toBe(false);
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn1"]')?.getAttribute('data-pn-playing')).toBe(
+      'true',
+    );
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn3"]')?.getAttribute('data-pn-playing')).toBe(
+      'true',
+    );
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn2"]')?.hasAttribute('data-pn-playing')).toBe(
+      false,
+    );
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn4"]')?.hasAttribute('data-pn-playing')).toBe(
+      false,
+    );
   });
 
   it('setPlaybackTick highlights exactly the notes sounding at a tick, via the timemap', () => {
@@ -199,14 +205,24 @@ describe('playback highlighting', () => {
     const timemap = handle.getTimeMap();
 
     handle.setPlaybackTick(timemap.byId('bn1')!.tick + 10);
-    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn1"]')?.getAttribute('data-pn-playing')).toBe('true');
-    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn2"]')?.hasAttribute('data-pn-playing')).toBe(false);
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn1"]')?.getAttribute('data-pn-playing')).toBe(
+      'true',
+    );
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn2"]')?.hasAttribute('data-pn-playing')).toBe(
+      false,
+    );
 
     const bn3 = timemap.byId('bn3')!;
     handle.setPlaybackTick(bn3.tick + bn3.durationTicks - 10);
-    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn4"]')?.getAttribute('data-pn-playing')).toBe('true');
-    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn3"]')?.hasAttribute('data-pn-playing')).toBe(false);
-    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn1"]')?.hasAttribute('data-pn-playing')).toBe(false);
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn4"]')?.getAttribute('data-pn-playing')).toBe(
+      'true',
+    );
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn3"]')?.hasAttribute('data-pn-playing')).toBe(
+      false,
+    );
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="bn1"]')?.hasAttribute('data-pn-playing')).toBe(
+      false,
+    );
   });
 
   it('reapplies highlights when the score re-lays out and the highlighted element gets a new DOM node', () => {
@@ -218,7 +234,9 @@ describe('playback highlighting', () => {
           measures: [
             {
               clefs: [{ clef: { sign: 'G', staffPosition: -2 } }],
-              sequences: [{ content: [{ duration: { base: 'quarter' }, notes: [{ pitch: parsePitch('C4'), id: 'x' }] }] }],
+              sequences: [
+                { content: [{ duration: { base: 'quarter' }, notes: [{ pitch: parsePitch('C4'), id: 'x' }] }] },
+              ],
             },
           ],
         },
@@ -250,14 +268,18 @@ describe('playback highlighting', () => {
         <Notation.Playback view={view} />
       </Notation>,
     );
-    expect(container.querySelector('g[data-pn="element"][data-pn-el="x"]')?.getAttribute('data-pn-playing')).toBe('true');
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="x"]')?.getAttribute('data-pn-playing')).toBe(
+      'true',
+    );
 
     rerender(
       <Notation score={twoNotes}>
         <Notation.Playback view={view} />
       </Notation>,
     );
-    expect(container.querySelector('g[data-pn="element"][data-pn-el="x"]')?.getAttribute('data-pn-playing')).toBe('true');
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="x"]')?.getAttribute('data-pn-playing')).toBe(
+      'true',
+    );
   });
 });
 
@@ -268,24 +290,16 @@ describe('scale spelling', () => {
     );
 
   it('spells the major scale with one letter per degree', () => {
-    expect(names('D4', 'major')).toEqual([
-      'D4', 'E4', 'F#4', 'G4', 'A4', 'B4', 'C#5', 'D5',
-    ]);
+    expect(names('D4', 'major')).toEqual(['D4', 'E4', 'F#4', 'G4', 'A4', 'B4', 'C#5', 'D5']);
   });
 
   it('raises only the 7th in harmonic minor', () => {
-    expect(names('A3', 'harmonicMinor')).toEqual([
-      'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G#4', 'A4',
-    ]);
+    expect(names('A3', 'harmonicMinor')).toEqual(['A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G#4', 'A4']);
   });
 
   it('uses the classical descending form for melodic minor', () => {
-    expect(names('A3', 'melodicMinor')).toEqual([
-      'A3', 'B3', 'C4', 'D4', 'E4', 'F#4', 'G#4', 'A4',
-    ]);
-    expect(names('A3', 'melodicMinor', true)).toEqual([
-      'A4', 'G4', 'F4', 'E4', 'D4', 'C4', 'B3', 'A3',
-    ]);
+    expect(names('A3', 'melodicMinor')).toEqual(['A3', 'B3', 'C4', 'D4', 'E4', 'F#4', 'G#4', 'A4']);
+    expect(names('A3', 'melodicMinor', true)).toEqual(['A4', 'G4', 'F4', 'E4', 'D4', 'C4', 'B3', 'A3']);
   });
 
   it('reverses the same pitch set for every other scale', () => {
@@ -299,7 +313,6 @@ describe('presets', () => {
     expect(fittingMeter({ base: 'eighth' }, 8)).toEqual({ count: 4, unit: 4 });
     expect(fittingMeter(QUARTER, 1)).toEqual({ count: 1, unit: 4 });
   });
-
 });
 
 describe('playback cursor', () => {
@@ -353,5 +366,19 @@ describe('playback cursor', () => {
     const x = container.querySelector('[data-pn-cursor] rect')!.getAttribute('x');
     rerender(tree());
     expect(container.querySelector('[data-pn-cursor] rect')!.getAttribute('x')).toBe(x);
+  });
+});
+
+describe('<NotesReveal labels>', () => {
+  it('places labels in event order at increasing horizontal positions', () => {
+    const { container } = render(
+      <NotesReveal pitches={['C4', 'E4', 'G4']} mode="melodic" clef="treble" labels={['one', 'two', 'three']} />,
+    );
+    const labels = [...container.querySelectorAll<HTMLElement>('.pn-label')];
+
+    expect(labels.map((l) => l.textContent)).toEqual(['one', 'two', 'three']);
+    const lefts = labels.map((l) => parseFloat(l.style.left));
+    expect(lefts).toEqual([...lefts].sort((a, b) => a - b));
+    expect(new Set(lefts).size).toBe(3);
   });
 });

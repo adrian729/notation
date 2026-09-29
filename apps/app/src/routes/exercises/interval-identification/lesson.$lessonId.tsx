@@ -1,11 +1,12 @@
-import { createFileRoute, Link, useNavigate, notFound } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
+import { createFileRoute, useNavigate, notFound } from '@tanstack/react-router';
+import { LessonNotFound } from '@/components/lesson/WorkshopPage';
+import { LessonRoutePage } from '@/components/lesson/LessonRoutePage';
 import { lessonById, LESSONS } from '@/exercises/interval-identification';
 import { Runner } from './-Runner';
 
 export const Route = createFileRoute('/exercises/interval-identification/lesson/$lessonId')({
   component: LessonPage,
-  notFoundComponent: NotFoundLesson,
+  notFoundComponent: () => <LessonNotFound backTo="/exercises/interval-identification" />,
   loader: ({ params }) => {
     const lesson = lessonById(params.lessonId);
     if (!lesson) throw notFound();
@@ -14,32 +15,16 @@ export const Route = createFileRoute('/exercises/interval-identification/lesson/
 });
 
 function LessonPage() {
-  const lesson = Route.useLoaderData();
   const navigate = useNavigate();
-  const index = LESSONS.findIndex((l) => l.id === lesson.id);
-  const next = LESSONS[index + 1];
-
   return (
-    <Runner
-      key={lesson.id}
-      options={lesson.options}
-      title={lesson.title}
-      lessonId={lesson.id}
+    <LessonRoutePage
+      lesson={Route.useLoaderData()}
+      lessons={LESSONS}
+      Runner={Runner}
       onBack={() => navigate({ to: '/exercises/interval-identification' })}
-      onNextLesson={
-        next ? () => navigate({ to: '/exercises/interval-identification/lesson/$lessonId', params: { lessonId: next.id } }) : undefined
+      onOpenLesson={(lessonId) =>
+        navigate({ to: '/exercises/interval-identification/lesson/$lessonId', params: { lessonId } })
       }
     />
-  );
-}
-
-function NotFoundLesson() {
-  return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-16 text-center">
-      <p>Lesson not found.</p>
-      <Button asChild>
-        <Link to="/exercises/interval-identification">Back to lessons</Link>
-      </Button>
-    </div>
   );
 }

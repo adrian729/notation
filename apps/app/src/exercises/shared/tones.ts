@@ -1,11 +1,11 @@
 import { pitchToMidi } from '@polyhymnia/notation-model';
-import { intervalById, intervalDisplayName, type IntervalId } from './intervals.js';
+import { intervalById, type IntervalId } from './intervals.js';
 import {
   pickPreferredRoot,
   pitchToToken,
-  qualityForIntervalId,
-  spellInterval,
+  spellRelative,
   tokenMidi,
+  writtenIntervalName,
   type SpelledPitch,
 } from './spelling.js';
 import type { PlayingMode } from './playing.js';
@@ -25,9 +25,8 @@ export function direction(mode: PlayingMode): 1 | -1 {
   return mode === 'desc' ? -1 : 1;
 }
 
-function toneName(mode: PlayingMode, degree: number, size: IntervalId): string {
-  const quality = qualityForIntervalId(size, degree);
-  return `${intervalDisplayName(degree, quality)}, ${mode === 'harmonic' ? 'harmonic' : mode === 'asc' ? 'ascending' : 'descending'}`;
+function toneName(mode: PlayingMode, lower: SpelledPitch, upper: SpelledPitch): string {
+  return `${writtenIntervalName(pitchToToken(lower), pitchToToken(upper))}, ${mode === 'harmonic' ? 'harmonic' : mode === 'asc' ? 'ascending' : 'descending'}`;
 }
 
 export function toTones(
@@ -36,7 +35,6 @@ export function toTones(
   dir: 1 | -1,
   root: SpelledPitch,
   other: SpelledPitch,
-  degree: number,
 ): IntervalTones {
   const lower = dir === 1 ? root : other;
   const upper = dir === 1 ? other : root;
@@ -46,21 +44,26 @@ export function toTones(
     to: pitchToToken(mode === 'desc' ? other : upper),
     root,
     other,
-    name: toneName(mode, degree, size),
+    name: toneName(mode, lower, upper),
   };
 }
 
 export function buildTones(size: IntervalId, root: SpelledPitch, mode: PlayingMode): IntervalTones {
   const spec = intervalById(size);
   const dir = direction(mode);
-  const { root: spelledRoot, other, degree } = spellInterval(root, spec.degreeOptions, spec.semitones, dir);
-  return toTones(size, mode, dir, spelledRoot, other, degree);
+  const spelled = spellRelative(root, [spec], dir, 2);
+  if (!spelled) throw new RangeError('could not spell interval without a double accidental');
+  return toTones(size, mode, dir, spelled.pinned, spelled.members[0]!.pitch);
 }
 
 export function midiOfToken(token: string): number {
   const midi = tokenMidi(token);
   if (midi === undefined) throw new SyntaxError(`Invalid pitch token: ${JSON.stringify(token)}`);
   return midi;
+}
+
+export function clefForMidis(midis: readonly number[]): 'treble' | 'bass' {
+  return (Math.min(...midis) + Math.max(...midis)) / 2 < 60 ? 'bass' : 'treble';
 }
 
 export function withinRange(tones: IntervalTones, lowMidi: number, highMidi: number): boolean {
@@ -71,6 +74,10 @@ export function withinRange(tones: IntervalTones, lowMidi: number, highMidi: num
 
 export function randomInt(rng: Rng, minInclusive: number, maxInclusive: number): number {
   return minInclusive + Math.floor(rng() * (maxInclusive - minInclusive + 1));
+}
+
+export function pickOne<T>(items: readonly T[], rng: Rng): T {
+  return items[Math.floor(rng() * items.length)]!;
 }
 
 export function midiToPitch(midi: number, rng: Rng): SpelledPitch {

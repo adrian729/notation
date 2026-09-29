@@ -135,6 +135,10 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+.pn-labelled {
+  --pn-label-ink: var(--muted-foreground);
+}
+
 .pn-notation {
   --pn-ink: var(--foreground);
   --pn-staff: var(--muted-foreground);

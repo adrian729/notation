@@ -5,6 +5,7 @@ export interface RangeOption {
 }
 
 export type Tempo = 'slow' | 'medium' | 'fast';
+export const TEMPOS: readonly Tempo[] = ['slow', 'medium', 'fast'];
 
 export const TEMPO_NOTE_DURATION: Record<Tempo, number> = {
   slow: 1.0,

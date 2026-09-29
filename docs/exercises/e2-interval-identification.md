@@ -23,18 +23,20 @@ Implementation: `apps/app/src/exercises/interval-identification/` (pure logic) a
 - Keyboard: `Space` plays the question; `Enter` goes to the next question once answered. No answer keys [ours, same as E1 minus the A/S/B keys].
 - Anything that ends the question (answering, **Finish** in endless mode, or leaving) stops the sound immediately; **Play question** can replay it afterwards [ours, same as E1].
 
-## Options (lesson-fixed)
+## Options
 
-Lessons fix the options below; there is no custom exercise screen for this version.
+Workshop lessons fix the options; the custom exercise exposes them [ours].
 
 | Option | Values | Tag |
 | --- | --- | --- |
-| Intervals | The interval family of the module | EM |
-| Playing mode | asc, desc, harmonic, or mixed (random among all three, per question) | EM |
-| Range | C3–C6 for simple families, G2–C6 for compound | ours (replaces EarMaster's keys and root movement, as in E1) |
-| Tempo | Medium (0.7 s note length) | ours, fixed per lesson |
-| Questions | 10 | ours, fixed per lesson |
-| Auto new question | On, after a correct answer (1.5 s, **Stay** button cancels it, same mechanism as E1) | EM F12, Stay ours |
+| Intervals | Lessons: the interval family of the module. Custom: the same interval picker as E1's custom exercise, with individual tiles for all 24 intervals (minor 2nd to double octave), the set chips Perfect, Imperfect consonant, Dissonant and All intervals, the Second octave chip and the Full names / Short toggle. Pick at least two. Default: all 12 simple intervals | EM (lessons), ours (custom) |
+| Playing mode | Lessons: asc, desc, harmonic, or mixed (random among all three, per question). Custom: tick any of ascending, descending, harmonic; each question picks one of the ticked | EM |
+| Range | C3–C6 when every ticked interval is up to an octave, G2–C6 as soon as one is larger (lessons: simple families and compound follow the same rule) | ours (replaces EarMaster's keys and root movement, as in E1) |
+| Tempo | Lessons: Medium (0.7 s note length). Custom: slow, medium, fast (1.0 s, 0.7 s, 0.45 s) | ours |
+| Questions | Lessons: 10. Custom: same control as E1 | ours |
+| Auto new question | Lessons: on, after a correct answer (1.5 s, **Stay** button cancels it, same mechanism as E1). Custom: off by default | EM F12, Stay ours |
+
+The custom exercise screen explains every option inline. The last-used custom options are remembered in the browser (`localStorage`, key `polyhymnia:e2:customOptions`) and restored next time the page opens with no options chosen yet; a **Reset to defaults** button clears back to the defaults above [ours, same as E1 and E3].
 
 ## Question choice
 
@@ -76,6 +78,5 @@ Workshop: 5 interval families × 4 modes (ascending, descending, harmonic, mixed
 - Answering by entering tones on the staff, piano, fingerboard, solfege keyboard, MIDI or microphone; only multiple-choice buttons [EM].
 - Answer identification modes (absolute, any octave, relative) [EM].
 - Keys and root movement, and the advanced root-placement options; replaced by a plain pitch range, as in E1 [EM].
-- A custom exercise screen; only the fixed workshop lessons exist [EM].
 - Auditioning individual answer options before choosing, or replaying the question in a different mode after answering [ours, not asked for].
 - EarMaster's own 16-module progression (m2/M2 pairs up to all intervals in an octave); this version reuses E1's 5-family split instead [EM S9].

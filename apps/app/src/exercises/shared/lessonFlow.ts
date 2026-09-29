@@ -1,5 +1,16 @@
 export const PASS_THRESHOLD = 0.8;
 
+export type QuestionCount = number | 'endless';
+export const QUESTION_COUNT_MIN = 1;
+export const QUESTION_COUNT_MAX = 200;
+export const DEFAULT_QUESTION_COUNT = 10;
+
+export function normalizeQuestionCount(count: QuestionCount): QuestionCount {
+  if (count === 'endless') return count;
+  if (!Number.isFinite(count)) return DEFAULT_QUESTION_COUNT;
+  return Math.min(QUESTION_COUNT_MAX, Math.max(QUESTION_COUNT_MIN, Math.round(count)));
+}
+
 export interface AnsweredQuestion<Q, A> {
   question: Q;
   answer: A;

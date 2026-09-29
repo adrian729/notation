@@ -91,12 +91,12 @@ Editing existing content (not authoring it fresh) goes through `applyIntent` (`i
 `@polyhymnia/notation-react/presets` — separate export path, tree-shaken out if unused. Thin wrappers around `<Notation>` for the single-exercise case — not a scoped feature of their own (`README.md`), just sugar that builds a small MNX document internally from a few typed props; nothing outside `presets/` constructs MNX by hand for the app.
 
 ```ts
-interface ChordRevealProps { pitches: readonly PitchToken[]; clef: ClefKind; duration?: NoteValue }   // default { base: 'quarter' }
-interface IntervalRevealProps { from: PitchToken; to: PitchToken; clef: ClefKind; mode: 'harmonic' | 'melodic'; duration?: NoteValue }   // default { base: 'quarter' }
+interface NotesRevealProps { pitches: readonly PitchToken[]; mode: 'melodic' | 'harmonic'; clef: ClefKind; duration?: NoteValue; labels?: readonly string[] }   // duration default { base: 'quarter' }; labels[i] is shown centred under the i-th drawn event, in a row of reserved height below the staff
 type ScaleName = 'major' | 'naturalMinor' | 'harmonicMinor' | 'melodicMinor';
 interface ScaleRevealProps { root: PitchToken; scale: ScaleName; clef: ClefKind; descending?: boolean; duration?: NoteValue }   // default { base: 'quarter' }
 ```
 
+- `NotesReveal` width is one rule for every use: the measure is laid out at its natural content width (`widthSp: 1` first pass) plus a fixed 12sp slot per drawn event (`maxLastSystemFill: 1`), rendered at the same staff scale as a 65sp-wide layout filling the container (capped at the container width) and centred. `labels` add no layout branch; each label is positioned from the resulting layout.
 - `PitchToken` — the same `'C4'` / `'F#5'` / `'Bb3'` string grammar `parsePitch` (`mnx.md`) accepts; presets parse it internally to an MNX `pitch` object.
 - `ClefKind` — `'treble' | 'bass' | 'alto' | 'tenor'`, the engine's resolved clef kinds (`engraving.md`); presets translate this to the MNX `{sign, staffPosition}` pair `mnx.md`'s clef mapping table expects.
 - `duration` — an MNX note value, `{ base: NoteValueBase; dots?: number }` (`mnx.md`), not a token string — same shape a hand-written `.mnx.json` event's `duration` would use.
@@ -104,7 +104,7 @@ interface ScaleRevealProps { root: PitchToken; scale: ScaleName; clef: ClefKind;
 `descending: true` with `scale: 'melodicMinor'`: uses the classical descending form (natural-minor pitches, lowered 6th/7th) — a genuinely different pitch set from the ascending form, not the same notes reversed. Every other `scale` value: `descending` reverses the same (ascending) pitch set, since only melodic minor has direction-dependent content.
 
 ```tsx
-<ChordReveal pitches={['C4','E4','G4']} clef="treble" />
-<IntervalReveal from="C4" to="E4" clef="treble" mode="harmonic" />
+<NotesReveal pitches={['C4','E4','G4']} mode="harmonic" clef="treble" />
+<NotesReveal pitches={['C4','E4']} mode="melodic" clef="treble" />
 <ScaleReveal root="D4" scale="major" clef="treble" />
 ```

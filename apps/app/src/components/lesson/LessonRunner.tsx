@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import type { NoteEvent } from '@polyhymnia/audio';
 import { TimerOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -38,10 +38,10 @@ export interface LessonRunnerProps<Q, A, O extends RunnerOptions> {
   onNextLesson?: () => void;
   generate: (options: O, previous?: Q) => Q;
   buildEvents: (question: Q) => NoteEvent[];
-  correctAnswer: (question: Q) => A;
+  isCorrect: (question: Q, answer: A) => boolean;
   saveResult: (lessonId: string, percent: number, passed: boolean) => void;
   prompt: string;
-  verdict: (question: Q, correct: boolean) => string;
+  verdict: (item: AnsweredQuestion<Q, A>) => string;
   renderAnswers: (props: AnswerRenderProps<Q, A>) => ReactNode;
   renderReveal: (question: Q) => ReactNode;
   revealPlaceholder: ReactNode;
@@ -76,14 +76,14 @@ function tryGenerate<Q, O>(generate: (options: O, previous?: Q) => Q, options: O
 
 function makeReducer<Q, A, O extends RunnerOptions>(
   generate: (options: O, previous?: Q) => Q,
-  correctAnswer: (question: Q) => A,
+  isCorrect: (question: Q, answer: A) => boolean,
   lessonId: string | undefined,
 ) {
   return function reducer(state: RunnerState<Q, A>, action: Action<Q, A, O>): RunnerState<Q, A> {
     switch (action.type) {
       case 'answer': {
         if (state.phase !== 'playing' || !state.question) return state;
-        const correct = action.choice === correctAnswer(state.question);
+        const correct = isCorrect(state.question, action.choice);
         const flow = recordAnswer(state.flow, state.question, action.choice, correct);
         return { ...state, flow, phase: flow.finished ? 'summary' : 'answered', selected: action.choice };
       }
@@ -124,7 +124,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
   onNextLesson,
   generate,
   buildEvents,
-  correctAnswer,
+  isCorrect,
   saveResult,
   prompt,
   verdict,
@@ -146,7 +146,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
   const buildEventsRef = useRef(buildEvents);
   buildEventsRef.current = buildEvents;
 
-  const reducer = useMemo(() => makeReducer<Q, A, O>(generate, correctAnswer, lessonId), [generate, correctAnswer, lessonId]);
+  const reducer = useMemo(() => makeReducer<Q, A, O>(generate, isCorrect, lessonId), [generate, isCorrect, lessonId]);
 
   const [state, dispatch] = useReducer(reducer, undefined, () => {
     const flow = createLessonFlow<Q, A>({ questionCount: options.questionCount, graded: !!lessonId });
@@ -228,13 +228,14 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
     dispatch({ type: 'next', options });
   }, [state.phase, state.flow.finished, options]);
 
+  const lastAnswered = state.flow.answered[state.flow.answered.length - 1];
+
   const autoNextArmed =
     state.phase === 'answered' &&
     !state.flow.finished &&
     options.autoNext &&
     !autoPaused &&
-    state.question !== null &&
-    state.selected === correctAnswer(state.question);
+    lastAnswered?.correct === true;
 
   useEffect(() => {
     if (!autoNextArmed) return;
@@ -246,7 +247,8 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
     const isTextInput = (el: EventTarget | null) =>
       el instanceof HTMLElement && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
     const isInteractiveControl = (el: EventTarget | null) =>
-      el instanceof HTMLElement && !!el.closest('button, a, select, input, textarea, [contenteditable], [role="button"]');
+      el instanceof HTMLElement &&
+      !!el.closest('button, a, select, input, textarea, [contenteditable], [role="button"]');
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === ' ' || e.key === 'Enter') {
         if (isInteractiveControl(e.target)) return;
@@ -287,7 +289,6 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
   }
 
   const question = state.question!;
-  const correct = correctAnswer(question);
 
   if (state.phase === 'summary') {
     return (
@@ -342,7 +343,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
       )}
 
       <p className="text-center text-base font-medium" role="status">
-        {answeredYet ? verdict(question, state.selected === correct) : prompt}
+        {answeredYet && lastAnswered ? verdict(lastAnswered) : prompt}
       </p>
 
       {blocked && (
@@ -351,13 +352,15 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
         </p>
       )}
 
-      {renderAnswers({
-        question,
-        selected: state.selected,
-        answered: answeredYet,
-        disabled: !answeredYet && !started,
-        answer,
-      })}
+      <Fragment key={state.playCount}>
+        {renderAnswers({
+          question,
+          selected: state.selected,
+          answered: answeredYet,
+          disabled: !answeredYet && !started,
+          answer,
+        })}
+      </Fragment>
 
       <div className="flex justify-center gap-3">
         <Button ref={playButtonRef} variant="outline" onClick={replay}>
@@ -387,7 +390,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
         )}
       </div>
 
-      {answeredYet && renderReveal(question)}
+      {answeredYet && <div className="flex justify-center">{renderReveal(question)}</div>}
     </div>
   );
 }

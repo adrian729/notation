@@ -7,3 +7,5 @@ export * from './lessonFlow.js';
 export * from './store.js';
 export * from './catalog.js';
 export * from './families.js';
+export * from './customSearch.js';
+export * from './session.js';

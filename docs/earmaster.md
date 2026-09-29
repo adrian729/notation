@@ -273,7 +273,7 @@ Grounded in `AGENTS.md`, `notation/interaction.md`, `notation/audio.md`, `notati
 
 ## 2.1 What we have today
 
-- **Rendering** (`notation-react`): `<Notation score>` renders MNX with treble, bass, alto and tenor clefs, all keys, meters, tuplets, ties, slurs and two voices per staff. `Notation.Interaction` resolves `element`/`slot`/`point` hits into `activate`/`hover` intents; `Notation.Marks` draws app states, selection and a preview ghost without re-layout; `Notation.Playback` (`notes`/`cursor`) plus `setPlaybackTick` draws highlight and cursor from an app-supplied tick. Presets: `ChordReveal`, `IntervalReveal`, `ScaleReveal` (major, natural/harmonic/melodic minor).
+- **Rendering** (`notation-react`): `<Notation score>` renders MNX with treble, bass, alto and tenor clefs, all keys, meters, tuplets, ties, slurs and two voices per staff. `Notation.Interaction` resolves `element`/`slot`/`point` hits into `activate`/`hover` intents; `Notation.Marks` draws app states, selection and a preview ghost without re-layout; `Notation.Playback` (`notes`/`cursor`) plus `setPlaybackTick` draws highlight and cursor from an app-supplied tick. Presets: `NotesReveal`, `ScaleReveal` (major, natural/harmonic/melodic minor).
 - **Editing** (`notation-model`): `applyIntent({type:'setPitches'})` sets, clears or chords one event; rhythm never changes.
 - **Audio** (`@polyhymnia/audio`): `melodic`, `harmonic`, `concat`, `shift`, `transpose`, `midiOfPitch`, `eventsFromTimeMap` (repeats, voltas, D.S. al Fine via `playOrder`, tempo override, `tickAtSeconds` for the cursor); `./webaudio` has only `synthInstrument` behind the `Instrument` seam. Deferred in `audio.md`: count-in, metronome, seek/loop, dynamics velocity, grace notes, tempo ramps.
 - **App** (`apps/web`): three fixed-content demos — `NoteHeard` (click the note heard), `Dictation` (pitch-only, first note given, ♭/♮/♯ toggle, Check), `ErrorDetection` (pitch variant played through `melodic` with one fixed note length) — plus `ScorePlayer` and `sound.ts` (`createSound`, `midiOfId`). No question generation, routing, settings, persistence or statistics.
@@ -286,10 +286,10 @@ Verdicts: **Supported** = a working demo of the mechanic exists; only content ge
 
 | EarMaster | Verdict | Existing primitives | Missing (gap) |
 | --- | --- | --- | --- |
-| E1 Interval Comparison | App logic | `melodic`/`harmonic` + `concat`; A/B buttons; `IntervalReveal` ×2 after answering | Generator with common-tone root choice (G1), spelled interval math (G2) |
+| E1 Interval Comparison | App logic | `melodic`/`harmonic` + `concat`; A/B buttons; `NotesReveal` ×2 after answering | Generator with common-tone root choice (G1), spelled interval math (G2) |
 | E2 Interval Identification | App logic (buttons, staff); New (mic, MIDI) | Buttons; staff entry via `slot` hits + `setPitches` (chord form for harmonic); "play tonic" as `harmonic` chords `concat` | G1, G2, reference builder (G6); answer identification modes are app comparison rules; mic (G15), MIDI (G14) |
 | E3 Interval Singing | New capability | Reference tone via `melodic`; spelling variant = staff entry | Mic pitch detection with hold-to-commit (G15); live note display (G12) |
-| E4 Chord Identification | App logic | `harmonic` / arpeggiated `melodic`; `ChordReveal`; staff chord entry via `setPitches` | Chord tables with spelling (G1, G2); custom chords (G5 storage); open voicings wider than one staff need grand staff (G16) |
+| E4 Chord Identification | App logic | `harmonic` / arpeggiated `melodic`; `NotesReveal`; staff chord entry via `setPitches` | Chord tables with spelling (G1, G2); custom chords (G5 storage); open voicings wider than one staff need grand staff (G16) |
 | E5 Chord Inversions | App logic | As E4 | Inversion generation with fixed bass (G1) |
 | E6 Chord Progressions | App logic (whole, chord-by-chord selects); New (numerals on staff, bass staff, MIDI) | `harmonic` + `concat`, or generated MNX → `eventsFromTimeMap` with `Playback(notes)`; bar pick via `point`/`element` hits | Voicing and function tables (G1), MNX progression generator (G7); Roman numerals in the SVG (G17, until then app text); "deep root tone" / bass display (G16); MIDI chord → function (G14) |
 | E7 Scale Identification | App logic | `melodic`; `ScaleReveal` for 4 scales | Mode and custom-scale tables (G1); generated MNX for mode reveal (G7) |

@@ -1,6 +1,7 @@
 import type { PlayingMode } from '../shared/playing.js';
 import {
   buildTones,
+  clefForMidis,
   midiOfToken,
   midiToPitch,
   withinRange,
@@ -56,8 +57,7 @@ export function generateQuestion(
     const tones = buildTones(size, root, mode);
     if (!withinRange(tones, low, high)) continue;
 
-    const middle = (pitchToMidi(tones.root) + pitchToMidi(tones.other)) / 2;
-    const clef: 'treble' | 'bass' = middle < 60 ? 'bass' : 'treble';
+    const clef = clefForMidis([pitchToMidi(tones.root), pitchToMidi(tones.other)]);
     const question: Question = { mode, size, tones, clef };
     const signature = questionSignature(question);
     if (last && sameSignature(signature, last) && attempt < MAX_ATTEMPTS - 1) continue;

@@ -1,6 +1,30 @@
+import type { RangeOption } from './playing.js';
+
 export type IntervalId =
-  | 'm2' | 'M2' | 'm3' | 'M3' | 'P4' | 'TT' | 'P5' | 'm6' | 'M6' | 'm7' | 'M7' | 'P8'
-  | 'm9' | 'M9' | 'm10' | 'M10' | 'P11' | 'A11' | 'P12' | 'm13' | 'M13' | 'm14' | 'M14' | 'P15';
+  | 'm2'
+  | 'M2'
+  | 'm3'
+  | 'M3'
+  | 'P4'
+  | 'TT'
+  | 'P5'
+  | 'm6'
+  | 'M6'
+  | 'm7'
+  | 'M7'
+  | 'P8'
+  | 'm9'
+  | 'M9'
+  | 'm10'
+  | 'M10'
+  | 'P11'
+  | 'A11'
+  | 'P12'
+  | 'm13'
+  | 'M13'
+  | 'm14'
+  | 'M14'
+  | 'P15';
 
 export interface IntervalSize {
   id: IntervalId;
@@ -70,19 +94,31 @@ export const INTERVAL_FAMILY_ORDER: readonly IntervalFamilyId[] = [
 ];
 
 const DEGREE_QUALITY_NAME: Record<string, string> = {
-  '2m': 'Minor 2nd', '2M': 'Major 2nd',
-  '3m': 'Minor 3rd', '3M': 'Major 3rd',
-  '4P': 'Perfect 4th', '4A': 'Augmented 4th',
-  '5P': 'Perfect 5th', '5d': 'Diminished 5th',
-  '6m': 'Minor 6th', '6M': 'Major 6th',
-  '7m': 'Minor 7th', '7M': 'Major 7th',
+  '2m': 'Minor 2nd',
+  '2M': 'Major 2nd',
+  '3m': 'Minor 3rd',
+  '3M': 'Major 3rd',
+  '4P': 'Perfect 4th',
+  '4A': 'Augmented 4th',
+  '5P': 'Perfect 5th',
+  '5d': 'Diminished 5th',
+  '6m': 'Minor 6th',
+  '6M': 'Major 6th',
+  '7m': 'Minor 7th',
+  '7M': 'Major 7th',
   '8P': 'Octave',
-  '9m': 'Minor 9th', '9M': 'Major 9th',
-  '10m': 'Minor 10th', '10M': 'Major 10th',
-  '11P': 'Perfect 11th', '11A': 'Augmented 11th',
-  '12P': 'Perfect 12th', '12d': 'Diminished 12th',
-  '13m': 'Minor 13th', '13M': 'Major 13th',
-  '14m': 'Minor 14th', '14M': 'Major 14th',
+  '9m': 'Minor 9th',
+  '9M': 'Major 9th',
+  '10m': 'Minor 10th',
+  '10M': 'Major 10th',
+  '11P': 'Perfect 11th',
+  '11A': 'Augmented 11th',
+  '12P': 'Perfect 12th',
+  '12d': 'Diminished 12th',
+  '13m': 'Minor 13th',
+  '13M': 'Major 13th',
+  '14m': 'Minor 14th',
+  '14M': 'Major 14th',
   '15P': 'Double octave',
 };
 
@@ -95,4 +131,11 @@ export function intervalIdDisplayName(id: IntervalId): string {
   const spec = intervalById(id);
   const quality = id[0] as 'm' | 'M' | 'P' | 'A';
   return intervalDisplayName(spec.degreeOptions[0]!, quality);
+}
+
+const FIRST_OCTAVE_RANGE: RangeOption = { low: 'C3', high: 'C6' };
+const SECOND_OCTAVE_RANGE: RangeOption = { low: 'G2', high: 'C6' };
+
+export function rangeForIntervals(intervals: readonly IntervalId[]): RangeOption {
+  return intervals.some((id) => INTERVAL_FAMILIES.compound.includes(id)) ? SECOND_OCTAVE_RANGE : FIRST_OCTAVE_RANGE;
 }

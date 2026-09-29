@@ -49,3 +49,23 @@
   pointer-events: none;
   opacity: var(--pn-preview-opacity, 0.45);
 }
+
+.pn-labelled {
+  max-width: 100%;
+}
+.pn-labelled > .pn-notation {
+  width: 100%;
+}
+.pn-labels {
+  position: relative;
+  height: var(--pn-label-row-height, 2rem);
+  font-size: var(--pn-label-size, 0.75rem);
+  line-height: var(--pn-label-line-height, 1rem);
+  color: var(--pn-label-ink, currentColor);
+}
+.pn-label {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  text-align: center;
+}

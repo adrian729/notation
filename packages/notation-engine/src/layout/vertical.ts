@@ -238,9 +238,7 @@ function beamDirectionsByElement(
       .filter((el): el is TemporalElement => el !== undefined && el.kind !== 'rest');
     if (notes.length === 0) continue;
 
-    const overrides = notes
-      .map((el) => el.stem)
-      .filter((s): s is 'up' | 'down' => s === 'up' || s === 'down');
+    const overrides = notes.map((el) => el.stem).filter((s): s is 'up' | 'down' => s === 'up' || s === 'down');
 
     let dir: 1 | -1;
     if (overrides.length > 0) {
@@ -334,7 +332,7 @@ function layOut(
     : shared && row.stem !== 'up' && row.stem !== 'down'
       ? voiceDirection(row.voice, upVoice)
       : stemDirection(heads, row.stem);
-  const shifts = secondShifts(heads, width);
+  const shifts = clusterShifts(heads, width, dir);
 
   const noteheads: NoteheadLayout[] = heads.map((head, i) => {
     const dx = shifts[i] ?? 0;
@@ -512,8 +510,7 @@ function crossVoiceShift(
   lower: VerticalElement,
 ): { element: VerticalElement; by: number } | undefined {
   const pairs = upper.noteheads.flatMap((a) => lower.noteheads.map((b) => [a, b] as const));
-  const apart = (a: NoteheadLayout, b: NoteheadLayout): number =>
-    Math.abs(a.staffPosition - b.staffPosition);
+  const apart = (a: NoteheadLayout, b: NoteheadLayout): number => Math.abs(a.staffPosition - b.staffPosition);
 
   if (pairs.some(([a, b]) => Math.abs(apart(a, b) - 0.5) < 1e-9)) {
     return { element: upper, by: headExtent(lower.noteheads) };
@@ -521,7 +518,8 @@ function crossVoiceShift(
   const unisons = pairs.filter(([a, b]) => apart(a, b) < 1e-9);
   if (unisons.length === 0) return undefined;
   const identical =
-    upper.duration.dots === lower.duration.dots && unisons.every(([a, b]) => a.glyph === b.glyph);
+    upper.duration.dots === lower.duration.dots &&
+    unisons.every(([a, b]) => a.glyph === b.glyph && a.pitch.alter === b.pitch.alter);
   if (identical) return undefined;
   return { element: lower, by: headExtent(upper.noteheads) };
 }
@@ -541,10 +539,7 @@ const BREATH_GLYPH: Record<NonNullable<TemporalElement['breath']>, string> = {
 
 const BREATH_Y = 0;
 
-function layOutBreath(
-  breath: TemporalElement['breath'],
-  noteRight: number,
-): BreathLayout | undefined {
+function layOutBreath(breath: TemporalElement['breath'], noteRight: number): BreathLayout | undefined {
   if (!breath) return undefined;
   return { glyph: BREATH_GLYPH[breath], dx: noteRight + BREATH_GAP, y: BREATH_Y };
 }
@@ -578,31 +573,29 @@ function stemDirection(heads: readonly Head[], override: TemporalElement['stem']
 
   let furthest = 0;
   for (const head of heads) furthest = Math.max(furthest, Math.abs(head.staffPosition - MIDDLE_LINE));
-  const extremes = heads.filter(
-    (h) => Math.abs(Math.abs(h.staffPosition - MIDDLE_LINE) - furthest) < 1e-9,
-  );
+  const extremes = heads.filter((h) => Math.abs(Math.abs(h.staffPosition - MIDDLE_LINE) - furthest) < 1e-9);
   const below = extremes.some((h) => h.staffPosition > MIDDLE_LINE);
   const above = extremes.some((h) => h.staffPosition < MIDDLE_LINE);
   if (below && !above) return 1;
   return -1;
 }
 
-function secondShifts(heads: readonly Head[], width: number): number[] {
-  const order = heads
-    .map((head, index) => ({ index, position: head.staffPosition }))
-    .sort((a, b) => b.position - a.position);
-  const shifts = new Array<number>(heads.length).fill(0);
-  let previous: number | undefined;
-  let previousShifted: boolean = false;
-  for (const entry of order) {
-    const isSecond: boolean =
-      previous !== undefined && Math.abs(previous - entry.position - 0.5) < 1e-9;
-    const shift: boolean = isSecond && !previousShifted;
-    shifts[entry.index] = shift ? width : 0;
-    previousShifted = shift;
-    previous = entry.position;
+function clusterShifts(heads: readonly Head[], width: number, dir: 1 | -1): number[] {
+  const pitchKey = (head: Head): string => `${head.staffPosition}:${head.note.pitch.alter}`;
+  const distinct = [...new Map(heads.map((head) => [pitchKey(head), head])).values()].sort(
+    (a, b) => dir * (b.staffPosition - a.staffPosition || a.note.pitch.alter - b.note.pitch.alter),
+  );
+  const columnOf = new Map<string, number>();
+  const placed: { position: number; column: number }[] = [];
+  for (const head of distinct) {
+    let column = 0;
+    while (placed.some((p) => p.column === column && Math.abs(p.position - head.staffPosition) <= 0.5 + 1e-9)) {
+      column += 1;
+    }
+    placed.push({ position: head.staffPosition, column });
+    columnOf.set(pitchKey(head), column);
   }
-  return shifts;
+  return heads.map((head) => dir * columnOf.get(pitchKey(head))! * width);
 }
 
 function layOutStem(
@@ -656,12 +649,7 @@ function ledgerLines(staffPosition: number): number[] {
   return lines;
 }
 
-function dotPositions(
-  dots: 0 | 1 | 2,
-  fromX: number,
-  y: number,
-  below: boolean,
-): { dx: number; y: number }[] {
+function dotPositions(dots: 0 | 1 | 2, fromX: number, y: number, below: boolean): { dx: number; y: number }[] {
   if (!dots) return [];
   const width = glyphAdvanceWidth('augmentationDot');
   const onLine = Math.abs(y - Math.round(y)) < 1e-9;
@@ -682,14 +670,14 @@ function dotsWidth(dots: 0 | 1 | 2): number {
 function packAccidentals(noteheads: readonly NoteheadLayout[]): number {
   const withAccidental = noteheads
     .filter((n) => n.accidental)
-    .sort((a, b) => a.staffPosition - b.staffPosition);
-  if (withAccidental.length === 0) return 0;
+    .sort((a, b) => a.staffPosition - b.staffPosition || b.dx - a.dx);
+  const headsLeft = Math.min(0, ...noteheads.map((n) => n.dx));
+  if (withAccidental.length === 0) return -headsLeft;
 
   const parensRight = (acc: AccidentalLayout): number =>
     acc.parenthesized ? glyphAdvanceWidth('accidentalParensRight') : 0;
   const unitWidth = (acc: AccidentalLayout): number =>
-    acc.width +
-    (acc.parenthesized ? glyphAdvanceWidth('accidentalParensLeft') + parensRight(acc) : 0);
+    acc.width + (acc.parenthesized ? glyphAdvanceWidth('accidentalParensLeft') + parensRight(acc) : 0);
 
   const columns: { top: number; bottom: number }[][] = [];
   const assigned: { head: NoteheadLayout; column: number }[] = [];
@@ -706,9 +694,7 @@ function packAccidentals(noteheads: readonly NoteheadLayout[]): number {
     }
     const span = { top: top - ACCIDENTAL_PAD, bottom: bottom + ACCIDENTAL_PAD };
     let column = 0;
-    while (
-      columns[column]?.some((placed) => span.top < placed.bottom && placed.top < span.bottom)
-    ) {
+    while (columns[column]?.some((placed) => span.top < placed.bottom && placed.top < span.bottom)) {
       column += 1;
     }
     (columns[column] ??= []).push(span);
@@ -716,18 +702,17 @@ function packAccidentals(noteheads: readonly NoteheadLayout[]): number {
   }
 
   const widths = columns.map((_, i) =>
-    assigned
-      .filter((a) => a.column === i)
-      .reduce((max, a) => Math.max(max, unitWidth(a.head.accidental!)), 0),
+    assigned.filter((a) => a.column === i).reduce((max, a) => Math.max(max, unitWidth(a.head.accidental!)), 0),
   );
 
   for (const { head, column } of assigned) {
-    let right = -ACCIDENTAL_GAP;
+    let right = headsLeft - ACCIDENTAL_GAP;
     for (let i = 0; i < column; i += 1) right -= widths[i]! + ACCIDENTAL_COLUMN_GAP;
     head.accidental!.dx = right - parensRight(head.accidental!) - head.accidental!.width;
   }
 
   return (
+    -headsLeft +
     ACCIDENTAL_GAP +
     widths.reduce((sum, w) => sum + w, 0) +
     Math.max(0, widths.length - 1) * ACCIDENTAL_COLUMN_GAP

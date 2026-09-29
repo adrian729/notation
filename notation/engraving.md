@@ -18,8 +18,17 @@ Direction and length for every notehead outside a beam group (stage 5, `vertical
 3. thickness: `stemThickness` (0.12sp, architecture.md). `stem:'none'` suppresses rendering;
    direction still resolves (ledger-line-side accidental placement needs it) even undrawn.
 4. chord "second" shift (rod-width `chord-shift`, Horizontal spacing below): members a step
-   apart shift the upper notehead one notehead-width right of the stem, lower stays left — same
-   rule Two voices (below) uses across voices, applied here within one chord's own stem.
+   apart or on the same staff position with different alterations (a chromatic unison, e.g.
+   E♭4 + E4) never share a notehead column; identical pitches share one position. Distinct
+   pitches are placed from the notehead end of the stem (bottom-up for stem up, top-down for
+   stem down; at one position the lower alteration counts as lower), each in the column nearest
+   the stem's normal side that holds no member a step or less away. Column 1 sits on the other
+   side of the stem (right for stem up, left for stem down), so in an isolated second or unison
+   the upper notehead is the right one; a cluster that needs more columns (C4 D♭4 D4 E♭4 E4
+   needs four) continues outward on that side. Two voices (below) separates seconds and
+   chromatic unisons across voices the same way, and Accidentals (below) gives both notes of a
+   chromatic unison their own accidental, ordered like the noteheads, within one chord or across
+   voices.
 ```
 
 ## Beaming
@@ -139,7 +148,7 @@ idealWidth(d) = BASE * (d/quarter)^K     BASE = 3.2 sp, K = 0.55 (options.spacin
 | half | 1.464 | 4.69 sp | ~1.6 sp | spring |
 | whole | 2.144 | 6.86 sp | ~2.1 sp | spring |
 
-Column width = `max(rod, idealWidth)`. Column layout, left→right: `[accidentals][notehead][chord-shift][dots]` + 0.3sp minimum inter-column gap — `chord-shift` is the extra width from a shifted chord member (Stems step 4, above: the shifted notehead sits right of the stem, extending the column past `notehead`, not before it).
+Column width = `max(rod, idealWidth)`. Column layout, left→right: `[accidentals][notehead][chord-shift][dots]` + 0.3sp minimum inter-column gap — `chord-shift` is the extra width from a shifted chord member (Stems step 4, above: with stem up the shifted notehead sits right of the stem, extending the column past `notehead`; with stem down it sits left of the stem, between the accidentals and the normal notehead).
 
 Dot vertical placement: same y as its notehead if the notehead sits in a space; nudged up `0.5sp` if the notehead sits on a line (a dot never renders directly on a staff line). Rest dots: same rule relative to the rest's y (Rests, below).
 
@@ -202,7 +211,9 @@ State: `Map<"step:octave", alter>`, reset per barline, seeded from the key signa
 for each note in time order:
   written = policy resolution:
     'never' -> none | 'always' -> yes | 'cautionary' -> yes, parenthesized if options.accidentals.parenthesizeCautionary
-    'auto'  -> yes iff note.alter != effectiveAlter(step, octave)
+    'auto'  -> yes iff note.alter != effectiveAlter(step, octave), or another note on the
+               same staff at the same tick (either voice) has the same step and octave with a
+               different alter (both notes of a chromatic unison always show their accidental)
   tie-stop into a note held from a previous measure -> suppress, always (no repeat across
     a barline — the tie carries the alteration, whether or not the tie-start's accidental
     was itself written)
@@ -211,11 +222,11 @@ for each note in time order:
 
 `options.accidentals.courtesyPolicy: 'none' | 'next-measure' | 'always'`, default `'next-measure'` — an unexpected accidental is the thing being tested, ambiguity is a bug not a style choice.
 
-**Chord stacking:** sort accidentals top-down by staff position, greedy-pack into columns running leftward from the notehead: the column nearest the notehead is filled first, and each accidental goes into the nearest column where it doesn't vertically overlap (bbox test, ~0.2sp pad) anything already placed — a new column opens further left only when every existing one collides. Feeds the rod width above.
+**Chord stacking:** sort accidentals top-down by staff position (at one position, the rightmost notehead first, so a chromatic unison's accidentals read in the same left-to-right order as its noteheads), greedy-pack into columns running leftward from the notehead: the column nearest the notehead is filled first, and each accidental goes into the nearest column where it doesn't vertically overlap (bbox test, ~0.2sp pad) anything already placed — a new column opens further left only when every existing one collides. Columns start left of the chord's leftmost notehead (a stem-down shifted member included). Feeds the rod width above.
 
 ## Ties
 
-- Direction: opposite the stem (single voice); by voice in 2-voice (v0 arches up, v1 down); chord: outer notes arch outward, inner follow the nearest outer.
+- Direction: opposite the stem (single voice); by voice in 2-voice (v0 arches up, v1 down); chord: outer notes arch outward, inner follow the nearest outer. Heads sharing one staff position (a chromatic unison) can't both arch the same way: the highest-pitched arches up, the lowest down, so the two ties never coincide.
 - Endpoints: ~0.3sp inset from the notehead edge, ~0.5sp vertical offset from centre — never starting at the notehead (reads as a slur).
 - Shape: filled path, variable width (tieEndpointThickness 0.10 → tieMidpointThickness 0.22), two cubic Béziers closed into one path — not a stroked constant-width curve.
 - Across a barline: continues normally. Across a system break: two half-ties.
@@ -287,9 +298,9 @@ Exactly 2 per staff — covers everything needed, avoids the 3+-voice collision 
 - Augmentation dots on a v1 note that lands on a staff line go to the space below, instead of the usual space above.
 - Shared tick → shared column, rod = union of both voices' requirements.
 - Seconds between voices at a shared tick: shift the v0 (upper, stem-up) notehead one notehead width right.
-- Same-tick unison, identical notehead glyph and dot count: no shift — both voices' noteheads sit at the same x, each keeps its own element/hitbox.
-- Same-tick unison, different notehead glyphs: shift v1 right by one notehead width instead.
-- Accidentals at a shared tick are packed across both voices together so their glyphs can't collide.
+- Same-tick unison, identical pitch, notehead glyph and dot count: no shift — both voices' noteheads sit at the same x, each keeps its own element/hitbox.
+- Same-tick unison with different notehead glyphs or different alterations (chromatic unison): shift v1 right by one notehead width instead.
+- Accidentals at a shared tick are packed across both voices together so their glyphs can't collide; a chromatic unison's two accidentals read in the same left-to-right order as its noteheads.
 - Beaming runs per voice independently, direction pre-forced.
 
 A beam's own stem-reach-the-middle-line rule (Beams, above) is skipped for a beam in a two-voice measure — a voice's beam is expected to sit off to its own side of the staff and never has to cross toward the middle line.

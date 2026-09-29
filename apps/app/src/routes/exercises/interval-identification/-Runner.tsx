@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { IntervalReveal } from '@polyhymnia/notation-react/presets';
+import { NotesReveal } from '@polyhymnia/notation-react/presets';
 import { cn } from '@/lib/utils';
+import { RevealStaff } from '@/components/lesson/RevealStaff';
 import { LessonRunner, type AnswerRenderProps } from '@/components/lesson/LessonRunner';
 import { answerTileClass, answerTileState } from '@/components/lesson/answerTiles';
-import { intervalById, intervalIdDisplayName, type IntervalId } from '@/exercises/shared';
+import { intervalById, intervalIdDisplayName, type AnsweredQuestion, type IntervalId } from '@/exercises/shared';
 import {
   buildQuestionEvents,
   generateQuestion,
@@ -25,11 +26,11 @@ function generate(options: IdentificationOptions, previous?: Question): Question
   return generateQuestion(options, Math.random, previous && questionSignature(previous));
 }
 
-function correctAnswer(question: Question): IntervalId {
-  return question.size;
+function isCorrect(question: Question, answer: IntervalId): boolean {
+  return answer === question.size;
 }
 
-function verdict(question: Question, correct: boolean): string {
+function verdict({ question, correct }: AnsweredQuestion<Question, IntervalId>): string {
   const correctName = intervalIdDisplayName(question.size);
   return correct ? `Correct: ${correctName}` : `Wrong: the answer was ${correctName}`;
 }
@@ -43,22 +44,25 @@ function answerGridClass(count: number): string {
 
 function IntervalSingle({ question }: { question: Question }) {
   return (
-    <div className="flex w-full flex-col items-center gap-4 [&_.pn-notation]:h-auto [&_.pn-notation]:w-full">
-      <div className="flex w-full max-w-[30rem] flex-col items-center gap-1">
-        <span className="text-base font-medium text-muted-foreground">{question.tones.name}</span>
-        <IntervalReveal
-          className="pn-notation"
-          from={question.tones.from}
-          to={question.tones.to}
+    <div className="flex w-full max-w-[30rem] flex-col items-center gap-1">
+      <span className="text-base font-medium text-muted-foreground">{question.tones.name}</span>
+      <RevealStaff>
+        <NotesReveal
+          pitches={[question.tones.from, question.tones.to]}
           clef={question.clef}
           mode={question.mode === 'harmonic' ? 'harmonic' : 'melodic'}
         />
-      </div>
+      </RevealStaff>
     </div>
   );
 }
 
-const REVEAL_PLACEHOLDER = <div className="aspect-[3/1] w-full max-w-[30rem] rounded-md bg-muted" />;
+const REVEAL_PLACEHOLDER = (
+  <div className="flex w-full max-w-[30rem] flex-col items-center gap-1">
+    <span className="min-h-6" />
+    <RevealStaff className="rounded-md bg-muted" />
+  </div>
+);
 
 function AnswerGrid({
   question,
@@ -104,7 +108,7 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
       onNextLesson={onNextLesson}
       generate={generate}
       buildEvents={(question) => buildQuestionEvents(question, options.tempo)}
-      correctAnswer={correctAnswer}
+      isCorrect={isCorrect}
       saveResult={recordLessonResult}
       prompt="Which interval did you hear?"
       verdict={verdict}

@@ -13,9 +13,24 @@ export interface HitOptions {
 }
 
 export type HitResult =
-  | { kind: 'element'; id: NoteId; part: 'notehead' | 'rest'; box: ElementBox; staffPosition: number; pitch: MnxPitch | null }
+  | {
+      kind: 'element';
+      id: NoteId;
+      part: 'notehead' | 'rest';
+      box: ElementBox;
+      staffPosition: number;
+      pitch: MnxPitch | null;
+    }
   | { kind: 'slot'; slot: Slot; staffPosition: number; pitch: MnxPitch }
-  | { kind: 'point'; measureIndex: number; systemIndex: number; x: number; tick: number; staffPosition: number; pitch: MnxPitch };
+  | {
+      kind: 'point';
+      measureIndex: number;
+      systemIndex: number;
+      x: number;
+      tick: number;
+      staffPosition: number;
+      pitch: MnxPitch;
+    };
 
 const DEFAULT_KINDS: readonly HitKind[] = ['element', 'slot', 'point'];
 const DEFAULT_RADIUS = 0.5;
@@ -30,9 +45,7 @@ function pitchAt(staffPosition: number, measureBox: MeasureBox, insertAlteration
 }
 
 function findSystem(layout: LayoutResult, y: number): SystemBox | undefined {
-  return layout.systems.find(
-    (s) => y >= s.y - HIT_STAFF_MARGIN && y <= s.y + STAFF_HEIGHT + HIT_STAFF_MARGIN,
-  );
+  return layout.systems.find((s) => y >= s.y - HIT_STAFF_MARGIN && y <= s.y + STAFF_HEIGHT + HIT_STAFF_MARGIN);
 }
 
 function findMeasure(layout: LayoutResult, systemIndex: number, x: number): MeasureBox | undefined {
@@ -41,10 +54,7 @@ function findMeasure(layout: LayoutResult, systemIndex: number, x: number): Meas
 
 function inflatedContains(box: Box, p: { x: number; y: number }, radius: number): boolean {
   return (
-    p.x >= box.x - radius &&
-    p.x <= box.x + box.w + radius &&
-    p.y >= box.y - radius &&
-    p.y <= box.y + box.h + radius
+    p.x >= box.x - radius && p.x <= box.x + box.w + radius && p.y >= box.y - radius && p.y <= box.y + box.h + radius
   );
 }
 
@@ -57,13 +67,16 @@ function hitElement(
   const systemY = new Map(layout.systems.map((s) => [s.index, s.y] as const));
   let best: ElementBox | undefined;
   let bestDist = Infinity;
+  let bestDx = Infinity;
   for (const box of Object.values(layout.elements)) {
     if (voice !== undefined && box.voice !== voice) continue;
     if (!inflatedContains(box.hitBox, p, radius)) continue;
     const y = systemY.get(box.systemIndex) ?? 0;
     const dist = Math.abs(box.staffPosition - (p.y - y));
-    if (dist < bestDist) {
+    const dx = Math.abs(box.x + box.w / 2 - p.x);
+    if (dist < bestDist || (dist === bestDist && dx < bestDx)) {
       bestDist = dist;
+      bestDx = dx;
       best = box;
     }
   }
@@ -111,18 +124,12 @@ function hitPoint(
 ): HitResult {
   const staffPosition = Math.round((p.y - systemY) * 2) / 2;
   const pitch = pitchAt(staffPosition, measureBox, insertAlteration);
-  const slotHere = layout.slots.find(
-    (s) => s.measureIndex === measureBox.index && p.x >= s.x && p.x < s.x + s.w,
-  );
+  const slotHere = layout.slots.find((s) => s.measureIndex === measureBox.index && p.x >= s.x && p.x < s.x + s.w);
   const tick = slotHere ? slotHere.tick - measureBox.startTick : 0;
   return { kind: 'point', measureIndex: measureBox.index, systemIndex, x: p.x, tick, staffPosition, pitch };
 }
 
-export function hitTest(
-  layout: LayoutResult,
-  p: { x: number; y: number },
-  opts: HitOptions = {},
-): HitResult | null {
+export function hitTest(layout: LayoutResult, p: { x: number; y: number }, opts: HitOptions = {}): HitResult | null {
   const kinds = opts.kinds ?? DEFAULT_KINDS;
   const radius = opts.radius ?? DEFAULT_RADIUS;
   const insertAlteration = opts.insertAlteration ?? 'key';

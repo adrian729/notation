@@ -19,6 +19,7 @@ const fixtureNames = [
   'golden-beams-over-rest',
   'golden-beams-slope',
   'golden-beams-stem-override',
+  'golden-chromatic-unisons',
   'golden-rests-3-4',
   'golden-slurs',
   'golden-ties-barline',

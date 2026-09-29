@@ -8,7 +8,7 @@ import type {
   ReactNode,
   Ref,
 } from 'react';
-import { HIT_STAFF_MARGIN, hitTest, layoutScore, previewShapes } from '@polyhymnia/notation-engine';
+import { HIT_STAFF_MARGIN, hitTest, previewShapes } from '@polyhymnia/notation-engine';
 import type {
   ElementBox,
   GlyphRun,
@@ -22,6 +22,7 @@ import type {
 import type { MnxDocument, NoteId } from '@polyhymnia/notation-model';
 import { InteractionChild, clientToLayoutPoint, hitIdentity, resolveHitOptions } from './Interaction.js';
 import type { NotationInteractionProps, NotationIntent } from './Interaction.js';
+import { memoLayout } from './layoutMemo.js';
 import { MarksChild } from './Marks.js';
 import type { NotationMarksProps } from './Marks.js';
 
@@ -64,16 +65,8 @@ export interface NotationProps {
 const GLYPH_FONT_SIZE = 4;
 const CURSOR_WIDTH = 0.3;
 
-export function Notation({
-  score,
-  options,
-  children,
-  className,
-  style,
-  onLayout,
-  ref,
-}: NotationProps): JSX.Element {
-  const layout = useMemo(() => layoutScore(score, options), [score, options]);
+export function Notation({ score, options, children, className, style, onLayout, ref }: NotationProps): JSX.Element {
+  const layout = useMemo(() => memoLayout(score, options), [score, options]);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const elementRefs = useRef(new Map<string, SVGGElement>());
   const cursorRef = useRef<SVGGElement | null>(null);
@@ -176,18 +169,21 @@ export function Notation({
   };
 
   const isElementKeyboardTarget = (id: string): boolean =>
-    targets.includes('element') && (interaction?.voice === undefined || layout.elements[id]?.voice === interaction.voice);
+    targets.includes('element') &&
+    (interaction?.voice === undefined || layout.elements[id]?.voice === interaction.voice);
 
-  const handleElementKeyDown = (id: NoteId) => (event: ReactKeyboardEvent<SVGGElement>): void => {
-    if (!interaction?.onIntent || !isElementKeyboardTarget(id)) return;
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    const box = layout.elements[id];
-    if (!box) return;
-    event.preventDefault();
-    const center = { x: box.hitBox.x + box.hitBox.w / 2, y: box.hitBox.y + box.hitBox.h / 2 };
-    const hit = hitTest(layout, center, { ...resolveHitOptions(interaction, options), kinds: ['element'] });
-    if (hit) interaction.onIntent({ type: 'activate', target: hit }, { layout, nativeEvent: event.nativeEvent });
-  };
+  const handleElementKeyDown =
+    (id: NoteId) =>
+    (event: ReactKeyboardEvent<SVGGElement>): void => {
+      if (!interaction?.onIntent || !isElementKeyboardTarget(id)) return;
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const box = layout.elements[id];
+      if (!box) return;
+      event.preventDefault();
+      const center = { x: box.hitBox.x + box.hitBox.w / 2, y: box.hitBox.y + box.hitBox.h / 2 };
+      const hit = hitTest(layout, center, { ...resolveHitOptions(interaction, options), kinds: ['element'] });
+      if (hit) interaction.onIntent({ type: 'activate', target: hit }, { layout, nativeEvent: event.nativeEvent });
+    };
 
   return (
     <svg
@@ -225,14 +221,7 @@ export function Notation({
       )}
       <g data-pn="curves">
         {layout.paths.map((p, i) => (
-          <path
-            key={`p${i}`}
-            d={p.d}
-            data-pn={p.cls}
-            data-pn-el={p.el}
-            fill="currentColor"
-            stroke="none"
-          />
+          <path key={`p${i}`} d={p.d} data-pn={p.cls} data-pn-el={p.el} fill="currentColor" stroke="none" />
         ))}
       </g>
       <g data-pn="glyphs" fontSize={GLYPH_FONT_SIZE}>
@@ -321,7 +310,13 @@ function CursorGroup({
   );
 }
 
-function PreviewGroup({ layout, preview }: { layout: LayoutResult; preview: NonNullable<NotationMarksProps['preview']> }): JSX.Element {
+function PreviewGroup({
+  layout,
+  preview,
+}: {
+  layout: LayoutResult;
+  preview: NonNullable<NotationMarksProps['preview']>;
+}): JSX.Element {
   const { glyphs, rects } = previewShapes(layout, preview);
   return (
     <g data-pn="preview" fontSize={GLYPH_FONT_SIZE}>
@@ -342,9 +337,7 @@ function Rect({ shape }: { shape: RectShape }): JSX.Element {
       y={shape.y}
       width={shape.w}
       height={shape.h}
-      transform={
-        shape.rot ? `rotate(${shape.rot} ${shape.x} ${shape.y})` : undefined
-      }
+      transform={shape.rot ? `rotate(${shape.rot} ${shape.x} ${shape.y})` : undefined}
       data-pn={shape.cls}
       data-pn-el={shape.el}
       fill="currentColor"
@@ -355,14 +348,7 @@ function Rect({ shape }: { shape: RectShape }): JSX.Element {
 
 function Glyph({ glyph }: { glyph: GlyphRun }): JSX.Element {
   return (
-    <text
-      x={glyph.x}
-      y={glyph.y}
-      data-pn={glyph.cls}
-      data-pn-el={glyph.el}
-      fill="currentColor"
-      stroke="none"
-    >
+    <text x={glyph.x} y={glyph.y} data-pn={glyph.cls} data-pn-el={glyph.el} fill="currentColor" stroke="none">
       {String.fromCodePoint(glyph.cp)}
     </text>
   );

@@ -1,8 +1,9 @@
 import { intervalById, type IntervalId } from '../shared/intervals.js';
 import { pitchToMidi } from '@polyhymnia/notation-model';
-import { spellSharedPair, type SpelledPitch } from '../shared/spelling.js';
+import { spellRelative, type SpelledMember, type SpelledPitch } from '../shared/spelling.js';
 import {
   buildTones,
+  clefForMidis,
   direction,
   midiOfToken,
   midiToPitch,
@@ -14,7 +15,8 @@ import {
   type IntervalTones,
   type Rng,
 } from '../shared/tones.js';
-import { validateOptions, normalizeOptions, type ExerciseOptions, type ValidationResult } from './options.js';
+import { validateOptions, normalizeOptions, type ExerciseOptions } from './options.js';
+import type { ValidationResult } from '../shared/session.js';
 import type { PlayingMode } from '../shared/playing.js';
 
 export type Answer = 'A' | 'B' | 'same';
@@ -34,18 +36,22 @@ function buildSharedTones(
   pinnedRole: 'root' | 'other',
   mode: PlayingMode,
 ): { tonesA: IntervalTones; tonesB: IntervalTones } | undefined {
-  const specA = intervalById(sizeA);
-  const specB = intervalById(sizeB);
   const dir = direction(mode);
-  const result = spellSharedPair(pinned, pinnedRole, specA, specB, dir);
-  if (!result) return undefined;
-  const rootA = pinnedRole === 'root' ? result.pinned : result.a.computed;
-  const otherA = pinnedRole === 'root' ? result.a.computed : result.pinned;
-  const rootB = pinnedRole === 'root' ? result.pinned : result.b.computed;
-  const otherB = pinnedRole === 'root' ? result.b.computed : result.pinned;
+  const spelled = spellRelative(
+    pinned,
+    [intervalById(sizeA), intervalById(sizeB)],
+    pinnedRole === 'root' ? dir : (-dir as 1 | -1),
+    1,
+  );
+  if (!spelled) return undefined;
+  const [a, b] = spelled.members as [SpelledMember, SpelledMember];
+  const rootA = pinnedRole === 'root' ? spelled.pinned : a.pitch;
+  const otherA = pinnedRole === 'root' ? a.pitch : spelled.pinned;
+  const rootB = pinnedRole === 'root' ? spelled.pinned : b.pitch;
+  const otherB = pinnedRole === 'root' ? b.pitch : spelled.pinned;
   return {
-    tonesA: toTones(sizeA, mode, dir, rootA, otherA, result.a.degree),
-    tonesB: toTones(sizeB, mode, dir, rootB, otherB, result.b.degree),
+    tonesA: toTones(sizeA, mode, dir, rootA, otherA),
+    tonesB: toTones(sizeB, mode, dir, rootB, otherB),
   };
 }
 
@@ -140,13 +146,8 @@ function finishQuestion(
 ): Question {
   const specA = intervalById(sizeA);
   const specB = intervalById(sizeB);
-  const correct: Answer =
-    specA.semitones === specB.semitones ? 'same' : specA.semitones > specB.semitones ? 'A' : 'B';
-  const tones = [pitchToMidi(a.root), pitchToMidi(a.other), pitchToMidi(b.root), pitchToMidi(b.other)].sort(
-    (x, y) => x - y,
-  );
-  const median = (tones[1]! + tones[2]!) / 2;
-  const clef: 'treble' | 'bass' = median < 60 ? 'bass' : 'treble';
+  const correct: Answer = specA.semitones === specB.semitones ? 'same' : specA.semitones > specB.semitones ? 'A' : 'B';
+  const clef = clefForMidis([a.root, a.other, b.root, b.other].map(pitchToMidi));
   return { mode, a, b, correct, clef };
 }
 

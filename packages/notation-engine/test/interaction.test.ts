@@ -37,11 +37,7 @@ describe('pitch derivation', () => {
     const doc = mnx({}, measure(rest('w')));
     const layout = layoutScore(doc);
     const system = layout.systems[0]!;
-    const hit = hitTest(
-      layout,
-      { x: layout.measures[0]!.contentX, y: system.y + 2 },
-      { kinds: ['point'] },
-    );
+    const hit = hitTest(layout, { x: layout.measures[0]!.contentX, y: system.y + 2 }, { kinds: ['point'] });
     expect(hit?.kind).toBe('point');
     expect(hit?.pitch).toBeTruthy();
     expect(hit && hit.kind === 'point' ? hit.tick : null).toBe(0);
@@ -53,7 +49,10 @@ describe('slots', () => {
     const doc = mnx({}, measure(note('C4', 'q'), note('D4', 'q'), note('E4', 'q'), note('F4', 'q')));
     const layout = layoutScore(doc);
     const measureBox = layout.measures[0]!;
-    const bands = layout.slots.filter((s) => s.measureIndex === 0).slice().sort((a, b) => a.x - b.x);
+    const bands = layout.slots
+      .filter((s) => s.measureIndex === 0)
+      .slice()
+      .sort((a, b) => a.x - b.x);
 
     expect(bands).toHaveLength(4);
     expect(bands[0]!.x).toBeCloseTo(measureBox.contentX, 5);
@@ -64,7 +63,6 @@ describe('slots', () => {
     const span = bands[bands.length - 1]!.x + bands[bands.length - 1]!.w - bands[0]!.x;
     expect(totalWidth).toBeCloseTo(span, 5);
   });
-
 });
 
 describe('element hit-testing (chords)', () => {
@@ -115,7 +113,7 @@ describe('element hit-testing (chords)', () => {
     expect(slotHit && slotHit.kind === 'slot' ? slotHit.slot.voice : null).toBe(0);
   });
 
-  it('reports the note\'s actual written pitch, not a diatonic guess from the key', () => {
+  it("reports the note's actual written pitch, not a diatonic guess from the key", () => {
     const doc = mnx({ key: 2 }, measure(note('F5', 'q'), rest('q'), rest('q'), rest('q')));
     const layout = layoutScore(doc);
     const box = boxes(layout).find((b) => b.kind === 'note')!;
@@ -137,6 +135,26 @@ describe('element hit-testing (chords)', () => {
       octave: 5,
       alter: 1,
     });
+  });
+
+  it.each([
+    ['stem up', ['C4', 'Eb4', 'E4']],
+    ['stem down', ['C5', 'Eb5', 'E5', 'G5']],
+  ])('resolves each head of a chromatic unison to its own note (%s)', (_, pitches) => {
+    const doc = mnx(
+      {},
+      measure({
+        duration: { base: 'whole' as const },
+        notes: pitches.map((p) => ({ pitch: parsePitch(p) })),
+      }),
+    );
+    const layout = layoutScore(doc);
+    const unison = boxes(layout).filter((b) => b.pitch?.step === 2);
+    expect(new Set(unison.map((b) => b.x)).size).toBe(2);
+    for (const box of unison) {
+      const hit = hitTest(layout, center(box), { kinds: ['element'] });
+      expect(hit && hit.kind === 'element' ? hit.id : null).toBe(box.id);
+    }
   });
 
   it('hits an element far outside the ±4sp system band (high and low ledger notes)', () => {
@@ -161,13 +179,12 @@ describe('dictation round trip', () => {
     const doc = mnx({}, measure(rest('q'), rest('q'), rest('q'), rest('q')));
     const layout1 = layoutScore(doc);
     const system = layout1.systems[0]!;
-    const firstSlot = layout1.slots.filter((s) => s.voice === 0).slice().sort((a, b) => a.tick - b.tick)[0]!;
+    const firstSlot = layout1.slots
+      .filter((s) => s.voice === 0)
+      .slice()
+      .sort((a, b) => a.tick - b.tick)[0]!;
 
-    const hit = hitTest(
-      layout1,
-      { x: firstSlot.x + firstSlot.w / 2, y: system.y + 2 },
-      { kinds: ['slot'] },
-    );
+    const hit = hitTest(layout1, { x: firstSlot.x + firstSlot.w / 2, y: system.y + 2 }, { kinds: ['slot'] });
     if (!hit || hit.kind !== 'slot') throw new Error('expected a slot hit');
     const { slot, pitch, staffPosition } = hit;
     const beforeId = slot.eventId;
@@ -222,7 +239,6 @@ describe('previewShapes', () => {
     expect(rects.filter((r) => r.cls === 'preview-ledger')).toHaveLength(2);
     expect(glyphs.filter((g) => g.cls === 'preview-accidental')).toHaveLength(0);
   });
-
 });
 
 describe('interaction properties', () => {
