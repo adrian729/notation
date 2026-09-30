@@ -26,6 +26,7 @@ export function NotesReveal({
   mode,
   clef,
   duration = QUARTER,
+  font,
   labels,
   className,
   style,
@@ -42,9 +43,10 @@ export function NotesReveal({
     const fitted: NotationOptions = {
       widthSp: natural + SLOT_SP * eventCount,
       maxLastSystemFill: 1,
+      font,
     };
     return { options: fitted, layout: memoLayout(doc, fitted) };
-  }, [doc, eventCount]);
+  }, [doc, eventCount, font]);
   const centred = { width: `${(layout.viewBox.w / FULL_WIDTH_SP) * 100}%`, marginInline: 'auto', ...style };
 
   if (!labels) {

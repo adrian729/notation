@@ -6,8 +6,19 @@
   font-display: block;
 }
 
+/* PolyhymniaNotation is the superseded modern family. It is NOT dead weight and
+   must not be removed: it stays the opt-in look and the fallback for any future
+   per-user style setting. Both faces are shipped on purpose. */
+@font-face {
+  font-family: 'PolyhymniaMensural';
+  src: url('./polyhymnia-mensural.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
 .pn-notation {
-  font-family: 'PolyhymniaNotation';
+  font-family: 'PolyhymniaMensural';
   color: var(--pn-ink, currentColor);
   display: block;
   max-width: 100%;
@@ -28,6 +39,33 @@
 
 .pn-notation [data-pn='staff-line'] {
   color: var(--pn-staff, #999);
+}
+
+/* Mensural printing ruled the staff in red. The ruling is held back from full
+   opacity so it sits with the page and lets the black notes on top of it stay
+   legible. Only the ruling is red; barlines go with the other signage below. */
+.pn-notation[data-pn-font='mensural'] [data-pn='staff-line'] {
+  color: var(--pn-staff-mensural, oklch(0.52 0.175 32));
+  opacity: 0.6;
+}
+
+/* Non-note signage in lapis. Accidentals and dots go blue too — they belong to the
+   pitch, not to the notehead. Clefs, noteheads, stems, flags and beams stay ink:
+   a gold clef read as a different visual weight from everything around it. */
+.pn-notation[data-pn-font='mensural'] :is(
+    [data-pn='barline'],
+    [data-pn='time-signature'],
+    [data-pn='key-accidental'],
+    [data-pn='accidental'],
+    [data-pn='dot'],
+    [data-pn='ledger-line'],
+    [data-pn='rest'],
+    [data-pn='slur'],
+    [data-pn='tie'],
+    [data-pn='tuplet-bracket'],
+    [data-pn='tuplet-number']
+  ) {
+  color: var(--pn-lapis-mensural, oklch(0.49 0.2 262));
 }
 .pn-notation [data-pn='element'] {
   outline: none;

@@ -8,9 +8,10 @@ import type {
   ReactNode,
   Ref,
 } from 'react';
-import { HIT_STAFF_MARGIN, hitTest, previewShapes } from '@polyhymnia/notation-engine';
+import { DEFAULT_FONT, HIT_STAFF_MARGIN, hitTest, previewShapes } from '@polyhymnia/notation-engine';
 import type {
   ElementBox,
+  FontFamily,
   GlyphRun,
   HitResult,
   LayoutResult,
@@ -65,8 +66,15 @@ export interface NotationProps {
 const GLYPH_FONT_SIZE = 4;
 const CURSOR_WIDTH = 0.3;
 
+const FAMILY_CSS_NAME: Record<FontFamily, string> = {
+  modern: 'PolyhymniaNotation',
+  mensural: 'PolyhymniaMensural',
+};
+
 export function Notation({ score, options, children, className, style, onLayout, ref }: NotationProps): JSX.Element {
   const layout = useMemo(() => memoLayout(score, options), [score, options]);
+  const family: FontFamily = options?.font ?? DEFAULT_FONT;
+  const fontFamily = FAMILY_CSS_NAME[family];
   const svgRef = useRef<SVGSVGElement | null>(null);
   const elementRefs = useRef(new Map<string, SVGGElement>());
   const cursorRef = useRef<SVGGElement | null>(null);
@@ -189,6 +197,7 @@ export function Notation({ score, options, children, className, style, onLayout,
     <svg
       ref={svgRef}
       className={classNames('pn-notation', className)}
+      data-pn-font={family}
       style={style}
       viewBox={viewBoxAttr(layout.viewBox)}
       role="img"
@@ -224,7 +233,7 @@ export function Notation({ score, options, children, className, style, onLayout,
           <path key={`p${i}`} d={p.d} data-pn={p.cls} data-pn-el={p.el} fill="currentColor" stroke="none" />
         ))}
       </g>
-      <g data-pn="glyphs" fontSize={GLYPH_FONT_SIZE}>
+      <g data-pn="glyphs" fontSize={GLYPH_FONT_SIZE} fontFamily={fontFamily}>
         {groupGlyphs(layout.glyphs).map((group, i) =>
           group.el === undefined ? (
             group.glyphs.map((g, j) => <Glyph key={`g${i}-${j}`} glyph={g} />)
@@ -249,7 +258,9 @@ export function Notation({ score, options, children, className, style, onLayout,
       {playbackView?.mode === 'cursor' && (
         <CursorGroup groupRef={cursorRef} timemap={layout.timemap} position={playbackView.position} />
       )}
-      {marks?.preview != null && <PreviewGroup layout={layout} preview={marks.preview} />}
+      {marks?.preview != null && (
+        <PreviewGroup layout={layout} preview={marks.preview} fontFamily={fontFamily} family={family} />
+      )}
       {children}
     </svg>
   );
@@ -313,13 +324,17 @@ function CursorGroup({
 function PreviewGroup({
   layout,
   preview,
+  fontFamily,
+  family,
 }: {
   layout: LayoutResult;
   preview: NonNullable<NotationMarksProps['preview']>;
+  fontFamily: string;
+  family: FontFamily;
 }): JSX.Element {
-  const { glyphs, rects } = previewShapes(layout, preview);
+  const { glyphs, rects } = previewShapes(layout, preview, family);
   return (
-    <g data-pn="preview" fontSize={GLYPH_FONT_SIZE}>
+    <g data-pn="preview" fontSize={GLYPH_FONT_SIZE} fontFamily={fontFamily}>
       {rects.map((r, i) => (
         <Rect key={`pr${i}`} shape={r} />
       ))}

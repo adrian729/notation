@@ -1,9 +1,11 @@
 import { noteValueLength, pitchToMidi, stepNumberOf, STEP_LETTERS } from '@polyhymnia/notation-model';
 import type { Key, NoteValue, Pitch, Time } from '@polyhymnia/notation-model';
-import type { LayoutResult } from '@polyhymnia/notation-engine';
+import type { FontFamily, LayoutResult } from '@polyhymnia/notation-engine';
 import type { CSSProperties } from 'react';
 
 export interface RevealBaseProps {
+  /** Music font family; omit for the house default. */
+  font?: FontFamily;
   className?: string;
   style?: CSSProperties;
   onLayout?: (layout: LayoutResult) => void;
