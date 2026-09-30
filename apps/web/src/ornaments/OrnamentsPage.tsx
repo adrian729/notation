@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 const IMAGES = import.meta.glob<string>('./img/*.webp', { eager: true, query: '?url', import: 'default' });
 
@@ -38,10 +38,15 @@ const HEAD_AND_TAIL: readonly OrnamentSpec[] = [
   { id: 65, name: 'Pendant' },
 ];
 
-const CORNERS: readonly OrnamentSpec[] = [
-  { id: 27, name: 'Vine corner' },
-  { id: 53, name: 'Acanthus corner' },
-  { id: 63, name: 'Leaf corner' },
+interface CornerSpec extends OrnamentSpec {
+  drawnAs: 'tl' | 'br';
+  anchored?: boolean;
+}
+
+const CORNERS: readonly CornerSpec[] = [
+  { id: 27, name: 'Vine corner', drawnAs: 'tl', anchored: true },
+  { id: 53, name: 'Acanthus corner', drawnAs: 'br' },
+  { id: 63, name: 'Leaf corner', drawnAs: 'tl' },
 ];
 
 const CATALOGUE: readonly number[] = [
@@ -61,6 +66,29 @@ const BORDERS: readonly BorderSpec[] = [
   { name: 'Renaissance frieze, quatrefoil corners', edge: 71, side: '071-v', corner: 7 },
   { name: 'Running vine, rose corners', edge: 70, side: '070-v', corner: 8 },
 ];
+
+interface FrameSpec {
+  key: string;
+  name: string;
+  corner: string;
+}
+
+const FRAMES: readonly FrameSpec[] = [
+  { key: 'quatrefoil', name: 'Quatrefoil tiles', corner: '2.75rem' },
+  { key: 'arcade', name: 'Arcade', corner: '1.9rem' },
+  { key: 'lily', name: 'Lily rows', corner: '3rem' },
+  { key: 'cross', name: 'Crossed rules', corner: '5rem' },
+  { key: 'oak', name: 'Oak branches', corner: '5rem' },
+  { key: 'acanthus', name: 'Acanthus scroll', corner: '2.4rem' },
+  { key: 'lattice', name: 'Lattice', corner: '2.5rem' },
+  { key: 'diamond', name: 'Diamond chain', corner: '1.2rem' },
+];
+
+const FRAME_PARTS = ['tl', 'tr', 'bl', 'br', 't', 'b', 'l', 'r'] as const;
+
+function frameUrl(key: string, part: string): string {
+  return IMAGES[`./img/vectorian-frame-${key}-${part}.webp`]!;
+}
 
 const TINTS = [
   { id: 'ink', label: 'Ink' },
@@ -119,13 +147,14 @@ function RuleDivider({ id }: { id: number }) {
   );
 }
 
-function Corners({ id }: { id: number }) {
+function Corners({ id, drawnAs = 'tl', anchored = false }: { id: number; drawnAs?: 'tl' | 'br'; anchored?: boolean }) {
+  const extra = `drawn-${drawnAs}${anchored ? ' corner-anchored' : ''}`;
   return (
     <>
-      <Ornament id={id} className="corner corner-tl" />
-      <Ornament id={id} className="corner corner-tr" />
-      <Ornament id={id} className="corner corner-bl" />
-      <Ornament id={id} className="corner corner-br" />
+      <Ornament id={id} className={`corner corner-tl ${extra}`} />
+      <Ornament id={id} className={`corner corner-tr ${extra}`} />
+      <Ornament id={id} className={`corner corner-bl ${extra}`} />
+      <Ornament id={id} className={`corner corner-br ${extra}`} />
     </>
   );
 }
@@ -142,6 +171,76 @@ function BandBorder({ border }: { border: BorderSpec }) {
       <Ornament id={border.corner} className="band-corner band-corner-bl" />
       <Ornament id={border.corner} className="band-corner band-corner-br" />
       <figcaption>{border.name}</figcaption>
+    </figure>
+  );
+}
+
+const RATIOS = new Map<string, Promise<number>>();
+
+function imageRatio(url: string): Promise<number> {
+  let ratio = RATIOS.get(url);
+  if (!ratio) {
+    ratio = new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img.naturalWidth / img.naturalHeight);
+      img.src = url;
+    });
+    RATIOS.set(url, ratio);
+  }
+  return ratio;
+}
+
+function FramePiece({ url, part }: { url: string; part: (typeof FRAME_PARTS)[number] }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const horizontal = part === 't' || part === 'b';
+  const edge = horizontal || part === 'l' || part === 'r';
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !edge) return;
+    let ratio = 0;
+    let live = true;
+    const fit = () => {
+      if (!ratio) return;
+      const { width, height } = el.getBoundingClientRect();
+      const along = horizontal ? width : height;
+      const natural = horizontal ? height * ratio : width / ratio;
+      const tile = along / Math.max(1, Math.round(along / natural));
+      const size = horizontal ? `${tile}px 100%` : `100% ${tile}px`;
+      el.style.setProperty('mask-size', size);
+      el.style.setProperty('-webkit-mask-size', size);
+    };
+    void imageRatio(url).then((r) => {
+      if (!live) return;
+      ratio = r;
+      fit();
+    });
+    const observer = new ResizeObserver(fit);
+    observer.observe(el);
+    return () => {
+      live = false;
+      observer.disconnect();
+    };
+  }, [url, edge, horizontal]);
+
+  const mask = `url(${url})`;
+  return (
+    <span
+      ref={ref}
+      aria-hidden="true"
+      className={`ornament piece piece-${part}`}
+      style={{ maskImage: mask, WebkitMaskImage: mask }}
+    />
+  );
+}
+
+function FrameBorder({ frame }: { frame: FrameSpec }) {
+  return (
+    <figure className="piece-frame" style={{ '--corner': frame.corner } as CSSProperties}>
+      {FRAME_PARTS.map((part) => (
+        <FramePiece key={part} url={frameUrl(frame.key, part)} part={part} />
+      ))}
+      <figcaption>{frame.name}</figcaption>
     </figure>
   );
 }
@@ -198,7 +297,7 @@ export function OrnamentsPage() {
 
         <h2>In use</h2>
         <article className="folio">
-          <Corners id={27} />
+          <Corners id={27} anchored />
           <Ornament id={58} className="headpiece" />
           <p className="folio-kicker">Folio I</p>
           <h3 className="folio-title">Of the comparing of intervals</h3>
@@ -245,6 +344,17 @@ export function OrnamentsPage() {
           <BarBorder />
         </div>
 
+        <h2>Frames</h2>
+        <p className="note">
+          The decorative borders of the free Vectorian pack, cut into four corners and four edges; each edge repeats
+          whole motifs, so a frame fits any box.
+        </p>
+        <div className="borders">
+          {FRAMES.map((frame) => (
+            <FrameBorder key={frame.key} frame={frame} />
+          ))}
+        </div>
+
         <h2>Headpieces and tailpieces</h2>
         <p className="note">Above a chapter title and at the end of a section.</p>
         <Tiles items={HEAD_AND_TAIL} />
@@ -254,7 +364,7 @@ export function OrnamentsPage() {
         <div className="frames">
           {CORNERS.map((corner) => (
             <figure key={corner.id} className="frame">
-              <Corners id={corner.id} />
+              <Corners id={corner.id} drawnAs={corner.drawnAs} anchored={corner.anchored} />
               <figcaption>
                 {corner.name} <span className="num">#{corner.id}</span>
               </figcaption>

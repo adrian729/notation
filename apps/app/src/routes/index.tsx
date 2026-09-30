@@ -3,6 +3,7 @@ import type { MnxDocument } from '@polyhymnia/notation-model';
 import { LOGO_URL } from '@/lib/logo';
 import { TitleText } from '@/components/Initial';
 import { SaltarelloScore } from '@/components/SaltarelloScore';
+import { FlourishRule, Ornament, OrnamentRule } from '@/components/Ornament';
 import saltarello from '@/assets/scores/saltarello.mnx.json';
 
 export const Route = createFileRoute('/')({
@@ -15,8 +16,7 @@ const EXERCISES = [
   {
     folio: '01',
     title: 'Interval Comparison',
-    description:
-      'Hear two intervals and say which is wider, or whether they match. No note names, nothing to read.',
+    description: 'Hear two intervals and say which is wider, or whether they match. No note names, nothing to read.',
     to: '/exercises/interval-comparison' as const,
   },
   {
@@ -47,7 +47,7 @@ function HomePage() {
         <span>Ear training</span>
       </div>
 
-      <header className="-mt-loose flex flex-col items-center gap-base text-center">
+      <header className="ornament-corners -mt-tight flex flex-col items-center gap-base border border-primary-strong/40 px-loose py-loose text-center [--corner-size:3rem]">
         <img src={LOGO_URL} alt="" className="size-[5.75rem] sm:size-30" />
         <div className="flex flex-col items-center gap-tight">
           <h1 className="font-display text-title sm:text-display">
@@ -57,13 +57,15 @@ function HomePage() {
             Ear training for musicians: the difference between reading music and hearing it.
           </p>
         </div>
+        <OrnamentRule name="fleur-de-lis" className="w-full max-w-md" />
       </header>
 
       <section aria-labelledby="exercises" className="flex flex-col gap-base">
         <h2 id="exercises" className="rubricated font-specimen text-subhead text-muted-foreground">
           Exercises
         </h2>
-        <ol className="flex flex-col divide-y divide-border border-y border-border">
+        <FlourishRule />
+        <ol className="-my-base flex flex-col divide-y divide-border/60">
           {EXERCISES.map((exercise) => (
             <li key={exercise.to}>
               <Link
@@ -86,9 +88,11 @@ function HomePage() {
             </li>
           ))}
         </ol>
+        <FlourishRule />
       </section>
 
-      <footer className="pt-base">
+      <footer className="flex flex-col gap-loose">
+        <Ornament name="tailpiece" className="mx-auto size-14 text-primary-strong" />
         <SaltarelloScore score={SALTARELLO} />
       </footer>
     </div>

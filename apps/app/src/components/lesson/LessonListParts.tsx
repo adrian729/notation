@@ -3,6 +3,7 @@ import { CircleCheck, CircleHelp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Ornament, OrnamentRule } from '@/components/Ornament';
 import type { HelpSection, LessonResult, OverviewSection } from '@/exercises/shared';
 
 export function OverviewHelpPopover({
@@ -25,7 +26,9 @@ export function OverviewHelpPopover({
       >
         {sections.map((section) => (
           <section key={section.heading} className="flex flex-col gap-2 py-2.5 first:pt-0 last:pb-0">
-            <h3 className="font-display text-meta font-semibold uppercase tracking-wider text-primary-strong">{section.heading}</h3>
+            <h3 className="font-display text-meta font-semibold uppercase tracking-wider text-primary-strong">
+              {section.heading}
+            </h3>
             <p>{section.intro}</p>
             {section.items.length > 0 && (
               <dl className="mt-1 flex flex-col gap-3 border-l-2 border-border pl-3">
@@ -55,7 +58,9 @@ export function ModuleHelpPopover({ ariaLabel, help }: { ariaLabel: string; help
       <PopoverContent className="flex w-80 flex-col text-meta leading-relaxed">
         {help.map((section) => (
           <section key={section.heading} className="flex flex-col gap-1 py-2 first:pt-0 last:pb-0">
-            <h3 className="font-display text-meta font-semibold uppercase tracking-wider text-primary-strong">{section.heading}</h3>
+            <h3 className="font-display text-meta font-semibold uppercase tracking-wider text-primary-strong">
+              {section.heading}
+            </h3>
             <p>{section.text}</p>
           </section>
         ))}
@@ -68,16 +73,24 @@ export function ModuleCard({
   id,
   title,
   help,
+  lead = false,
   children,
 }: {
   id: string;
   title: string;
   help: readonly HelpSection[];
+  lead?: boolean;
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="flex scroll-mt-base flex-col gap-base border-t border-rubric pt-base">
+    <section id={id} className="flex scroll-mt-base flex-col gap-base">
+      {lead ? (
+        <Ornament name="headpiece" className="mx-auto h-14 w-44 text-primary-strong" />
+      ) : (
+        <OrnamentRule name="gothic-leaf" />
+      )}
       <div className="flex items-center gap-1">
+        <Ornament name="fleur-de-lis" className="mr-1.5 size-5 text-primary-strong" />
         <h2 className="rubricated font-display text-subhead text-primary-strong">{title}</h2>
         <ModuleHelpPopover ariaLabel={`About ${title}`} help={help} />
       </div>
@@ -104,9 +117,7 @@ export function LessonLinkTile({
       <span
         className={cn(
           'flex items-center gap-1.5 font-medium',
-          result?.passed
-            ? 'text-success-strong'
-            : 'text-rubric-strong hover:text-primary-strong',
+          result?.passed ? 'text-success-strong' : 'text-rubric-strong hover:text-primary-strong',
         )}
       >
         {title}

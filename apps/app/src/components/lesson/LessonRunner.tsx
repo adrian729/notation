@@ -17,6 +17,7 @@ import {
 } from '@/exercises/shared';
 import { LessonSummary } from './LessonSummary';
 import { ExerciseMasthead } from './ExerciseMasthead';
+import { OrnamentRule } from '@/components/Ornament';
 
 interface RunnerOptions {
   questionCount: number | 'endless';
@@ -339,9 +340,14 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
         <ExerciseMasthead />
       </nav>
 
-      <header className="flex flex-col gap-tight border-b border-border pb-base">
+      <header className="flex flex-col gap-base">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-base">
-          <Button variant="ghost" size="sm" onClick={onBack} className="rubricated font-specimen justify-self-start text-subhead">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="rubricated font-specimen justify-self-start text-subhead"
+          >
             Back
           </Button>
           <div className="flex flex-col items-center gap-tight text-center">
@@ -361,6 +367,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
             <div />
           )}
         </div>
+        <OrnamentRule name="cross-fleury" />
       </header>
 
       {!state.flow.endless && (
@@ -408,7 +415,12 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
       </Fragment>
 
       <div className="flex flex-wrap items-center justify-center gap-base">
-        <Button ref={playButtonRef} variant="outline" onClick={replay} className="rubricated font-specimen text-subhead">
+        <Button
+          ref={playButtonRef}
+          variant="outline"
+          onClick={replay}
+          className="rubricated font-specimen text-subhead"
+        >
           Play question
         </Button>
         {answeredYet && (

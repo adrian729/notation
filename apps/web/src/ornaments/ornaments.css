@@ -256,6 +256,42 @@ h2 {
   transform: scale(-1, -1);
 }
 
+.corner-anchored.corner-tl,
+.corner-anchored.corner-tr {
+  top: 0;
+}
+
+.corner-anchored.corner-bl,
+.corner-anchored.corner-br {
+  bottom: 0;
+}
+
+.corner-anchored.corner-tl,
+.corner-anchored.corner-bl {
+  left: 0;
+}
+
+.corner-anchored.corner-tr,
+.corner-anchored.corner-br {
+  right: 0;
+}
+
+.corner-tl.drawn-br {
+  transform: scale(-1, -1);
+}
+
+.corner-tr.drawn-br {
+  transform: scaleY(-1);
+}
+
+.corner-bl.drawn-br {
+  transform: scaleX(-1);
+}
+
+.corner-br.drawn-br {
+  transform: none;
+}
+
 .folio {
   position: relative;
   padding: 2.5rem 3.5rem 2.25rem;
@@ -382,9 +418,11 @@ h2 {
   bottom: calc(var(--inset) + var(--corner));
   width: var(--band);
   mask-size: 100% auto;
-  mask-repeat: no-repeat round;
+  mask-repeat: repeat-y;
+  mask-position: 0 0;
   -webkit-mask-size: 100% auto;
-  -webkit-mask-repeat: no-repeat round;
+  -webkit-mask-repeat: repeat-y;
+  -webkit-mask-position: 0 0;
 }
 
 .band-left {
@@ -495,4 +533,79 @@ h2 {
 .catalogue-art {
   width: 100%;
   height: 3.5rem;
+}
+
+.piece-frame {
+  position: relative;
+  margin: 0;
+  height: 16rem;
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 calc(var(--corner) + 1rem);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.piece {
+  position: absolute;
+}
+
+.piece-tl,
+.piece-tr,
+.piece-bl,
+.piece-br {
+  width: var(--corner);
+  height: var(--corner);
+}
+
+.piece-tl,
+.piece-tr,
+.piece-t {
+  top: 0.5rem;
+}
+
+.piece-bl,
+.piece-br,
+.piece-b {
+  bottom: 0.5rem;
+}
+
+.piece-tl,
+.piece-bl,
+.piece-l {
+  left: 0.5rem;
+}
+
+.piece-tr,
+.piece-br,
+.piece-r {
+  right: 0.5rem;
+}
+
+.ornament.piece-t,
+.ornament.piece-b {
+  left: calc(0.5rem + var(--corner));
+  right: calc(0.5rem + var(--corner));
+  height: var(--corner);
+  mask-size: auto 100%;
+  mask-repeat: repeat-x;
+  mask-position: 0 0;
+  -webkit-mask-size: auto 100%;
+  -webkit-mask-repeat: repeat-x;
+  -webkit-mask-position: 0 0;
+}
+
+.ornament.piece-l,
+.ornament.piece-r {
+  top: calc(0.5rem + var(--corner));
+  bottom: calc(0.5rem + var(--corner));
+  width: var(--corner);
+  mask-size: 100% auto;
+  mask-repeat: repeat-y;
+  mask-position: 0 0;
+  -webkit-mask-size: 100% auto;
+  -webkit-mask-repeat: repeat-y;
+  -webkit-mask-position: 0 0;
 }

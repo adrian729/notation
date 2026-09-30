@@ -110,7 +110,7 @@ function AnswerGrid({
           aria-label={answered ? HEAR_LABEL[choice] : undefined}
           onClick={() => (answered ? hear(choiceEvents(question, choice, tempo)) : answer(choice))}
           className={cn(
-            'flex min-h-40 flex-col items-center justify-center gap-tight rounded-lg border bg-card px-tight py-base outline-none transition-colors duration-fast ease-out-quart disabled:cursor-not-allowed',
+            'ornament-corners flex min-h-40 flex-col items-center justify-center gap-tight rounded-lg border bg-card px-tight py-base outline-none transition-colors duration-fast ease-out-quart disabled:cursor-not-allowed',
             answerTileClass(answerTileState(choice, correct, selected, answered)),
             answered && (choice === correct || choice === selected) ? 'border-2' : 'border',
             choice === 'same' && (answered ? undefined : 'text-primary-strong'),

@@ -110,6 +110,32 @@
   }
 }
 
+@utility ornament {
+  display: block;
+  flex-shrink: 0;
+  background-color: currentColor;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+@utility ornament-corners {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0.3rem;
+    pointer-events: none;
+    background-color: var(--primary-strong);
+    mask:
+      url('../assets/ornaments/vectorian-063-tl.webp') top left / var(--corner-size, 1.75rem) no-repeat,
+      url('../assets/ornaments/vectorian-063-tr.webp') top right / var(--corner-size, 1.75rem) no-repeat,
+      url('../assets/ornaments/vectorian-063-bl.webp') bottom left / var(--corner-size, 1.75rem) no-repeat,
+      url('../assets/ornaments/vectorian-063-br.webp') bottom right / var(--corner-size, 1.75rem) no-repeat;
+  }
+}
+
 /* Letter-spaced small capitals for running heads and rubrics. Styles the
    letterforms only — the typeface comes from an explicit font-* class. */
 @utility rubricated {

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { InstrumentSelect } from '@/components/custom/InstrumentSelect';
 import type { HelpSection, LessonResult, OverviewSection } from '@/exercises/shared';
 import { TitleText } from '@/components/Initial';
+import { Ornament } from '@/components/Ornament';
 import { WorkshopAside } from './WorkshopAside';
 import { LessonLinkTile, ModuleCard, OverviewHelpPopover } from './LessonListParts';
 
@@ -47,8 +48,8 @@ export function WorkshopPage({
         {headerAction}
 
         <div className="flex flex-col gap-base">
-          {modules.map((mod) => (
-            <ModuleCard key={mod.id} id={mod.id} title={mod.title} help={mod.help}>
+          {modules.map((mod, index) => (
+            <ModuleCard key={mod.id} id={mod.id} title={mod.title} help={mod.help} lead={index === 0}>
               {lessonsForModule(mod.id).map((lesson) => (
                 <LessonLinkTile
                   key={lesson.id}
@@ -59,6 +60,7 @@ export function WorkshopPage({
               ))}
             </ModuleCard>
           ))}
+          <Ornament name="tailpiece" className="mx-auto mt-loose size-14 text-primary-strong" />
         </div>
       </div>
     </div>
