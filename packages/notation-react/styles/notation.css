@@ -67,9 +67,13 @@
 
 /* The meter is the one place two digits stack, so they are told apart by value
    rather than hue: count stays ink, beat unit goes gold. Two mid-tones of
-   different hue are not separable at this size; dark against mid is. */
+   different hue are not separable at this size; dark against mid is.
+
+   The gold is hue 90 (yellow metal), not Catppuccin yellow: that scale sits at
+   hue 68 and reads as bronze. Held at 3.9:1 on paper rather than the 3:1 a
+   brighter gold would allow, since this is the smallest glyph in the score. */
 .pn-notation[data-pn-font='mensural'] [data-pn='time-signature-denominator'] {
-  color: var(--pn-gold-mensural, oklch(0.5 0.1 68));
+  color: var(--pn-gold-mensural, oklch(0.6 0.13 90));
 }
 .pn-notation [data-pn='element'] {
   outline: none;

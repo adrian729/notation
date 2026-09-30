@@ -199,7 +199,7 @@
   --pn-cursor: oklch(0.52 0.1 30);
   --pn-staff-mensural: var(--primary);
   --pn-lapis-mensural: var(--color-blue-600);
-  --pn-gold-mensural: var(--color-yellow-600);
+  --pn-gold-mensural: var(--color-gold-500);
 }
 
 .dark .pn-notation {
@@ -211,5 +211,5 @@
   --pn-cursor: oklch(0.8 0.1 30);
   --pn-staff-mensural: var(--primary);
   --pn-lapis-mensural: var(--color-blue-400);
-  --pn-gold-mensural: var(--color-yellow-400);
+  --pn-gold-mensural: var(--color-gold-200);
 }

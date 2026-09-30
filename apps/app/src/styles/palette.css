@@ -121,4 +121,19 @@
   --color-lavender-800: oklch(0.3579 0.1226 273.13);
   --color-lavender-900: oklch(0.2815 0.1094 273.13);
   --color-lavender-950: oklch(0.205 0.0963 273.13);
+
+  /* Gold metal, hue 90. The Catppuccin yellow ramp above sits at hue 68, which
+     reads as bronze rather than gold; this exists because a notation glyph that
+     must look like gold needs the true metal hue. */
+  --color-gold-50: oklch(0.971 0.015 90);
+  --color-gold-100: oklch(0.919 0.0704 90);
+  --color-gold-200: oklch(0.8166 0.1099 90);
+  --color-gold-300: oklch(0.714 0.1494 90);
+  --color-gold-400: oklch(0.6413 0.1313 90);
+  --color-gold-500: oklch(0.6 0.13 90);
+  --color-gold-600: oklch(0.4959 0.1016 90);
+  --color-gold-700: oklch(0.4231 0.0867 90);
+  --color-gold-800: oklch(0.3504 0.0719 90);
+  --color-gold-900: oklch(0.2777 0.0572 90);
+  --color-gold-950: oklch(0.205 0.0426 90);
 }
