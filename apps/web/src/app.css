@@ -195,3 +195,50 @@ footer {
   font-size: 0.82rem;
   line-height: 1.5;
 }
+
+.family-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.family-toggle button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.family-toggle button strong {
+  color: inherit;
+  font-weight: 600;
+}
+
+.family-toggle button span {
+  font-size: 0.76rem;
+}
+
+.family-toggle button.is-on {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.family-toggle button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.family-both {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}

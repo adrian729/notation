@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Notation } from '@polyhymnia/notation-react';
 import type { NotationHandle, NotationIntent } from '@polyhymnia/notation-react';
 import type { MnxDocument, NoteId } from '@polyhymnia/notation-model';
 import { createSound, midiOfId } from '../sound.js';
 import score from '../scores/exercise-note-heard.mnx.json';
+import { FontNotation } from '../font.js';
 
 const NOTES: readonly { id: NoteId; pitch: string }[] = [
   { id: 'n1', pitch: 'C4' },
@@ -91,10 +91,10 @@ export function NoteHeard() {
           Hover to hear
         </label>
       </div>
-      <Notation score={score as MnxDocument} ref={handleRef}>
-        <Notation.Interaction targets={['element']} onIntent={onIntent} />
-        <Notation.Marks states={states} />
-      </Notation>
+      <FontNotation score={score as MnxDocument} ref={handleRef}>
+        <FontNotation.Interaction targets={['element']} onIntent={onIntent} />
+        <FontNotation.Marks states={states} />
+      </FontNotation>
       <p className="exercise-feedback" role="status">
         {message}
       </p>

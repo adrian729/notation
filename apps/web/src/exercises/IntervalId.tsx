@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { NotesReveal } from '@polyhymnia/notation-react/presets';
 import { melodic } from '@polyhymnia/audio';
 import { createSound } from '../sound.js';
+import { useFontFamily } from '../font.js';
 
 interface Question {
   label: string;
@@ -20,6 +21,7 @@ const PROMPT = 'Press "Play", then click the interval you heard.';
 
 export function IntervalId() {
   const [question, setQuestion] = useState<Question | null>(null);
+  const { family } = useFontFamily();
   const [checked, setChecked] = useState(false);
   const [message, setMessage] = useState(PROMPT);
 
@@ -59,7 +61,7 @@ export function IntervalId() {
         ))}
       </div>
       {checked && question !== null && (
-        <NotesReveal pitches={[question.from, question.to]} clef="treble" mode="melodic" />
+        <NotesReveal pitches={[question.from, question.to]} clef="treble" mode="melodic" font={family} />
       )}
       <p className="exercise-feedback" role="status">
         {message}

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Notation } from '@polyhymnia/notation-react';
 import type { NotationHandle, NotationIntent } from '@polyhymnia/notation-react';
 import type { MnxDocument, NoteId } from '@polyhymnia/notation-model';
 import { melodic } from '@polyhymnia/audio';
 import { createSound, midiOfId } from '../sound.js';
 import score from '../scores/exercise-error-detection.mnx.json';
+import { FontNotation } from '../font.js';
 
 const NOTES: readonly { id: NoteId; pitch: string }[] = [
   { id: 'e1', pitch: 'C4' },
@@ -92,10 +92,10 @@ export function ErrorDetection() {
           Reset
         </button>
       </div>
-      <Notation score={score as MnxDocument} ref={handleRef}>
-        <Notation.Interaction targets={['element']} onIntent={onIntent} />
-        <Notation.Marks states={states} selection={selection} />
-      </Notation>
+      <FontNotation score={score as MnxDocument} ref={handleRef}>
+        <FontNotation.Interaction targets={['element']} onIntent={onIntent} />
+        <FontNotation.Marks states={states} selection={selection} />
+      </FontNotation>
       <p className="exercise-feedback" role="status">
         {feedback}
       </p>

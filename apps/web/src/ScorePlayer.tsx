@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Notation } from '@polyhymnia/notation-react';
 import type { NotationHandle, PlaybackView } from '@polyhymnia/notation-react';
 import type { MnxDocument } from '@polyhymnia/notation-model';
 import { eventsFromTimeMap } from '@polyhymnia/audio';
 import type { Playback } from '@polyhymnia/audio/webaudio';
 import { createSound } from './sound.js';
+import { FontNotation } from './font.js';
 
 const CURSOR_VIEW: PlaybackView = { mode: 'cursor', highlightActive: true };
 const OFF_VIEW: PlaybackView = { mode: 'off' };
@@ -56,9 +56,9 @@ export function ScorePlayer({ score }: { score: MnxDocument }) {
           {playing ? 'Stop' : 'Play'}
         </button>
       </div>
-      <Notation score={score} ref={handleRef}>
-        <Notation.Playback view={playing ? CURSOR_VIEW : OFF_VIEW} />
-      </Notation>
+      <FontNotation score={score} ref={handleRef}>
+        <FontNotation.Playback view={playing ? CURSOR_VIEW : OFF_VIEW} />
+      </FontNotation>
     </>
   );
 }

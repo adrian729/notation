@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { Notation } from '@polyhymnia/notation-react';
 import type { MnxDocument } from '@polyhymnia/notation-model';
 import { NotesReveal, ScaleReveal } from '@polyhymnia/notation-react/presets';
 import { NoteHeard, Dictation, ErrorDetection, IntervalId } from './exercises/index.js';
 import { Example } from './Example.js';
+import { FontComparison } from './FontComparison.js';
 import { ScorePlayer } from './ScorePlayer.js';
 import { unlockSound } from './sound.js';
 
@@ -27,6 +27,7 @@ import triplets from './scores/triplets.mnx.json';
 import twoVoices from './scores/two-voices.mnx.json';
 import ties from './scores/ties.mnx.json';
 import slurs from './scores/slurs.mnx.json';
+import { FontNotation, useFontFamily } from './font.js';
 
 const MELODY = melody as MnxDocument;
 const WHOLE_BAR_REST = wholeBarRest as MnxDocument;
@@ -57,6 +58,7 @@ const CLEF_EXAMPLES: readonly { label: string; doc: MnxDocument }[] = [
 
 export function App() {
   useEffect(() => unlockSound(), []);
+  const { family } = useFontFamily();
 
   return (
     <main>
@@ -69,10 +71,13 @@ export function App() {
         exercises further down exercise hit-testing and answer entry.
       </p>
 
+      <FontComparison />
+
       <h2>Chords</h2>
       <div className="row">
         <Example title="C major triad" caption="NotesReveal, treble">
-          {(onLayout) => <NotesReveal pitches={['C4', 'E4', 'G4']} mode="harmonic" clef="treble" onLayout={onLayout} />}
+          {(onLayout) => <NotesReveal pitches={['C4', 'E4', 'G4']} mode="harmonic" clef="treble" onLayout={onLayout} font={family}
+            />}
         </Example>
         <Example title="G dominant 7th" caption="NotesReveal, bass, seconds shifted across the stem">
           {(onLayout) => (
@@ -81,6 +86,7 @@ export function App() {
               mode="harmonic"
               clef="bass"
               duration={{ base: 'whole' }}
+              font={family}
               onLayout={onLayout}
             />
           )}
@@ -92,6 +98,7 @@ export function App() {
               mode="harmonic"
               clef="treble"
               duration={{ base: 'half' }}
+              font={family}
               onLayout={onLayout}
             />
           )}
@@ -101,16 +108,20 @@ export function App() {
       <h2>Intervals</h2>
       <div className="row">
         <Example title="Major 3rd, harmonic" caption="NotesReveal — both pitches on one stem">
-          {(onLayout) => <NotesReveal pitches={['C4', 'E4']} clef="treble" mode="harmonic" onLayout={onLayout} />}
+          {(onLayout) => <NotesReveal pitches={['C4', 'E4']} clef="treble" mode="harmonic" onLayout={onLayout} font={family}
+            />}
         </Example>
         <Example title="Major 6th, melodic" caption="NotesReveal — two successive beats">
-          {(onLayout) => <NotesReveal pitches={['C4', 'A4']} clef="treble" mode="melodic" onLayout={onLayout} />}
+          {(onLayout) => <NotesReveal pitches={['C4', 'A4']} clef="treble" mode="melodic" onLayout={onLayout} font={family}
+            />}
         </Example>
         <Example title="Tritone, harmonic" caption="A second apart? No — F4 to B4, bass clef">
-          {(onLayout) => <NotesReveal pitches={['F2', 'B2']} clef="bass" mode="harmonic" onLayout={onLayout} />}
+          {(onLayout) => <NotesReveal pitches={['F2', 'B2']} clef="bass" mode="harmonic" onLayout={onLayout} font={family}
+            />}
         </Example>
         <Example title="Descending minor 6th" caption="NotesReveal, melodic, high to low">
-          {(onLayout) => <NotesReveal pitches={['A4', 'C4']} clef="treble" mode="melodic" onLayout={onLayout} />}
+          {(onLayout) => <NotesReveal pitches={['A4', 'C4']} clef="treble" mode="melodic" onLayout={onLayout} font={family}
+            />}
         </Example>
       </div>
 
@@ -120,28 +131,35 @@ export function App() {
         key signature — every alteration is written on the note, which is what an ear-training reveal wants to show.
       </p>
       <Example title="C major" caption="ScaleReveal — root C4, ascending">
-        {(onLayout) => <ScaleReveal root="C4" scale="major" clef="treble" onLayout={onLayout} />}
+        {(onLayout) => <ScaleReveal root="C4" scale="major" clef="treble" onLayout={onLayout} font={family}
+            />}
       </Example>
       <Example title="E♭ major" caption="Three flats, spelled on the notes">
-        {(onLayout) => <ScaleReveal root="Eb4" scale="major" clef="treble" onLayout={onLayout} />}
+        {(onLayout) => <ScaleReveal root="Eb4" scale="major" clef="treble" onLayout={onLayout} font={family}
+            />}
       </Example>
       <Example title="A natural minor" caption="No accidentals at all">
-        {(onLayout) => <ScaleReveal root="A3" scale="naturalMinor" clef="treble" onLayout={onLayout} />}
+        {(onLayout) => <ScaleReveal root="A3" scale="naturalMinor" clef="treble" onLayout={onLayout} font={family}
+            />}
       </Example>
       <Example title="A harmonic minor" caption="Raised 7th only — G♯, and the augmented 2nd F→G♯">
-        {(onLayout) => <ScaleReveal root="A3" scale="harmonicMinor" clef="treble" onLayout={onLayout} />}
+        {(onLayout) => <ScaleReveal root="A3" scale="harmonicMinor" clef="treble" onLayout={onLayout} font={family}
+            />}
       </Example>
       <Example title="A melodic minor, ascending" caption="Raised 6th and 7th — F♯ and G♯">
-        {(onLayout) => <ScaleReveal root="A3" scale="melodicMinor" clef="treble" onLayout={onLayout} />}
+        {(onLayout) => <ScaleReveal root="A3" scale="melodicMinor" clef="treble" onLayout={onLayout} font={family}
+            />}
       </Example>
       <Example
         title="A melodic minor, descending"
         caption="The classical descending form: natural-minor pitches, F♮ and G♮ — a different pitch set, not the ascending notes reversed"
       >
-        {(onLayout) => <ScaleReveal root="A3" scale="melodicMinor" clef="treble" descending onLayout={onLayout} />}
+        {(onLayout) => <ScaleReveal root="A3" scale="melodicMinor" clef="treble" descending onLayout={onLayout} font={family}
+            />}
       </Example>
       <Example title="D major, descending, bass clef" caption="Direction-independent: the same pitches, reversed">
-        {(onLayout) => <ScaleReveal root="D2" scale="major" clef="bass" descending onLayout={onLayout} />}
+        {(onLayout) => <ScaleReveal root="D2" scale="major" clef="bass" descending onLayout={onLayout} font={family}
+            />}
       </Example>
 
       <h2>A melody, from a hand-written MNX file</h2>
@@ -150,7 +168,7 @@ export function App() {
         a rest mid-bar, and spacing/justification across the system.
       </p>
       <Example title="F major, 3/4" caption="B♭ comes from the key signature, so no accidental is written">
-        {(onLayout) => <Notation score={MELODY} onLayout={onLayout} />}
+        {(onLayout) => <FontNotation score={MELODY} onLayout={onLayout} />}
       </Example>
 
       <h2>Playback</h2>
@@ -170,7 +188,7 @@ export function App() {
       <div className="row">
         {KEY_EXAMPLES.map((k) => (
           <Example key={k.label} title={k.label}>
-            {(onLayout) => <Notation score={k.doc} onLayout={onLayout} />}
+            {(onLayout) => <FontNotation score={k.doc} onLayout={onLayout} />}
           </Example>
         ))}
       </div>
@@ -183,7 +201,7 @@ export function App() {
       <div className="row">
         {CLEF_EXAMPLES.map((c) => (
           <Example key={c.label} title={c.label}>
-            {(onLayout) => <Notation score={c.doc} onLayout={onLayout} />}
+            {(onLayout) => <FontNotation score={c.doc} onLayout={onLayout} />}
           </Example>
         ))}
       </div>
@@ -193,16 +211,16 @@ export function App() {
         title="Whole-bar rest in 9/8"
         caption="9/8 of a whole note is not a notatable rest shape; the whole-bar rest is one glyph standing for the entire bar"
       >
-        {(onLayout) => <Notation score={WHOLE_BAR_REST} onLayout={onLayout} />}
+        {(onLayout) => <FontNotation score={WHOLE_BAR_REST} onLayout={onLayout} />}
       </Example>
       <Example
         title="Mixed rests"
         caption="Quarter, eighth, half and dotted-half rests on their conventional staff positions"
       >
-        {(onLayout) => <Notation score={MIXED_RESTS} onLayout={onLayout} />}
+        {(onLayout) => <FontNotation score={MIXED_RESTS} onLayout={onLayout} />}
       </Example>
       <Example title="Ledger lines above and below" caption="C6 and A6 above the staff, C4 and E3 and C3 below it">
-        {(onLayout) => <Notation score={LEDGER_LINES} onLayout={onLayout} />}
+        {(onLayout) => <FontNotation score={LEDGER_LINES} onLayout={onLayout} />}
       </Example>
 
       <h2>Beams and tuplets</h2>
@@ -211,16 +229,16 @@ export function App() {
         <code>type: &quot;tuplet&quot;</code> events.
       </p>
       <Example title="4/4 — 8ths, 16ths, dotted 8th+16th" caption="Mixed subdivisions beamed per beat">
-        {(onLayout) => <Notation score={RHYTHM_4_4} onLayout={onLayout} />}
+        {(onLayout) => <FontNotation score={RHYTHM_4_4} onLayout={onLayout} />}
       </Example>
       <Example
         title="6/8 — compound groupings"
         caption="Beam groups follow the dotted-quarter pulse, not straight beats"
       >
-        {(onLayout) => <Notation score={RHYTHM_6_8} onLayout={onLayout} />}
+        {(onLayout) => <FontNotation score={RHYTHM_6_8} onLayout={onLayout} />}
       </Example>
       <Example title="Triplets" caption="Two beamed eighth-note triplets, then a quarter-note triplet">
-        {(onLayout) => <Notation score={TRIPLETS} onLayout={onLayout} />}
+        {(onLayout) => <FontNotation score={TRIPLETS} onLayout={onLayout} />}
       </Example>
 
       <h2>Two voices</h2>
@@ -233,7 +251,7 @@ export function App() {
         title="Two voices, one staff"
         caption="Beat 1: a second (v0 shifts right). Beat 2: a unison (no shift). Beat 3: simultaneous rests, offset apart. Beat 4: independent rhythm, per-voice beaming."
       >
-        {(onLayout) => <Notation score={TWO_VOICES} onLayout={onLayout} />}
+        {(onLayout) => <FontNotation score={TWO_VOICES} onLayout={onLayout} />}
       </Example>
 
       <h2>Ties</h2>
@@ -245,7 +263,7 @@ export function App() {
         title="Ties across a barline and a chord"
         caption="Beat 2 ties into the next bar; the last bar's chord ties into a repeated chord"
       >
-        {(onLayout) => <Notation score={TIES} onLayout={onLayout} />}
+        {(onLayout) => <FontNotation score={TIES} onLayout={onLayout} />}
       </Example>
 
       <h2>Slurs</h2>
@@ -258,7 +276,7 @@ export function App() {
         title="A phrase slur and a chord's startNote"
         caption="Bar 1: a slur over a four-note run. Bar 2: the slur starts from the chord's top note, not its default anchor"
       >
-        {(onLayout) => <Notation score={SLURS} onLayout={onLayout} />}
+        {(onLayout) => <FontNotation score={SLURS} onLayout={onLayout} />}
       </Example>
 
       <h2>Diagnostics</h2>
@@ -267,7 +285,7 @@ export function App() {
         it to length and attaches the warning below, which this page renders exactly as any app would.
       </p>
       <Example title="Underfull bar, auto-padded">
-        {(onLayout) => <Notation score={UNDERFULL} onLayout={onLayout} />}
+        {(onLayout) => <FontNotation score={UNDERFULL} onLayout={onLayout} />}
       </Example>
 
       <h2>Ear-training exercises</h2>

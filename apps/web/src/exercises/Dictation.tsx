@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Notation } from '@polyhymnia/notation-react';
 import type { NotationIntent } from '@polyhymnia/notation-react';
 import { applyIntent, parsePitch } from '@polyhymnia/notation-model';
 import type { MnxDocument, NoteId, Pitch } from '@polyhymnia/notation-model';
@@ -7,6 +6,7 @@ import type { PreviewNote } from '@polyhymnia/notation-engine';
 import { melodic } from '@polyhymnia/audio';
 import { createSound } from '../sound.js';
 import score from '../scores/exercise-dictation.mnx.json';
+import { FontNotation } from '../font.js';
 
 const GIVEN_ID: NoteId = 'd1';
 const ANSWERABLE: readonly NoteId[] = ['d2', 'd3', 'd4'];
@@ -132,10 +132,10 @@ export function Dictation() {
           </button>
         </span>
       </div>
-      <Notation score={doc}>
-        <Notation.Interaction targets={['slot']} onIntent={onIntent} />
-        <Notation.Marks states={states} preview={preview} />
-      </Notation>
+      <FontNotation score={doc}>
+        <FontNotation.Interaction targets={['slot']} onIntent={onIntent} />
+        <FontNotation.Marks states={states} preview={preview} />
+      </FontNotation>
       <p className="exercise-feedback" role="status">
         {checked
           ? ANSWERABLE.map((id, i) => {
