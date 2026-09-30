@@ -50,13 +50,13 @@
       "x": 10.404,
       "y": 5,
       "cp": 57478,
-      "cls": "time-signature"
+      "cls": "time-signature-numerator"
     },
     {
       "x": 10.4,
       "y": 7,
       "cp": 57480,
-      "cls": "time-signature"
+      "cls": "time-signature-denominator"
     },
     {
       "x": 1.22,

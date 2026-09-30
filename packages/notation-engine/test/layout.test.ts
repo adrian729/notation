@@ -350,7 +350,8 @@ describe('chrome', () => {
     const layout = layoutModern(fixture('chrome-changes'), { widthSp: 200 });
 
     expect(glyphsOf(layout, 'clef')).toHaveLength(1);
-    expect(glyphsOf(layout, 'time-signature')).toHaveLength(4);
+    expect(glyphsOf(layout, 'time-signature-numerator')).toHaveLength(2);
+    expect(glyphsOf(layout, 'time-signature-denominator')).toHaveLength(2);
     const keyGlyphs = glyphsOf(layout, 'key-accidental');
     expect(keyGlyphs.filter((g) => g.cp === cp('accidentalSharp'))).toHaveLength(1);
     expect(keyGlyphs.filter((g) => g.cp === cp('accidentalNatural'))).toHaveLength(1);

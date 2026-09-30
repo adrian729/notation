@@ -211,16 +211,25 @@ function emitTimeSignature(time: TimeSpec, x: number, staffTop: number, glyphs: 
   const blockWidth = Math.max(digitsWidth(time.beats), digitsWidth(time.beatType));
   const centre = x + blockWidth / 2;
 
-  emitDigits(numerator, centre, staffTop + 1, glyphs, family);
-  emitDigits(denominator, centre, staffTop + 3, glyphs, family);
+  // Numerator and denominator get separate classes so they can be coloured apart:
+  // two hues of similar lightness are hard to tell apart at this size.
+  emitDigits(numerator, centre, staffTop + 1, 'time-signature-numerator', glyphs, family);
+  emitDigits(denominator, centre, staffTop + 3, 'time-signature-denominator', glyphs, family);
 }
 
-function emitDigits(digits: string, centre: number, y: number, glyphs: GlyphRun[], family: FontFamily): void {
+function emitDigits(
+  digits: string,
+  centre: number,
+  y: number,
+  cls: string,
+  glyphs: GlyphRun[],
+  family: FontFamily,
+): void {
   const total = [...digits].reduce((sum, d) => sum + glyphAdvanceWidth(`timeSig${d}`), 0);
   let x = centre - total / 2;
   for (const digit of digits) {
     const name = `timeSig${digit}`;
-    glyphs.push(glyph(name, x, y, 'time-signature', family));
+    glyphs.push(glyph(name, x, y, cls, family));
     x += glyphAdvanceWidth(name);
   }
 }

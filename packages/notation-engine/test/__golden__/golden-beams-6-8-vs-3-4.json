@@ -26,13 +26,13 @@
       "x": 3.288,
       "y": 5,
       "cp": 57478,
-      "cls": "time-signature"
+      "cls": "time-signature-numerator"
     },
     {
       "x": 3.284,
       "y": 7,
       "cp": 57480,
-      "cls": "time-signature"
+      "cls": "time-signature-denominator"
     },
     {
       "x": 5.628,
@@ -80,13 +80,13 @@
       "x": 33.722,
       "y": 5,
       "cp": 57475,
-      "cls": "time-signature"
+      "cls": "time-signature-numerator"
     },
     {
       "x": 33.624,
       "y": 7,
       "cp": 57476,
-      "cls": "time-signature"
+      "cls": "time-signature-denominator"
     },
     {
       "x": 36.104,
