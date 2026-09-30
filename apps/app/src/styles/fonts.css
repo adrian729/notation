@@ -1,0 +1,53 @@
+/*
+ * Manuscript faces. These are vendored rather than pulled from fontsource:
+ * neither Junicode 2 nor EB Garamond Initials is published there.
+ *
+ * Junicode VF       psb1558/Junicode-font tag v2.226, webfiles/JunicodeVF-Roman.woff2
+ *                   sha256 a5838c9ed2cd6eca5a013220932bcddd1825523b85ceb5561393313c754e4639
+ *                   JunicodeVF-Italic.woff2
+ *                   sha256 71add8ebed5f6272395282a9ec0e5bc7db7c7656058b8d7724e2cf1f9e292931
+ *                   Same tag, so the roman and italic cuts share an em box and weight axis.
+ * EB Garamond       georgd/EB-Garamond-Initials nightly EBGaramond.zip
+ * Initials          sha256 4628c053d3b2b97724db1f2ed98f550372ec1de4ec4ef10800e5a335b5a42e2e
+ *                   Subset to U+0041-005A and converted OTF -> WOFF2 with pyftsubset
+ *                   (fontTools, as used by packages/notation-font). The two layers are
+ *                   shipped, not the combined face: Fill1 is the ornament, Fill2 the
+ *                   letter, and both share an em box so they register exactly.
+ *
+ * Both are OFL 1.1 with no Reserved Font Name, so subsetting is permitted and the
+ * family names are kept. Licence texts sit beside the binaries in src/assets/fonts/.
+ */
+
+@font-face {
+  font-family: 'Junicode VF';
+  src: url('../assets/fonts/junicode-roman.woff2') format('woff2-variations');
+  font-weight: 300 700;
+  font-stretch: 75% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Junicode VF';
+  src: url('../assets/fonts/junicode-italic.woff2') format('woff2-variations');
+  font-weight: 300 700;
+  font-stretch: 75% 125%;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'EB Garamond Initials Frame';
+  src: url('../assets/fonts/eb-garamond-initials-f1.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'EB Garamond Initials Letter';
+  src: url('../assets/fonts/eb-garamond-initials-f2.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}

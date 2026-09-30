@@ -38,8 +38,8 @@ export function LessonSummary<Q, A>({
         <ExerciseMasthead />
       </nav>
       <div className="flex flex-col gap-tight">
-        <p className="rubricated text-meta text-rubric-strong">{exerciseTitle}</p>
-        <h2 className="text-2xl font-semibold">{title} — done</h2>
+        <p className="rubricated font-specimen text-meta text-rubric-strong">{exerciseTitle}</p>
+        <h2 className="font-display text-2xl font-semibold">{title} — done</h2>
       </div>
       <p className="text-lg">
         Score: <span className="font-semibold">{percent}%</span>

@@ -78,7 +78,7 @@ export function ModuleCard({
   return (
     <section id={id} className="flex scroll-mt-base flex-col gap-base border-t border-border pt-base">
       <div className="flex items-center gap-1">
-        <h2 className="rubricated text-subhead text-rubric-strong">{title}</h2>
+        <h2 className="rubricated font-display text-subhead text-rubric-strong">{title}</h2>
         <ModuleHelpPopover ariaLabel={`About ${title}`} help={help} />
       </div>
       <div className="flex flex-col">{children}</div>

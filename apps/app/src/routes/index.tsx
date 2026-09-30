@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { Notation } from '@polyhymnia/notation-react';
 import type { MnxDocument } from '@polyhymnia/notation-model';
 import { LOGO_URL } from '@/lib/logo';
+import { TitleText } from '@/components/Initial';
 import saltarello from '@/assets/scores/saltarello.mnx.json';
 
 export const Route = createFileRoute('/')({
@@ -9,8 +10,6 @@ export const Route = createFileRoute('/')({
 });
 
 const SALTARELLO = saltarello as MnxDocument;
-
-const DISPLAY_WONK = { fontVariationSettings: '"opsz" 144, "SOFT" 0, "WONK" 1' } as const;
 
 const EXERCISES = [
   {
@@ -43,7 +42,7 @@ const EXERCISES = [
 function HomePage() {
   return (
     <div className="page-column mx-auto flex w-full max-w-3xl flex-col gap-section px-base pt-base pb-section">
-      <div className="rubricated flex items-baseline justify-between border-b border-border pb-tight text-meta text-muted-foreground">
+      <div className="rubricated font-specimen flex items-baseline justify-between border-b border-border pb-tight text-meta text-muted-foreground">
         <span>Polyhymnia</span>
         <span>Ear training</span>
       </div>
@@ -51,8 +50,8 @@ function HomePage() {
       <header className="-mt-loose flex flex-col items-center gap-base text-center">
         <img src={LOGO_URL} alt="" className="size-[5.75rem] sm:size-30" />
         <div className="flex flex-col items-center gap-tight">
-          <h1 className="font-display text-[1.75rem] sm:text-[3rem]" style={DISPLAY_WONK}>
-            Polyhymnia
+          <h1 className="font-display text-[1.75rem] sm:text-[3rem]">
+            <TitleText title="Polyhymnia" />
           </h1>
           <p className="max-w-[52ch] text-body text-muted-foreground">
             Ear training for musicians: the difference between reading music and hearing it.
@@ -61,7 +60,7 @@ function HomePage() {
       </header>
 
       <section aria-labelledby="exercises" className="flex flex-col gap-base">
-        <h2 id="exercises" className="rubricated text-subhead text-muted-foreground">
+        <h2 id="exercises" className="rubricated font-specimen text-subhead text-muted-foreground">
           Exercises
         </h2>
         <ol className="flex flex-col divide-y divide-border border-y border-border">
@@ -73,14 +72,13 @@ function HomePage() {
               >
                 <span
                   aria-hidden="true"
-                  className="rubricated shrink-0 text-subhead text-muted-foreground transition-colors group-hover:text-primary-strong"
+                  className="rubricated font-specimen shrink-0 text-subhead text-muted-foreground transition-colors group-hover:text-primary-strong"
                 >
                   {exercise.folio}
                 </span>
                 <span className="flex min-w-0 flex-col gap-tight">
                   <span
                     className="font-display text-subhead transition-colors group-hover:text-primary-strong"
-                    style={DISPLAY_WONK}
                   >
                     {exercise.title}
                   </span>

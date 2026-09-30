@@ -291,7 +291,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
         <nav aria-label="Breadcrumb" className="self-start">
           <ExerciseMasthead />
         </nav>
-        <p className="rubricated text-meta text-rubric-strong">{exerciseTitle}</p>
+        <p className="rubricated font-specimen text-meta text-rubric-strong">{exerciseTitle}</p>
         <p className="text-base font-medium" role="status">
           Couldn&apos;t create a question.
         </p>
@@ -335,19 +335,19 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
 
       <header className="flex flex-col gap-tight border-b border-border pb-base">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-base">
-          <Button variant="ghost" size="sm" onClick={onBack} className="rubricated justify-self-start text-subhead">
+          <Button variant="ghost" size="sm" onClick={onBack} className="rubricated font-specimen justify-self-start text-subhead">
             Back
           </Button>
           <div className="flex flex-col items-center gap-tight text-center">
-            <p className="rubricated text-meta text-rubric-strong">{exerciseTitle}</p>
-            <h2 className="rubricated text-subhead text-foreground">{title}</h2>
+            <p className="rubricated font-specimen text-meta text-rubric-strong">{exerciseTitle}</p>
+            <h2 className="rubricated font-specimen text-subhead text-foreground">{title}</h2>
           </div>
           {state.flow.endless ? (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => dispatch({ type: 'finish' })}
-              className="rubricated justify-self-end text-subhead"
+              className="rubricated font-specimen justify-self-end text-subhead"
             >
               Finish
             </Button>
@@ -402,18 +402,18 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
       </Fragment>
 
       <div className="flex flex-wrap items-center justify-center gap-base">
-        <Button ref={playButtonRef} variant="outline" onClick={replay} className="rubricated text-subhead">
+        <Button ref={playButtonRef} variant="outline" onClick={replay} className="rubricated font-specimen text-subhead">
           Play question
         </Button>
         {answeredYet && (
-          <Button ref={newQuestionRef} onClick={goNext} className="rubricated text-subhead">
+          <Button ref={newQuestionRef} onClick={goNext} className="rubricated font-specimen text-subhead">
             Next question
           </Button>
         )}
         {autoNextArmed && (
           <Button
             variant="outline"
-            className="rubricated relative overflow-hidden text-subhead"
+            className="rubricated font-specimen relative overflow-hidden text-subhead"
             aria-label="Stay on this question"
             onClick={() => setAutoPaused(true)}
           >

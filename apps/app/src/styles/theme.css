@@ -50,6 +50,11 @@
   --motion-slow: 320ms;
 
   --paper-foxing: oklch(0.55 0.062 52);
+
+  /* Illuminated initial: blue frame, red letter, both dark enough to hold on
+     pale paper. Dark mode lifts the frame instead, see below. */
+  --initial-frame: var(--rubric);
+  --initial-letter: var(--primary-strong);
 }
 
 .dark {
@@ -99,14 +104,27 @@
   --sidebar-ring: oklch(0.62 0.17 32);
 
   --paper-foxing: oklch(0.42 0.05 52);
+
+  /* The frame has to carry the ornament's fine detail, so on Mocha it takes the
+     lighter rubric rather than the flat one, which sinks into the brown. */
+  --initial-frame: var(--rubric-strong);
+  --initial-letter: var(--primary-strong);
 }
 
 @theme inline {
-  --font-sans: 'Newsreader Variable', serif;
-  --font-display: 'Fraunces Variable', serif;
+  --font-sans: 'Junicode VF', 'EB Garamond Variable', serif;
+  --font-display: 'Texturina Variable', 'Junicode VF', serif;
   --font-mono: 'JetBrains Mono Variable', monospace;
   --font-heading: var(--font-display);
-  --font-specimen: 'EB Garamond Variable', 'Newsreader Variable', serif;
+  --font-specimen: 'EB Garamond Variable', 'Junicode VF', serif;
+  --font-initial-frame: 'EB Garamond Initials Frame', serif;
+  --font-initial-letter: 'EB Garamond Initials Letter', serif;
+  --font-body-features:
+    'cv01' 3, 'cv03' 2, 'cv07', 'cv09' 2, 'cv11', 'cv13' 2, 'cv15', 'cv17' 2,
+    'cv19' 2, 'cv25' 2, 'cv27', 'cv33' 3, 'cv37' 4, 'cv39', 'cv45' 2, 'cv49',
+    'cv51', 'cv02' 4, 'cv04' 2, 'cv06' 2, 'cv08', 'cv10' 2, 'cv12', 'cv14' 4,
+    'cv16', 'cv20' 3, 'cv22' 3, 'cv24' 6, 'cv26' 2, 'cv28', 'cv34',
+    'cv36' 2, 'cv38' 2, 'cv40', 'cv44', 'cv46' 2, 'cv48', 'cv50', 'cv52';
 
   --text-display: 3.5rem;
   --text-display--line-height: 1.05;

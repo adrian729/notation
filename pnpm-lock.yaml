@@ -20,14 +20,11 @@ importers:
       '@fontsource-variable/eb-garamond':
         specifier: 5.3.0
         version: 5.3.0
-      '@fontsource-variable/fraunces':
-        specifier: ^5.3.0
-        version: 5.3.0
       '@fontsource-variable/jetbrains-mono':
         specifier: ^5.3.0
         version: 5.3.0
-      '@fontsource-variable/newsreader':
-        specifier: ^5.3.0
+      '@fontsource-variable/texturina':
+        specifier: 5.3.0
         version: 5.3.0
       '@polyhymnia/audio':
         specifier: workspace:*
@@ -612,14 +609,11 @@ packages:
   '@fontsource-variable/eb-garamond@5.3.0':
     resolution: {integrity: sha512-656OJsA9Vv24yhqRZFEzXnzS2AYgKdEILLgHJYLzzXndgcWFKfSXFqzbRI5/6Yk1Yt7UfWrUeppE5nRQPQMwlQ==}
 
-  '@fontsource-variable/fraunces@5.3.0':
-    resolution: {integrity: sha512-9BYGySn4AHEJdgp9Z28tQ3X+laJMEOITXkQarZXeloWQZDq5oOvXJ3kDA8c7MGIfpogIaZfjrQBqmda8POOCKA==}
-
   '@fontsource-variable/jetbrains-mono@5.3.0':
     resolution: {integrity: sha512-F32xpS2NsGYoQi2ADSkKTgpJj7ozajsGgDJ8woTnqjmIB+dxDIqImjl4pXZVEExu8UFZ2ndhmX18EBS/hdz3Lw==}
 
-  '@fontsource-variable/newsreader@5.3.0':
-    resolution: {integrity: sha512-rrzYi43qMpbzwuFtf9OkWH8sxAPVPcQQQEwXpPtwaKYeJ8yVg5aLs5kawmo1f2Q1t1M38TLmEKCkGVDsYwgdFw==}
+  '@fontsource-variable/texturina@5.3.0':
+    resolution: {integrity: sha512-YnH5DJHrENmPYdWZ19GJj4A/ujzLf060FuQmrpxvwivNjnCqEP0zW21XbU+b6sWzpHtAcxRjaEOx/HlHjuLlag==}
 
   '@hono/node-server@2.1.1':
     resolution: {integrity: sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==}
@@ -4110,11 +4104,9 @@ snapshots:
 
   '@fontsource-variable/eb-garamond@5.3.0': {}
 
-  '@fontsource-variable/fraunces@5.3.0': {}
-
   '@fontsource-variable/jetbrains-mono@5.3.0': {}
 
-  '@fontsource-variable/newsreader@5.3.0': {}
+  '@fontsource-variable/texturina@5.3.0': {}
 
   '@hono/node-server@2.1.1(hono@4.13.9)':
     dependencies:

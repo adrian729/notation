@@ -19,15 +19,20 @@ The failure mode this document exists to prevent: a centered logo, a row of iden
 
 ## Typography
 
-Three families, three roles, no overlap. All from `@fontsource-variable`, self-hosted — no Google Fonts CDN.
+Four families, four roles, no overlap. Display and data come from `@fontsource-variable`; Junicode and the initials are vendored WOFF2 in `apps/app/src/assets/fonts/` because neither is published on fontsource. No Google Fonts CDN.
 
 | Role | Family | Token | Used for |
 | --- | --- | --- | --- |
-| Display | Fraunces Variable | `--font-display` | Wordmark, `h1`–`h3`, exercise titles, hero numerals. Variable `opsz` + `SOFT`/`WONK` axes — use `WONK 1` on display sizes for the hand-set irregularity. |
-| Text | Newsreader Variable | `--font-text` | All prose, body copy, UI labels, buttons, inputs, list rows. Designed for screen reading; readable at 14px. |
+| Display | Texturina Variable | `--font-display` | Wordmark, `h1`–`h3`, exercise titles. Variable `wght` + `opsz`; optical sizing is automatic, so no per-element axis settings. |
+| Text | Junicode VF | `--font-sans` | All prose, body copy, UI labels, buttons, inputs, list rows. Variable `wght` + `wdth`. Per-letter alternates are applied via `--font-body-features`. |
+| Specimen | EB Garamond Variable | `--font-specimen` | Letter-spaced small caps: running heads, rubrics, folios. |
 | Data | JetBrains Mono Variable | `--font-mono` | Anything numeric that must align or be compared: interval names and semitone counts, cents, Hz, tempo, timers, counts, version stamps. Tabular figures on. |
 
-`--font-heading` must resolve to Fraunces. It currently aliases `--font-sans`, which makes every heading the same typeface as body copy and is the single largest cause of the app looking undesigned.
+`--font-heading` resolves to `--font-display`.
+
+**Body alternates.** `--font-body-features` is a hand-picked `cv##` variant per letter (the Junicode character-variant alternates), applied on `html` so prose is engraved rather than modern. It is deliberately *not* a blanket `font-feature-settings` on the page: the display, specimen and mono utilities reset to `normal`, because those families have no such features and would only be mangled by them. Adding a feature setting to a non-Junicode element is a bug.
+
+**Illuminated initial.** Page titles (`h1` only) open with an illuminated capital: two stacked layers of the EB Garamond Initials font, `--font-initial-frame` (the ornament) behind `--font-initial-letter` (the letter), coloured by `--initial-frame` / `--initial-letter`. It is a *raised* initial, not a drop cap: it sits on the heading baseline and never intrudes into the text block below.
 
 **Type scale** — six steps, no others. Sizes outside this list are a violation.
 

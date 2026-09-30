@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { ArrowLeft, Play, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExerciseMasthead } from '@/components/lesson/ExerciseMasthead';
+import { TitleText } from '@/components/Initial';
 
 const TITLE = 'Custom exercise';
 
@@ -51,7 +52,9 @@ export function CustomFrame({ lessonsTo, help, summary, errors, onReset, runner,
           </Button>
         </div>
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold">{TITLE}</h1>
+          <h1 className="font-display text-2xl font-semibold">
+            <TitleText title={TITLE} />
+          </h1>
           <p className="text-muted-foreground">Choose what to practise. {help}</p>
         </div>
       </div>

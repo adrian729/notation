@@ -67,10 +67,10 @@ function TocList({ modules, active }: { modules: readonly TocModule[]; active: s
                 isActive ? 'text-rubric-strong' : 'text-muted-foreground',
               )}
             >
-              <span aria-hidden className="rubricated shrink-0 tabular-nums">
+              <span aria-hidden className="rubricated font-specimen shrink-0 tabular-nums">
                 {ROMAN[i] ?? i + 1}
               </span>
-              <span className="rubricated">
+              <span className="rubricated font-specimen">
                 {family}
                 {variant && <span className="text-muted-foreground"> — {variant}</span>}
               </span>
@@ -94,14 +94,14 @@ export function WorkshopAside({ modules }: { modules: readonly TocModule[] }) {
 
       {list && (
         <details className="lg:hidden">
-          <summary className="rubricated cursor-pointer text-subhead text-muted-foreground">Contents</summary>
+          <summary className="rubricated font-specimen cursor-pointer text-subhead text-muted-foreground">Contents</summary>
           <div className="pt-tight">{list}</div>
         </details>
       )}
 
       {list && (
         <div className="hidden min-h-0 flex-1 overflow-y-auto overscroll-contain pb-base lg:block">
-          <p className="rubricated border-b border-border pb-tight text-subhead text-muted-foreground">Contents</p>
+          <p className="rubricated font-specimen border-b border-border pb-tight text-subhead text-muted-foreground">Contents</p>
           {list}
         </div>
       )}

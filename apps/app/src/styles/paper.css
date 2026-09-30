@@ -110,9 +110,50 @@
   }
 }
 
-/* Letter-spaced capitals in a period face, for running heads and rubrics. */
+/* Letter-spaced small capitals for running heads and rubrics. Styles the
+   letterforms only — the typeface comes from an explicit font-* class. */
 @utility rubricated {
-  font-family: var(--font-specimen);
   font-variant-caps: all-small-caps;
   letter-spacing: 0.14em;
+}
+
+/*
+ * Illuminated initial. Two layers of the EB Garamond Initials font are stacked
+ * in a single grid cell: Fill1 is the ornament frame behind, Fill2 the letter in
+ * front. Both faces share an em box and advance width, so one cell registers
+ * them exactly — no per-glyph offsets that would drift when the title changes.
+ *
+ * The frame fills its em box from the baseline up, so a cap at 1em sits slightly
+ * taller than the heading's own capitals: an illuminated capital should stand
+ * proud of the text. The line box is left to the heading; the cap is seated on
+ * the baseline rather than being aligned to the text's x-height.
+ */
+@utility illuminated-initial {
+  display: inline-grid;
+  vertical-align: baseline;
+  font-size: 1em;
+  line-height: 1;
+  white-space: pre;
+
+  & > * {
+    grid-area: 1 / 1;
+    line-height: 1;
+    font-weight: normal;
+  }
+
+  & > .illuminated-initial-frame {
+    font-family: var(--font-initial-frame);
+    font-feature-settings: normal;
+    color: var(--initial-frame, var(--rubric));
+    /* The same letter is painted twice, once per layer. Only the letter layer is
+       real text; the frame must stay out of selection or copying a title yields
+       a doubled first letter. */
+    user-select: none;
+  }
+
+  & > .illuminated-initial-letter {
+    font-family: var(--font-initial-letter);
+    font-feature-settings: normal;
+    color: var(--initial-letter, var(--primary));
+  }
 }

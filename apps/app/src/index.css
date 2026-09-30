@@ -1,11 +1,11 @@
 @import 'tailwindcss' source(none);
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
-@import '@fontsource-variable/fraunces';
-@import '@fontsource-variable/newsreader';
 @import '@fontsource-variable/eb-garamond';
 @import '@fontsource-variable/jetbrains-mono';
+@import '@fontsource-variable/texturina/opsz.css';
 @import './styles/palette.css';
+@import './styles/fonts.css';
 @import './styles/theme.css';
 @import './styles/paper.css';
 
@@ -25,6 +25,7 @@
   }
   html {
     @apply font-sans antialiased;
+    font-feature-settings: var(--font-body-features);
   }
   @media (prefers-reduced-motion: no-preference) {
     html {
@@ -33,6 +34,15 @@
   }
   .font-mono {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .font-display,
+  .font-heading,
+  .font-specimen,
+  .font-mono {
+    font-feature-settings: normal;
   }
 }
 

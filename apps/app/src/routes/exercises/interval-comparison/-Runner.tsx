@@ -50,7 +50,7 @@ function IntervalPair({ question }: { question: Question }) {
               {key.toUpperCase()}
             </span>
             <div className="flex w-full max-w-[46rem] flex-col gap-tight">
-              <span className="rubricated text-meta text-muted-foreground">{tone.name}</span>
+              <span className="rubricated font-specimen text-meta text-muted-foreground">{tone.name}</span>
               <RevealStaff>
                 <NotesReveal
                   pitches={[tone.from, tone.to]}
@@ -72,7 +72,7 @@ const REVEAL_PLACEHOLDER = (
       <div key={letter} className="flex w-full items-baseline gap-base py-tight">
         <span className="shrink-0 font-display text-heading text-transparent">{letter}</span>
         <div className="flex w-full max-w-[46rem] flex-col gap-tight">
-          <span className="rubricated text-meta text-transparent">Placeholder</span>
+          <span className="rubricated font-specimen text-meta text-transparent">Placeholder</span>
           <RevealStaff className="rounded-lg border border-border bg-surface-sunken" />
         </div>
       </div>
@@ -113,7 +113,7 @@ function AnswerGrid({
             {choice === 'same' ? 'Same' : choice}
           </span>
           {!answered && (
-            <span className="rubricated text-meta text-rubric-strong">key {choice === 'same' ? 'S' : choice}</span>
+            <span className="rubricated font-specimen text-meta text-rubric-strong">key {choice === 'same' ? 'S' : choice}</span>
           )}
         </button>
       ))}

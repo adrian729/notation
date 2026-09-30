@@ -3,6 +3,7 @@ import { Link, type LinkProps } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { InstrumentSelect } from '@/components/custom/InstrumentSelect';
 import type { HelpSection, LessonResult, OverviewSection } from '@/exercises/shared';
+import { TitleText } from '@/components/Initial';
 import { WorkshopAside } from './WorkshopAside';
 import { LessonLinkTile, ModuleCard, OverviewHelpPopover } from './LessonListParts';
 
@@ -33,7 +34,9 @@ export function WorkshopPage({
         <div className="flex flex-col gap-tight">
           <div className="flex flex-wrap items-center justify-between gap-base">
             <div className="flex min-w-0 items-center gap-1">
-              <h1 className="font-display text-title">{title}</h1>
+              <h1 className="font-display text-title">
+                <TitleText title={title} />
+              </h1>
               <OverviewHelpPopover ariaLabel={`About ${title}`} sections={overview} />
             </div>
             <InstrumentSelect />
