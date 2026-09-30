@@ -15,7 +15,7 @@ import { scalePitches, fittingMeter } from '../src/presets/shared.js';
 afterEach(cleanup);
 
 const TREBLE_CLEF = 0xe050;
-const NOTEHEAD_BLACK = 0xe0a4;
+const NOTEHEAD_QUARTER = 0xe93d;
 
 const QUARTER: NoteValue = { base: 'quarter' };
 const HALF: NoteValue = { base: 'half' };
@@ -83,7 +83,7 @@ describe('<Notation>', () => {
       expect(head.getAttribute('fill')).toBe('currentColor');
     });
 
-    expect(heads[0]!.textContent!.codePointAt(0)).toBe(NOTEHEAD_BLACK);
+    expect(heads[0]!.textContent!.codePointAt(0)).toBe(NOTEHEAD_QUARTER);
     expect(container.querySelector('[data-pn="clef"]')!.textContent!.codePointAt(0)).toBe(TREBLE_CLEF);
   });
 
