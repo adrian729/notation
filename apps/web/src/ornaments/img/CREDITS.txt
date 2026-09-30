@@ -1,0 +1,5 @@
+vectorian-*.webp: Vectorian ornaments (https://www.vectorian.net/free-vintage-vectors.html),
+taken from https://github.com/cionx/svgornaments and rasterised to WebP.
+Licence: Vectorian Standard License. Web use is allowed; redistributing the ornaments in any
+vector format (SVG, EPS, AI, PDF...) is not, so only raster files are kept in this repository.
+File number = Vectorian ornament number (see https://mirrors.ctan.org/macros/latex/contrib/tkz/pgfornament/doc/ornaments.pdf).
