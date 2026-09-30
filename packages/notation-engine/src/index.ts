@@ -1,4 +1,5 @@
 export type { NotationOptions } from './options.js';
+export { DEFAULT_FONT, type FontFamily } from './font/glyphs.js';
 
 export type { ClefSpec, KeySpec, StaffPitch, TimeSpec } from './layout/records.js';
 

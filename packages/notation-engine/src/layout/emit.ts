@@ -1,5 +1,5 @@
 import { engravingDefaults, glyphAdvanceWidth, glyphBBox } from '../font/metadata.js';
-import { glyphCodepoint } from '../font/glyphs.js';
+import { DEFAULT_FONT, glyphCodepoint, type FontFamily } from '../font/glyphs.js';
 import type { Diagnostic } from '@polyhymnia/notation-model';
 import {
   describePitch,
@@ -53,7 +53,8 @@ export interface EmitInput {
   curves: CurvesResult;
 }
 
-export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult {
+export function emit(input: EmitInput, options?: NotationOptions): LayoutResult {
+  const family: FontFamily = options?.font ?? DEFAULT_FONT;
   const glyphs: GlyphRun[] = [];
   const rects: RectShape[] = [];
   const paths: PathShape[] = [];
@@ -79,8 +80,8 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
     }
 
     for (const measure of system.measures) {
-      emitChrome(measure, staffTop, glyphs);
-      emitBarlines(measure, staffTop, glyphs, rects);
+      emitChrome(measure, staffTop, glyphs, family);
+      emitBarlines(measure, staffTop, glyphs, rects, family);
       measureTimes.push({
         index: measure.index,
         startTick: measure.startTick,
@@ -110,6 +111,7 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
             elements,
             placement,
             stemOverrides: input.beams.stemOverrides,
+            family,
           });
         }
       });
@@ -139,7 +141,7 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
   }
   for (const numeral of input.tuplets.numerals) {
     const staffTop = staffTopOf.get(numeral.systemIndex) ?? 0;
-    glyphs.push(glyph(numeral.name, numeral.x, staffTop + numeral.y, 'tuplet-number', numeral.el));
+    glyphs.push(glyph(numeral.name, numeral.x, staffTop + numeral.y, 'tuplet-number', family, numeral.el));
   }
   for (const curve of input.curves.shapes) {
     const staffTop = staffTopOf.get(curve.systemIndex) ?? 0;
@@ -175,29 +177,33 @@ export function emit(input: EmitInput, _options?: NotationOptions): LayoutResult
   };
 }
 
-function emitChrome(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[]): void {
+function emitChrome(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], family: FontFamily): void {
   let x = measure.x + measure.chrome.startBarlineWidth;
 
   if (measure.chrome.showClef) {
-    glyphs.push(glyph(clefGlyph(measure.clef), x, staffTop + clefGlyphY(measure.clef), 'clef'));
+    glyphs.push(glyph(clefGlyph(measure.clef), x, staffTop + clefGlyphY(measure.clef), 'clef', family));
     x += measure.chrome.clefWidth;
   }
 
   if (measure.chrome.keyWidth > 0) {
     const key = layOutKeyGlyphs(measure.key, measure.clef, measure.chrome.cancelKey, measure.chrome.showKey, x);
     for (const acc of key.glyphs) {
-      glyphs.push(glyph(acc.glyph, acc.x, staffTop + acc.y, 'key-accidental'));
+      glyphs.push(glyph(acc.glyph, acc.x, staffTop + acc.y, 'key-accidental', family));
     }
     x = measure.x + measure.chrome.startBarlineWidth + measure.chrome.clefWidth + measure.chrome.keyWidth;
   }
 
-  if (measure.chrome.showTime) emitTimeSignature(measure.time, x, staffTop, glyphs);
+  if (measure.chrome.showTime) emitTimeSignature(measure.time, x, staffTop, glyphs, family);
 }
 
-function emitTimeSignature(time: TimeSpec, x: number, staffTop: number, glyphs: GlyphRun[]): void {
+function emitTimeSignature(time: TimeSpec, x: number, staffTop: number, glyphs: GlyphRun[], family: FontFamily): void {
+  // Mensural C and O prolation is not drawable yet, and cannot be fixed here: the
+  // pinned MNX schema types time.symbol as 'common' | 'cut' only, so no document
+  // can carry a prolation sign. The outlines exist in the mensural subset — this
+  // needs a schema decision before an engine change, not an engine change now.
   if (time.symbol === 'common' || time.symbol === 'cut') {
     const name = time.symbol === 'cut' ? 'timeSigCutCommon' : 'timeSigCommon';
-    glyphs.push(glyph(name, x, staffTop + 2, 'time-signature'));
+    glyphs.push(glyph(name, x, staffTop + 2, 'time-signature', family));
     return;
   }
   const numerator = String(Math.max(0, Math.round(time.beats)));
@@ -205,21 +211,21 @@ function emitTimeSignature(time: TimeSpec, x: number, staffTop: number, glyphs: 
   const blockWidth = Math.max(digitsWidth(time.beats), digitsWidth(time.beatType));
   const centre = x + blockWidth / 2;
 
-  emitDigits(numerator, centre, staffTop + 1, glyphs);
-  emitDigits(denominator, centre, staffTop + 3, glyphs);
+  emitDigits(numerator, centre, staffTop + 1, glyphs, family);
+  emitDigits(denominator, centre, staffTop + 3, glyphs, family);
 }
 
-function emitDigits(digits: string, centre: number, y: number, glyphs: GlyphRun[]): void {
+function emitDigits(digits: string, centre: number, y: number, glyphs: GlyphRun[], family: FontFamily): void {
   const total = [...digits].reduce((sum, d) => sum + glyphAdvanceWidth(`timeSig${d}`), 0);
   let x = centre - total / 2;
   for (const digit of digits) {
     const name = `timeSig${digit}`;
-    glyphs.push(glyph(name, x, y, 'time-signature'));
+    glyphs.push(glyph(name, x, y, 'time-signature', family));
     x += glyphAdvanceWidth(name);
   }
 }
 
-function emitBarlines(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], rects: RectShape[]): void {
+function emitBarlines(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], rects: RectShape[], family: FontFamily): void {
   const e = engravingDefaults;
   const bottom = staffTop + STAFF_HEIGHT;
   const line = (x: number, thickness: number): RectShape => ({
@@ -236,8 +242,8 @@ function emitBarlines(measure: PositionedMeasure, staffTop: number, glyphs: Glyp
     x += e.thickBarlineThickness + e.thinThickBarlineSeparation;
     rects.push(line(x, e.thinBarlineThickness));
     x += e.thinBarlineThickness + e.repeatBarlineDotSeparation;
-    glyphs.push(glyph('repeatDot', x, staffTop + 1.5, 'repeat-dot'));
-    glyphs.push(glyph('repeatDot', x, staffTop + 2.5, 'repeat-dot'));
+    glyphs.push(glyph('repeatDot', x, staffTop + 1.5, 'repeat-dot', family));
+    glyphs.push(glyph('repeatDot', x, staffTop + 2.5, 'repeat-dot', family));
   }
 
   const right = measure.x + measure.width;
@@ -265,8 +271,8 @@ function emitBarlines(measure: PositionedMeasure, staffTop: number, glyphs: Glyp
       const thinX = right - e.thickBarlineThickness - e.thinThickBarlineSeparation - e.thinBarlineThickness;
       rects.push(line(thinX, e.thinBarlineThickness));
       const dotX = thinX - e.repeatBarlineDotSeparation - glyphAdvanceWidth('repeatDot');
-      glyphs.push(glyph('repeatDot', dotX, staffTop + 1.5, 'repeat-dot'));
-      glyphs.push(glyph('repeatDot', dotX, staffTop + 2.5, 'repeat-dot'));
+      glyphs.push(glyph('repeatDot', dotX, staffTop + 1.5, 'repeat-dot', family));
+      glyphs.push(glyph('repeatDot', dotX, staffTop + 2.5, 'repeat-dot', family));
       break;
     }
     default:
@@ -303,6 +309,7 @@ interface ElementContext {
   elements: Record<string, ElementBox>;
   placement: Map<NoteId, Placement>;
   stemOverrides?: ReadonlyMap<NoteId, { yTop: number; yBottom: number }>;
+  family: FontFamily;
 }
 
 function emitElement(element: VerticalElement, ctx: ElementContext): void {
@@ -320,11 +327,11 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
       const accY = staffTop + head.accidental.y;
       if (head.accidental.parenthesized) {
         ctx.glyphs.push(
-          glyph('accidentalParensLeft', accX - glyphAdvanceWidth('accidentalParensLeft'), accY, 'accidental', head.id),
+          glyph('accidentalParensLeft', accX - glyphAdvanceWidth('accidentalParensLeft'), accY, 'accidental', ctx.family, head.id),
         );
-        ctx.glyphs.push(glyph('accidentalParensRight', accX + head.accidental.width, accY, 'accidental', head.id));
+        ctx.glyphs.push(glyph('accidentalParensRight', accX + head.accidental.width, accY, 'accidental', ctx.family, head.id));
       }
-      ctx.glyphs.push(glyph(head.accidental.glyph, accX, accY, 'accidental', head.id));
+      ctx.glyphs.push(glyph(head.accidental.glyph, accX, accY, 'accidental', ctx.family, head.id));
     }
 
     for (const y of head.ledgerLines) {
@@ -340,10 +347,10 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
       );
     }
 
-    ctx.glyphs.push(glyph(head.glyph, headX, staffTop + head.staffPosition, 'notehead', head.id));
+    ctx.glyphs.push(glyph(head.glyph, headX, staffTop + head.staffPosition, 'notehead', ctx.family, head.id));
 
     for (const dot of head.dots) {
-      ctx.glyphs.push(glyph('augmentationDot', ctx.x + dot.dx, staffTop + dot.y, 'dot', head.id));
+      ctx.glyphs.push(glyph('augmentationDot', ctx.x + dot.dx, staffTop + dot.y, 'dot', ctx.family, head.id));
     }
 
     ctx.elements[head.id] = noteBox(element, head, headX, ctx);
@@ -364,13 +371,13 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
       ...(owner ? { el: owner } : {}),
     });
     if (stem.flag) {
-      ctx.glyphs.push(glyph(stem.flag.glyph, stemX(ctx.x, stem), staffTop + stem.flag.y, 'flag', owner));
+      ctx.glyphs.push(glyph(stem.flag.glyph, stemX(ctx.x, stem), staffTop + stem.flag.y, 'flag', ctx.family, owner));
     }
   }
 
   const breath = element.breath;
   if (breath) {
-    ctx.glyphs.push(glyph(breath.glyph, ctx.x + breath.dx, staffTop + breath.y, 'breath', element.id));
+    ctx.glyphs.push(glyph(breath.glyph, ctx.x + breath.dx, staffTop + breath.y, 'breath', ctx.family, element.id));
   }
 
   const first = element.noteheads[0];
@@ -387,9 +394,9 @@ function emitRest(element: VerticalElement, ctx: ElementContext): void {
   const rest = element.rest!;
   const x = rest.wholeBar ? (ctx.columnLeft + ctx.columnRight) / 2 - rest.width / 2 : ctx.x;
   const y = ctx.staffTop + rest.y;
-  ctx.glyphs.push(glyph(rest.glyph, x, y, 'rest', element.id));
+  ctx.glyphs.push(glyph(rest.glyph, x, y, 'rest', ctx.family, element.id));
   for (const dot of rest.dots) {
-    ctx.glyphs.push(glyph('augmentationDot', x + dot.dx, ctx.staffTop + dot.y, 'dot', element.id));
+    ctx.glyphs.push(glyph('augmentationDot', x + dot.dx, ctx.staffTop + dot.y, 'dot', ctx.family, element.id));
   }
 
   const bbox = glyphBBox(rest.glyph);
@@ -556,8 +563,8 @@ function pathFrom(points: readonly (readonly [number, number])[], staffTop: numb
   return points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${(staffTop + y).toFixed(3)}`).join(' ') + ' Z';
 }
 
-function glyph(name: string, x: number, y: number, cls: string, el?: NoteId): GlyphRun {
-  return { x, y, cp: glyphCodepoint(name) ?? 0, cls, ...(el ? { el } : {}) };
+function glyph(name: string, x: number, y: number, cls: string, family: FontFamily, el?: NoteId): GlyphRun {
+  return { x, y, cp: glyphCodepoint(name, family) ?? 0, cls, ...(el ? { el } : {}) };
 }
 
 function centeredRect(x: number, y: number, w: number, thickness: number, cls: string, el?: NoteId): RectShape {

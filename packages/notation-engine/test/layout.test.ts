@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { Clef, MnxDocument } from '@polyhymnia/notation-model';
 import { layoutScore } from '../src/layout/index.js';
+import type { NotationOptions } from '../src/options.js';
 import type { NoteId } from '../src/layout/records.js';
 import { engravingDefaults, glyphAdvanceWidth, glyphBBox } from '../src/font/metadata.js';
 import { GLYPH_CODEPOINT } from '../src/font/glyphs.js';
 import type { ElementBox, GlyphRun, LayoutResult } from '../src/layout/types.js';
+/**
+ * These cases assert coordinates in modern-head geometry, so they ask for that
+ * family explicitly rather than riding the house default.
+ */
+const layoutModern = (doc: MnxDocument, options: NotationOptions = {}): LayoutResult =>
+  layoutScore(doc, { font: 'modern', ...options });
+
 import {
   ALTO,
   BASS,
@@ -34,7 +42,7 @@ function boxes(layout: LayoutResult): ElementBox[] {
 
 describe('chords are addressable per member', () => {
   it('emits one ElementBox per notehead, sharing x and tick', () => {
-    const layout = layoutScore(mnx({}, measure(chord(['C4', 'E4', 'G4', 'B4'], 'w'))));
+    const layout = layoutModern(mnx({}, measure(chord(['C4', 'E4', 'G4', 'B4'], 'w'))));
     const members = boxes(layout).filter((b) => b.kind === 'chord');
 
     expect(members).toHaveLength(4);
@@ -59,7 +67,7 @@ describe('chords are addressable per member', () => {
   });
 
   it('shifts a chord member a second above its neighbour off the stem', () => {
-    const layout = layoutScore(mnx({}, measure(chord(['C4', 'D4'], 'q'), rest('h.'))));
+    const layout = layoutModern(mnx({}, measure(chord(['C4', 'D4'], 'q'), rest('h.'))));
     const members = boxes(layout)
       .filter((b) => b.kind === 'chord')
       .sort((a, b) => a.staffPosition - b.staffPosition);
@@ -71,7 +79,7 @@ describe('chords are addressable per member', () => {
 
 describe('accidentals', () => {
   it('suppresses accidentals already carried by the key signature', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         { key: 2 },
         measure(note('D4', 'q'), note('E4', 'q'), note('F#4', 'q'), note('G4', 'q')),
@@ -85,7 +93,7 @@ describe('accidentals', () => {
   });
 
   it('writes an accidental once per measure, again in the next, never on a tie-stop', () => {
-    const layout = layoutScore(fixture('accidentals-ties'));
+    const layout = layoutModern(fixture('accidentals-ties'));
     const accidentals = glyphsOf(layout, 'accidental');
 
     expect(accidentals).toHaveLength(2);
@@ -93,7 +101,7 @@ describe('accidentals', () => {
   });
 
   it('honours the per-note policy override', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         measure(
@@ -110,7 +118,7 @@ describe('accidentals', () => {
   });
 
   it('stacks a chord’s accidentals into non-overlapping columns left of the notehead', () => {
-    const layout = layoutScore(mnx({}, measure(chord(['C#4', 'Eb4', 'G#4'], 'w'))));
+    const layout = layoutModern(mnx({}, measure(chord(['C#4', 'Eb4', 'G#4'], 'w'))));
     const accidentals = glyphsOf(layout, 'accidental');
     const noteX = boxes(layout)[0]!.x;
 
@@ -166,7 +174,7 @@ function expectClearOfNoteheads(layout: LayoutResult, glyphs: readonly GlyphRun[
 
 describe('accidental stacking', () => {
   it('keeps a six-note chromatic cluster’s accidentals off each other and off every notehead', () => {
-    const layout = layoutScore(mnx({}, measure(chord(['C#4', 'Db4', 'D#4', 'Eb4', 'F#4', 'Gb4'], 'w'))));
+    const layout = layoutModern(mnx({}, measure(chord(['C#4', 'Db4', 'D#4', 'Eb4', 'F#4', 'Gb4'], 'w'))));
     const accidentals = glyphsOf(layout, 'accidental');
 
     expect(accidentals).toHaveLength(6);
@@ -176,7 +184,7 @@ describe('accidental stacking', () => {
   });
 
   it('keeps the whole block left of the leftmost notehead in a stem-down chord with a second', () => {
-    const layout = layoutScore(mnx({}, measure(chord(['G#4', 'A#4', 'D5'], 'h'), rest('h'))));
+    const layout = layoutModern(mnx({}, measure(chord(['G#4', 'A#4', 'D5'], 'h'), rest('h'))));
     const members = boxes(layout)
       .filter((b) => b.kind === 'chord')
       .sort((a, b) => a.staffPosition - b.staffPosition);
@@ -196,7 +204,7 @@ describe('accidental stacking', () => {
   });
 
   it('gives an octave pair with the same accidental one shared column', () => {
-    const layout = layoutScore(mnx({}, measure(chord(['F#4', 'F#5'], 'w'))));
+    const layout = layoutModern(mnx({}, measure(chord(['F#4', 'F#5'], 'w'))));
     const accidentals = glyphsOf(layout, 'accidental');
 
     expect(accidentals).toHaveLength(2);
@@ -206,7 +214,7 @@ describe('accidental stacking', () => {
 
   it('makes a parenthesized cautionary column wide enough for its parentheses', () => {
     const parenthesized = { accidentalDisplay: { show: true, enclosure: { symbol: 'parentheses' as const } } };
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx({}, measure(chord(['G4', 'A4'], 'h', {}, [parenthesized, parenthesized]), rest('h'))),
       { accidentals: { parenthesizeCautionary: true } },
     );
@@ -225,7 +233,7 @@ describe('accidental stacking', () => {
   });
 
   it('packs two voices’ accidentals at shared ticks clear across voices', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         voices(
@@ -246,7 +254,7 @@ describe('accidental stacking', () => {
 
 describe('ledger lines', () => {
   it('draws every line crossed above and below the staff, but none for a note in a space', () => {
-    const layout = layoutScore(mnx({}, measure(note('C6', 'h'), note('C3', 'h'))));
+    const layout = layoutModern(mnx({}, measure(note('C6', 'h'), note('C3', 'h'))));
     const ledgers = layout.rects.filter((r) => r.cls === 'ledger-line');
     const staffTop = layout.systems[0]!.y;
     const byPosition = ledgers.map((r) => +(r.y + r.h / 2 - staffTop).toFixed(3)).sort((a, b) => a - b);
@@ -259,7 +267,7 @@ describe('ledger lines', () => {
 
 describe('rests', () => {
   it('draws one centred whole rest for a whole-bar rest in 9/8', () => {
-    const layout = layoutScore(mnx({ time: { count: 9, unit: 8 } }, { sequences: [{ content: [], fullMeasure: {} }] }));
+    const layout = layoutModern(mnx({ time: { count: 9, unit: 8 } }, { sequences: [{ content: [], fullMeasure: {} }] }));
     const rests = glyphsOf(layout, 'rest');
     const box = boxes(layout)[0]!;
 
@@ -275,7 +283,7 @@ describe('rests', () => {
   });
 
   it('anchors rests where the Bravura glyph metadata says, not where engraving.md guesses', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx({}, measure(rest('q'), rest('q'), rest('h')), measure(rest('8'), rest('8'), rest('q'), rest('h'))),
     );
     const restY = (name: string): number => {
@@ -292,7 +300,7 @@ describe('rests', () => {
     expect(glyphBBox('restWhole').bBoxNE[1]).toBeCloseTo(0.036, 3);
     expect(glyphBBox('restWhole').bBoxSW[1]).toBeCloseTo(-0.54, 3);
 
-    const whole = layoutScore(mnx({}, measure(rest('w'))));
+    const whole = layoutModern(mnx({}, measure(rest('w'))));
     const wholeGlyph = glyphsOf(whole, 'rest')[0]!;
     expect(+(wholeGlyph.y - whole.systems[0]!.y).toFixed(3)).toBe(1);
   });
@@ -304,7 +312,7 @@ describe('systems', () => {
       {},
       ...Array.from({ length: 8 }, () => measure(note('C4', 'q'), note('D4', 'q'), note('E4', 'q'), note('F4', 'q'))),
     );
-    const layout = layoutScore(doc, { widthSp: 40 });
+    const layout = layoutModern(doc, { widthSp: 40 });
 
     expect(layout.systems.length).toBeGreaterThan(1);
     for (const system of layout.systems) {
@@ -320,7 +328,7 @@ describe('systems', () => {
   });
 
   it('honours the systems of the score layout', () => {
-    const layout = layoutScore(fixture('system-break'));
+    const layout = layoutModern(fixture('system-break'));
     expect(layout.systems).toHaveLength(2);
     expect(
       boxes(layout)
@@ -330,7 +338,7 @@ describe('systems', () => {
   });
 
   it('does not force the last system to the full width', () => {
-    const layout = layoutScore(mnx({}, measure(note('C4', 'w'))), {
+    const layout = layoutModern(mnx({}, measure(note('C4', 'w'))), {
       widthSp: 100,
     });
     expect(layout.systems[0]!.w).toBeLessThanOrEqual(65 + 1e-6);
@@ -339,7 +347,7 @@ describe('systems', () => {
 
 describe('chrome', () => {
   it('draws clef, key and time once, and restates them on a change', () => {
-    const layout = layoutScore(fixture('chrome-changes'), { widthSp: 200 });
+    const layout = layoutModern(fixture('chrome-changes'), { widthSp: 200 });
 
     expect(glyphsOf(layout, 'clef')).toHaveLength(1);
     expect(glyphsOf(layout, 'time-signature')).toHaveLength(4);
@@ -351,7 +359,7 @@ describe('chrome', () => {
 
   it('draws an octave-up bass clef with its own glyph', () => {
     const glyphAt = (octave: -1 | 0 | 1): number =>
-      glyphsOf(layoutScore(mnx({ clef: { ...BASS, octave } }, measure(note('D3', 'w')))), 'clef')[0]!.cp;
+      glyphsOf(layoutModern(mnx({ clef: { ...BASS, octave } }, measure(note('D3', 'w')))), 'clef')[0]!.cp;
 
     expect(glyphAt(1)).toBe(0xe065);
     expect(glyphAt(1)).toBe(cp('fClef8va'));
@@ -361,7 +369,7 @@ describe('chrome', () => {
   });
 
   it('draws a dashed barline as dash segments spanning the staff, not one rect', () => {
-    const layout = layoutScore(mnx({}, withGlobal({ barline: { type: 'dashed' } }, measure(note('C4', 'w')))));
+    const layout = layoutModern(mnx({}, withGlobal({ barline: { type: 'dashed' } }, measure(note('C4', 'w')))));
     const staffTop = layout.systems[0]!.y;
     const dashes = layout.rects.filter((r) => r.cls === 'barline').sort((a, b) => a.y - b.y);
 
@@ -382,7 +390,7 @@ describe('chrome', () => {
 
 describe('stems and flags', () => {
   it('points stems away from the middle line and down when on it', () => {
-    const layout = layoutScore(mnx({}, measure(note('C4', 'q'), note('B4', 'q'), note('G5', 'h'))));
+    const layout = layoutModern(mnx({}, measure(note('C4', 'q'), note('B4', 'q'), note('G5', 'h'))));
     const staffTop = layout.systems[0]!.y;
     const stems = layout.rects.filter((r) => r.cls === 'stem').sort((a, b) => a.x - b.x);
 
@@ -395,7 +403,7 @@ describe('stems and flags', () => {
   });
 
   it('flags an unbeamed run shorter than a quarter', () => {
-    const layout = layoutScore(mnx({}, measure(note('C4', '8'), rest('h.'))));
+    const layout = layoutModern(mnx({}, measure(note('C4', '8'), rest('h.'))));
     const flags = glyphsOf(layout, 'flag');
     expect(flags.map((g) => g.cp)).toEqual([cp('flag8thUp')]);
   });
@@ -418,7 +426,7 @@ function beamLineAt(points: readonly [number, number][], x: number): number {
 
 describe('beaming', () => {
   it("ends every beamed stem on its beam's outer edge", () => {
-    const layout = layoutScore(mnx({}, measure(note('C4', '8'), note('A5', '8'), note('D4', '8'), note('E4', '8'))));
+    const layout = layoutModern(mnx({}, measure(note('C4', '8'), note('A5', '8'), note('D4', '8'), note('E4', '8'))));
     const staffTop = layout.systems[0]!.y;
     const beamPath = layout.paths.find((p) => p.cls === 'beam')!;
     const [, , far1, far0] = pathPoints(beamPath.d);
@@ -435,14 +443,14 @@ describe('beaming', () => {
   });
 
   it('never shortens a beamed stem past MIN_STEM (3.0sp)', () => {
-    const layout = layoutScore(mnx({}, measure(note('A4', '8'), note('B4', '8'), note('C5', '8'), note('C5', '8'))));
+    const layout = layoutModern(mnx({}, measure(note('A4', '8'), note('B4', '8'), note('C5', '8'), note('C5', '8'))));
     const stems = layout.rects.filter((r) => r.cls === 'stem');
     expect(stems.length).toBeGreaterThan(0);
     for (const stem of stems) expect(stem.h).toBeGreaterThanOrEqual(3.0 - 1e-6);
   });
 
   it('shares one stem direction across a beam group', () => {
-    const layout = layoutScore(mnx({}, measure(note('C4', '8'), note('F5', '8'), rest('h'))));
+    const layout = layoutModern(mnx({}, measure(note('C4', '8'), note('F5', '8'), rest('h'))));
     const stems = layout.rects.filter((r) => r.cls === 'stem').sort((a, b) => a.x - b.x);
     expect(stems).toHaveLength(2);
     const staffTop = layout.systems[0]!.y;
@@ -459,13 +467,13 @@ describe('beaming', () => {
   });
 
   it('hooks a dotted-eighth + sixteenth toward the dotted note', () => {
-    const layout = layoutScore(mnx({}, measure(note('C4', '8.'), note('D4', '16'), rest('h'))));
+    const layout = layoutModern(mnx({}, measure(note('C4', '8.'), note('D4', '16'), rest('h'))));
     const beamPaths = layout.paths.filter((p) => p.cls === 'beam');
     expect(beamPaths.length).toBeGreaterThanOrEqual(2);
   });
 
   it('bounds an outward-pointing explicit hook by the far gap, not the full 1.0sp stub', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         { time: { count: 4, unit: 16 } },
         withPart(
@@ -504,7 +512,7 @@ describe('beaming', () => {
 
 describe('breath marks', () => {
   it('draws the mark just past the note, above the staff, without consuming time', () => {
-    const layout = layoutScore(fixture('breath'));
+    const layout = layoutModern(fixture('breath'));
     const staffTop = layout.systems[0]!.y;
     const marks = glyphsOf(layout, 'breath');
     const notes = boxes(layout).sort((a, b) => a.tick - b.tick);
@@ -523,7 +531,7 @@ describe('breath marks', () => {
   it('widens the note’s column so the following one moves right', () => {
     const xs = (breath: boolean): number[] =>
       boxes(
-        layoutScore(
+        layoutModern(
           mnx(
             {},
             measure(note('C4', '8', breath ? { markings: { breath: {} } } : {}), note('A4', '8'), note('E4', 'h.')),
@@ -569,7 +577,7 @@ function xRange(g: GlyphRun, name: string): [number, number] {
 
 describe('two voices', () => {
   it('forces v0 stems up and v1 stems down only in a two-voice measure', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         voices([n('A5', 'h', 'hi0'), n('A5', 'h', 'hi1')], [n('C4', 'h', 'lo0'), n('C4', 'h', 'lo1')]),
@@ -589,7 +597,7 @@ describe('two voices', () => {
   });
 
   it('lets an explicit MNX stemDirection win over the voice direction', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         voices(
@@ -606,7 +614,7 @@ describe('two voices', () => {
   });
 
   it('beams each voice separately in its forced direction', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         voices([n('A5', '8', 'a'), n('B5', '8', 'b'), rest('h.')], [n('C4', '8', 'c'), n('D4', '8', 'd'), rest('h.')]),
@@ -632,7 +640,7 @@ describe('two voices', () => {
   });
 
   it('offsets rests one space up (v0) and down (v1) unless MNX gives a staff position', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         voices(
@@ -655,7 +663,7 @@ describe('two voices', () => {
   });
 
   it('keeps simultaneous rests bbox-clear for several durations, snapped to whole staff spaces', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         voices([rest('w', { id: 'w0' })], [rest('w', { id: 'w1' })]),
@@ -679,7 +687,7 @@ describe('two voices', () => {
   });
 
   it('puts the dot of a v1 note on a line in the space below', () => {
-    const layout = layoutScore(mnx({}, voices([n('B4', 'h.', 'up'), rest('q')], [n('G4', 'h.', 'down'), rest('q')])));
+    const layout = layoutModern(mnx({}, voices([n('B4', 'h.', 'up'), rest('q')], [n('G4', 'h.', 'down'), rest('q')])));
     const staffTop = layout.systems[0]!.y;
     const dotY = (id: string): number => +(glyphsOf(layout, 'dot').find((g) => g.el === id)!.y - staffTop).toFixed(3);
 
@@ -688,7 +696,7 @@ describe('two voices', () => {
   });
 
   it('shares one column x for same-tick elements of both voices', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx({}, voices([n('E5', 'h', 'top'), n('E5', 'h', 'top2')], [n('E4', 'h', 'bottom'), n('E4', 'h', 'bottom2')])),
     );
 
@@ -698,7 +706,7 @@ describe('two voices', () => {
   });
 
   it('keeps a same-glyph unison on one x, each voice with its own ElementBox', () => {
-    const layout = layoutScore(mnx({}, voices([n('C5', 'h', 'u0'), rest('h')], [n('C5', 'h', 'u1'), rest('h')])));
+    const layout = layoutModern(mnx({}, voices([n('C5', 'h', 'u0'), rest('h')], [n('C5', 'h', 'u1'), rest('h')])));
     const heads = glyphsOf(layout, 'notehead');
 
     expect(box(layout, 'u0').x).toBeCloseTo(box(layout, 'u1').x, 6);
@@ -708,12 +716,12 @@ describe('two voices', () => {
   });
 
   it('shifts v1 right of a unison with a different notehead glyph or dot count', () => {
-    const glyphs = layoutScore(
+    const glyphs = layoutModern(
       mnx({}, voices([n('C5', 'h', 'g0'), rest('h')], [n('C5', 'q', 'g1'), rest('q'), rest('h')])),
     );
     expect(box(glyphs, 'g1').x - box(glyphs, 'g0').x).toBeCloseTo(glyphAdvanceWidth('noteheadHalf'), 6);
 
-    const dots = layoutScore(
+    const dots = layoutModern(
       mnx(
         {},
         voices([n('C5', 'q.', 'd0'), n('C5', '8', 'd0b'), rest('h')], [n('C5', 'q', 'd1'), rest('q'), rest('h')]),
@@ -727,7 +735,7 @@ describe('two voices', () => {
 
 describe('diagnostics', () => {
   it('carries normalize and temporal diagnostics through and lays out a second voice', () => {
-    const layout = layoutScore(mnx({}, measure(note('C4', 'w')), voices([note('C4', 'q')], [note('E4', 'q')])));
+    const layout = layoutModern(mnx({}, measure(note('C4', 'w')), voices([note('C4', 'q')], [note('E4', 'q')])));
     const codes = layout.diagnostics.map((d) => d.code);
 
     expect(codes).toContain('measure-underfull');
@@ -738,15 +746,15 @@ describe('diagnostics', () => {
   });
 
   it('never throws on a malformed document', () => {
-    expect(() => layoutScore(undefined as never)).not.toThrow();
-    expect(() => layoutScore({} as never)).not.toThrow();
-    expect(layoutScore({} as never).systems).toEqual([]);
+    expect(() => layoutModern(undefined as never)).not.toThrow();
+    expect(() => layoutModern({} as never)).not.toThrow();
+    expect(layoutModern({} as never).systems).toEqual([]);
   });
 });
 
 describe('timemap', () => {
   it('mirrors ElementBox addressing and defaults to 120bpm', () => {
-    const layout = layoutScore(mnx({}, measure(chord(['C4', 'E4'], 'h'), note('G4', 'h'))));
+    const layout = layoutModern(mnx({}, measure(chord(['C4', 'E4'], 'h'), note('G4', 'h'))));
     const tm = layout.timemap;
 
     expect(tm.divisions).toBe(3360);
@@ -768,7 +776,7 @@ describe('timemap', () => {
   });
 
   it('highlights the tie continuation on its own written span, not the tie head', () => {
-    const layout = layoutScore(fixture('tie-merge'));
+    const layout = layoutModern(fixture('tie-merge'));
     const tm = layout.timemap;
 
     expect(tm.activeAt(6720)).toEqual(['c-start']);
@@ -777,7 +785,7 @@ describe('timemap', () => {
   });
 
   it('carries both voices, with entries and active ids at a shared tick', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         voices(
@@ -799,13 +807,13 @@ describe('timemap', () => {
   });
 
   it('merges a tie within one voice while the other voice moves', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         voices([n('C5', 'h', 't0'), n('C5', 'h', 't1')], [n('E4', 'q', 'm0'), n('F4', 'q', 'm1'), n('G4', 'h', 'm2')]),
       ),
     );
-    const tied = layoutScore(
+    const tied = layoutModern(
       mnx(
         {},
         voices(
@@ -823,11 +831,11 @@ describe('timemap', () => {
   });
 
   it('follows a custom tempo map', () => {
-    expect(layoutScore(fixture('tempo')).timemap.tickToSeconds(3360)).toBeCloseTo(1, 6);
+    expect(layoutModern(fixture('tempo')).timemap.tickToSeconds(3360)).toBeCloseTo(1, 6);
   });
 
   it('accepts a constant-tempo override on the seconds conversions, default unchanged', () => {
-    const tm = layoutScore(fixture('tempo')).timemap;
+    const tm = layoutModern(fixture('tempo')).timemap;
 
     expect(tm.tickToSeconds(6720)).toBeCloseTo(2, 6);
     expect(tm.secondsToTick(2)).toBeCloseTo(6720, 6);
@@ -842,7 +850,7 @@ describe('timemap', () => {
 
 describe('purity and glyph coverage', () => {
   it('resolves every emitted glyph to a real codepoint', () => {
-    const layout = layoutScore(fixture('repeat-alto'));
+    const layout = layoutModern(fixture('repeat-alto'));
     expect(layout.glyphs.length).toBeGreaterThan(0);
     expect(layout.glyphs.every((g) => g.cp >= 0xe000)).toBe(true);
   });
@@ -850,7 +858,7 @@ describe('purity and glyph coverage', () => {
 
 describe('tuplets', () => {
   it('draws a bracket when the span cannot beam (quarters)', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         measure(
@@ -865,14 +873,14 @@ describe('tuplets', () => {
   });
 
   it('draws a bracket when a rest sits inside an otherwise-beamable span', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx({}, measure(tuplet([3, '8'], [2, '8'], note('C4', '8'), rest('8'), note('D4', '8')), rest('h'), rest('q'))),
     );
     expect(layout.rects.filter((r) => r.cls === 'tuplet-bracket')).not.toHaveLength(0);
   });
 
   it('draws a bracket when only part of the span is beamed', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         withPart(
@@ -899,7 +907,7 @@ describe('tuplets', () => {
       ...tuplet([3, '8'], [2, '8'], note('C4', '8'), note('D4', '8'), note('E4', '8')),
       bracket: 'yes' as const,
     };
-    const layout = layoutScore(mnx({}, measure(forced, rest('h'), rest('q'))));
+    const layout = layoutModern(mnx({}, measure(forced, rest('h'), rest('q'))));
     expect(layout.rects.filter((r) => r.cls === 'tuplet-bracket')).not.toHaveLength(0);
   });
 
@@ -908,7 +916,7 @@ describe('tuplets', () => {
       ...tuplet([3, 'q'], [2, 'q'], note('C4', 'q'), note('D4', 'q'), note('E4', 'q')),
       bracket: 'no' as const,
     };
-    const layout = layoutScore(mnx({}, measure(forced, note('F4', 'q'), note('G4', 'q'))));
+    const layout = layoutModern(mnx({}, measure(forced, note('F4', 'q'), note('G4', 'q'))));
     expect(layout.rects.filter((r) => r.cls === 'tuplet-bracket')).toHaveLength(0);
   });
 
@@ -917,7 +925,7 @@ describe('tuplets', () => {
       ...tuplet([3, 'q'], [2, 'q'], note('C4', 'q'), note('D4', 'q'), note('E4', 'q')),
       showNumber: 'noNumber' as const,
     };
-    const layout = layoutScore(mnx({}, measure(silent, note('F4', 'q'), note('G4', 'q'))));
+    const layout = layoutModern(mnx({}, measure(silent, note('F4', 'q'), note('G4', 'q'))));
     expect(layout.glyphs.filter((g) => g.cls === 'tuplet-number')).toHaveLength(0);
   });
 
@@ -926,7 +934,7 @@ describe('tuplets', () => {
       ...tuplet([3, 'q'], [2, 'q'], note('C4', 'q'), note('D4', 'q'), note('E4', 'q')),
       showNumber: 'both' as const,
     };
-    const layout = layoutScore(mnx({}, measure(both, note('F4', 'q'), note('G4', 'q'))));
+    const layout = layoutModern(mnx({}, measure(both, note('F4', 'q'), note('G4', 'q'))));
     const numerals = layout.glyphs.filter((g) => g.cls === 'tuplet-number');
     expect(numerals).toHaveLength(3);
   });
@@ -934,7 +942,7 @@ describe('tuplets', () => {
 
 describe('viewBox', () => {
   it('covers every system', () => {
-    const layout = layoutScore(fixture('system-break'));
+    const layout = layoutModern(fixture('system-break'));
     const last = layout.systems[layout.systems.length - 1]!;
     expect(layout.viewBox.h).toBeGreaterThanOrEqual(last.y + last.h);
     expect(layout.viewBox.w).toBeGreaterThanOrEqual(Math.max(...layout.systems.map((s) => s.w)));
@@ -963,14 +971,14 @@ function tieArchFromPath(d: string): number {
 
 describe('ties', () => {
   it('draws one tie path across a barline, named after the source note', () => {
-    const layout = layoutScore(fixture('golden-ties-barline'));
+    const layout = layoutModern(fixture('golden-ties-barline'));
     const ties = layout.paths.filter((p) => p.cls === 'tie');
     expect(ties).toHaveLength(1);
     expect(ties[0]!.el!.endsWith('.tie')).toBe(true);
   });
 
   it('draws two half-ties across a system break, sharing one id', () => {
-    const layout = layoutScore(fixture('golden-ties-system-break'));
+    const layout = layoutModern(fixture('golden-ties-system-break'));
     const ties = layout.paths.filter((p) => p.cls === 'tie');
     expect(ties).toHaveLength(2);
     expect(ties[0]!.el).toBe(ties[1]!.el);
@@ -979,7 +987,7 @@ describe('ties', () => {
   });
 
   it('arches chord ties outward, inner notes following the nearest outer', () => {
-    const layout = layoutScore(fixture('golden-ties-chord'));
+    const layout = layoutModern(fixture('golden-ties-chord'));
     const ties = layout.paths.filter((p) => p.cls === 'tie');
     expect(ties).toHaveLength(3);
     const arch = (d: string): number => {
@@ -994,17 +1002,17 @@ describe('ties', () => {
 
   it('keeps tie ids stable across a re-layout of the same document', () => {
     const doc = fixture('golden-ties-barline');
-    const a = layoutScore(doc)
+    const a = layoutModern(doc)
       .paths.filter((p) => p.cls === 'tie')
       .map((p) => p.el);
-    const b = layoutScore(doc)
+    const b = layoutModern(doc)
       .paths.filter((p) => p.cls === 'tie')
       .map((p) => p.el);
     expect(a).toEqual(b);
   });
 
   it('warns, but still draws, a tie whose target skips an intervening note', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         measure(note('C4', 'q'), note('E5', 'q', {}, { ties: [{ target: 'held' }] }), note('D4', 'h')),
@@ -1016,7 +1024,7 @@ describe('ties', () => {
   });
 
   it('nudges a tie endpoint off a staff line into the adjacent space', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         measure(rest('h'), note('A4', 'h', {}, { ties: [{ target: 'held' }] })),
@@ -1040,7 +1048,7 @@ describe('ties', () => {
   });
 
   it('raises the arch when its apex would graze a staff line', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         measure(rest('h'), note('A4', 'h', {}, { ties: [{ target: 'held' }] })),
@@ -1072,7 +1080,7 @@ describe('slurs', () => {
       const slur = layout.paths.find((p) => p.cls === 'slur')!;
       return tieArchFromPath(slur.d);
     };
-    const withLeap = layoutScore(
+    const withLeap = layoutModern(
       mnx(
         {},
         measure(
@@ -1083,7 +1091,7 @@ describe('slurs', () => {
         ),
       ),
     );
-    const withoutLeap = layoutScore(
+    const withoutLeap = layoutModern(
       mnx(
         {},
         measure(
@@ -1102,7 +1110,7 @@ describe('slurs', () => {
       const slur = layout.paths.find((p) => p.cls === 'slur')!;
       return tieArchFromPath(slur.d);
     };
-    const withBeam = layoutScore(
+    const withBeam = layoutModern(
       mnx(
         {},
         withPart(
@@ -1117,7 +1125,7 @@ describe('slurs', () => {
         ),
       ),
     );
-    const withoutBeam = layoutScore(
+    const withoutBeam = layoutModern(
       mnx(
         {},
         measure(
@@ -1132,7 +1140,7 @@ describe('slurs', () => {
   });
 
   it('honours an explicit MNX side over the automatic direction', () => {
-    const up = layoutScore(
+    const up = layoutModern(
       mnx(
         {},
         measure(
@@ -1143,7 +1151,7 @@ describe('slurs', () => {
         ),
       ),
     );
-    const down = layoutScore(
+    const down = layoutModern(
       mnx(
         {},
         measure(
@@ -1159,7 +1167,7 @@ describe('slurs', () => {
   });
 
   it('anchors a slur startNote on a chord member, not the automatic anchor', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         measure(
@@ -1205,14 +1213,14 @@ describe('slurs', () => {
       ],
       scores: [{ name: 'Exercise', pages: [{ systems: [{ measure: 'm1' }, { measure: 'm2' }] }] }],
     };
-    const layout = layoutScore(doc);
+    const layout = layoutModern(doc);
     const slurs = layout.paths.filter((p) => p.cls === 'slur');
     expect(slurs).toHaveLength(2);
     expect(slurs[0]!.el).toBe(slurs[1]!.el);
   });
 
   it('warns and draws nothing when a slur target is unresolved', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx({}, measure(note('C4', 'q', { slurs: [{ target: 'missing' }] }), rest('q'), rest('h'))),
     );
     expect(layout.paths.filter((p) => p.cls === 'slur')).toHaveLength(0);
@@ -1239,7 +1247,7 @@ describe('slur clearance and anchors', () => {
   };
 
   it('clears an intermediate beam when the slur endpoints differ greatly in height', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         measure(
@@ -1267,7 +1275,7 @@ describe('slur clearance and anchors', () => {
   });
 
   it('anchors an automatic downward slur on the bottom chord member', () => {
-    const layout = layoutScore(
+    const layout = layoutModern(
       mnx(
         {},
         measure(
@@ -1291,9 +1299,67 @@ describe('slur clearance and anchors', () => {
   it('reports an invalid tempo bpm instead of silently dropping it', () => {
     const doc = mnx({}, measure(note('C4', 'w')));
     doc.global.measures[0]!.tempos = [{ bpm: -5 }] as never;
-    const layout = layoutScore(doc);
+    const layout = layoutModern(doc);
     expect(
       layout.diagnostics.some((d) => d.code === 'mnx-unsupported' && d.message.includes('invalid tempo bpm')),
     ).toBe(true);
   });
+});
+
+describe('font family', () => {
+  const values = mnx(
+    { time: { count: 2, unit: 1 } },
+    measure(note('C4', 'b'), note('D4', 'b')),
+    measure(note('E4', 'w'), note('F4', 'h'), note('G4', 'q'), note('A4', 'q')),
+  );
+  const noteheadCps = (layout: LayoutResult): number[] =>
+    glyphsOf(layout, 'notehead')
+      .map((g) => g.cp)
+      .sort((a, b) => a - b);
+
+  it('engraves values as white mensural shapes when asked', () => {
+    expect(noteheadCps(layoutScore(values, { font: 'mensural' }))).toEqual([
+      0xe93c, 0xe93d, 0xe93d, 0xe95e, 0xe962,
+    ]);
+  });
+
+  it('engraves mensural unless a family is asked for', () => {
+    expect(noteheadCps(layoutScore(values))).toEqual([0xe93c, 0xe93d, 0xe93d, 0xe95e, 0xe962]);
+    expect(noteheadCps(layoutScore(values, { font: 'modern' }))).toEqual([0xe0a0, 0xe0a2, 0xe0a3, 0xe0a4, 0xe0a4]);
+  });
+
+  it('centres a lozenge stem on the notehead, unlike a round one', () => {
+    const offset = (font: 'modern' | 'mensural', pitch: string): number => {
+      const layout = layoutScore(mnx({}, measure(note(pitch, 'q'))), { font });
+      const head = Object.values(layout.elements).find((b) => b.kind === 'note')!;
+      const stem = layout.rects.find((r) => r.cls === 'stem')!;
+      return stem.x + stem.w / 2 - (head.x + head.w / 2);
+    };
+
+    expect(offset('mensural', 'B4')).toBe(0);
+    expect(offset('mensural', 'D4')).toBe(0);
+    expect(offset('modern', 'B4')).not.toBe(0);
+  });
+
+  it('buries a lozenge stem just past its vertex, not on it and not deeper', () => {
+    const burial = (pitch: string): { depth: number; limit: number } => {
+      const layout = layoutScore(mnx({}, measure(note(pitch, 'q'))), { font: 'mensural' });
+      const head = Object.values(layout.elements).find((b) => b.kind === 'note')!;
+      const stem = layout.rects.find((r) => r.cls === 'stem')!;
+      const { bBoxNE, bBoxSW } = glyphBBox('mensuralNoteheadSemiminimaWhite', 'mensural');
+      const centre = head.y + head.h / 2;
+      const end = Math.abs(stem.y - centre) < Math.abs(stem.y + stem.h - centre) ? stem.y : stem.y + stem.h;
+      const up = end < centre;
+      const halfHeight = up ? bBoxNE[1] : -bBoxSW[1];
+      const vertex = up ? centre - halfHeight : centre + halfHeight;
+      return { depth: up ? end - vertex : vertex - end, limit: halfHeight / 2 };
+    };
+
+    for (const pitch of ['D4', 'B4']) {
+      const { depth, limit } = burial(pitch);
+      expect(depth).toBeGreaterThan(0);
+      expect(depth).toBeLessThan(limit);
+    }
+  });
+
 });

@@ -74,14 +74,14 @@ describe('golden fixtures', () => {
   });
 
   it.each(fixtureNames)('%s', async (name) => {
-    const layout = layoutScore(loadFixture(name));
+    const layout = layoutScore(loadFixture(name), { font: 'modern' });
     await expect(golden(layout)).toMatchFileSnapshot(`__golden__/${name}.json`);
   });
 });
 
 describe('golden official examples', () => {
   it.each(SELECTED_EXAMPLES)('%s', async (name) => {
-    const layout = layoutScore(loadExample(name));
+    const layout = layoutScore(loadExample(name), { font: 'modern' });
     await expect(golden(layout)).toMatchFileSnapshot(`__golden__/example-${name}.json`);
   });
 });

@@ -1,5 +1,8 @@
+import type { FontFamily } from './font/glyphs.js';
+
 export interface NotationOptions {
   divisions?: number;
+  font?: FontFamily;
   spacing?: { k?: number; base?: number };
   beaming?: { mergeBeats?: boolean; beatGrouping?: Readonly<Record<string, readonly number[]>> };
   accidentals?: {

@@ -1,6 +1,7 @@
 import type { Pitch as MnxPitch } from '@polyhymnia/notation-model';
 import { engravingDefaults, glyphAdvanceWidth } from '../font/metadata.js';
 import { glyphCodepoint } from '../font/glyphs.js';
+import { DEFAULT_FONT, type FontFamily } from '../font/glyphs.js';
 import { stepNumber, type Alter, type StaffPitch } from '../layout/records.js';
 import { STAFF_HEIGHT, accidentalGlyph, keyAlterOf, staffPositionOf } from '../layout/staff.js';
 import type { GlyphRun, LayoutResult, RectShape } from '../layout/types.js';
@@ -35,6 +36,7 @@ function ledgerRect(x: number, y: number, width: number): RectShape {
 export function previewShapes(
   layout: LayoutResult,
   preview: PreviewNote,
+  family: FontFamily = DEFAULT_FONT,
 ): { glyphs: readonly GlyphRun[]; rects: readonly RectShape[] } {
   const measureBox = layout.measures.find((m) => m.index === preview.measureIndex);
   if (!measureBox) return { glyphs: [], rects: [] };
@@ -49,7 +51,7 @@ export function previewShapes(
   const rects: RectShape[] = [];
 
   const noteheadName = 'noteheadBlack';
-  glyphs.push({ x: preview.x, y, cp: glyphCodepoint(noteheadName) ?? 0, cls: 'preview-notehead' });
+  glyphs.push({ x: preview.x, y, cp: glyphCodepoint(noteheadName, family) ?? 0, cls: 'preview-notehead' });
 
   const width = glyphAdvanceWidth(noteheadName);
   if (staffPosition < 0) {
@@ -69,7 +71,7 @@ export function previewShapes(
     glyphs.push({
       x: preview.x - accWidth - 0.2,
       y,
-      cp: glyphCodepoint(glyphName) ?? 0,
+      cp: glyphCodepoint(glyphName, family) ?? 0,
       cls: 'preview-accidental',
     });
   }

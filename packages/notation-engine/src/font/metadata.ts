@@ -1,4 +1,6 @@
 import raw from './metadata.json' with { type: 'json' };
+import mensuralRaw from './metadata.mensural.json' with { type: 'json' };
+import { DEFAULT_FONT, type FontFamily } from './glyphs.js';
 
 export type GlyphName = keyof typeof raw.glyphAdvanceWidths;
 
@@ -52,26 +54,36 @@ interface FontMetadata {
 }
 
 const fontMetadata: FontMetadata = raw as unknown as FontMetadata;
+const mensuralMetadata: FontMetadata = mensuralRaw as unknown as FontMetadata;
+
+function metadataFor(family: FontFamily): FontMetadata {
+  return family === 'mensural' ? mensuralMetadata : fontMetadata;
+}
 
 export const engravingDefaults: EngravingDefaults = fontMetadata.engravingDefaults;
 
-export function glyphAdvanceWidth(name: GlyphName | string): number {
-  return fontMetadata.glyphAdvanceWidths[name] ?? 0;
+export function engravingDefaultsFor(family: FontFamily = DEFAULT_FONT): EngravingDefaults {
+  return metadataFor(family).engravingDefaults;
+}
+
+export function glyphAdvanceWidth(name: GlyphName | string, family: FontFamily = DEFAULT_FONT): number {
+  return metadataFor(family).glyphAdvanceWidths[name] ?? 0;
 }
 
 const EMPTY_BBOX: GlyphBBox = { bBoxNE: [0, 0], bBoxSW: [0, 0] };
 
-export function glyphBBox(name: GlyphName | string): GlyphBBox {
-  return fontMetadata.glyphBBoxes[name] ?? EMPTY_BBOX;
+export function glyphBBox(name: GlyphName | string, family: FontFamily = DEFAULT_FONT): GlyphBBox {
+  return metadataFor(family).glyphBBoxes[name] ?? EMPTY_BBOX;
 }
 
-function glyphAnchors(name: GlyphName | string): GlyphAnchors | undefined {
-  return fontMetadata.glyphsWithAnchors[name];
+function glyphAnchors(name: GlyphName | string, family: FontFamily): GlyphAnchors | undefined {
+  return metadataFor(family).glyphsWithAnchors[name];
 }
 
 export function glyphAnchor(
   name: GlyphName | string,
   anchor: string,
+  family: FontFamily = DEFAULT_FONT,
 ): readonly [number, number] | undefined {
-  return glyphAnchors(name)?.[anchor];
+  return glyphAnchors(name, family)?.[anchor];
 }

@@ -1,3 +1,11 @@
+export type FontFamily = 'modern' | 'mensural';
+
+/**
+ * Family used when the caller does not choose one. Mensural is the house look:
+ * the modern family is kept only as an explicit opt-in.
+ */
+export const DEFAULT_FONT: FontFamily = 'mensural';
+
 export const GLYPH_CODEPOINT: Record<string, number> = {
   gClef: 0xe050,
   gClef8vb: 0xe052,
@@ -71,6 +79,25 @@ export const GLYPH_CODEPOINT: Record<string, number> = {
   caesura: 0xe4d1,
 };
 
-export function glyphCodepoint(name: string): number | undefined {
+export function glyphCodepoint(name: string, family: FontFamily = DEFAULT_FONT): number | undefined {
+  if (family === 'mensural') return MENSURAL_CODEPOINT[name] ?? GLYPH_CODEPOINT[name];
   return GLYPH_CODEPOINT[name];
 }
+
+const MENSURAL_CODEPOINT: Record<string, number> = {
+  mensuralWhiteBrevis: 0xe95e,
+  mensuralWhiteSemibrevis: 0xe962,
+  mensuralWhiteMinima: 0xe95f,
+  mensuralWhiteSemiminima: 0xe960,
+  mensuralWhiteFusa: 0xe961,
+  mensuralNoteheadLongaWhite: 0xe937,
+  mensuralNoteheadMinimaWhite: 0xe93c,
+  mensuralNoteheadSemiminimaWhite: 0xe93d,
+  mensuralRestMaxima: 0xe9f0,
+  mensuralRestLongaPerfecta: 0xe9f1,
+  mensuralRestSemibrevis: 0xe9f4,
+  mensuralRestMinima: 0xe9f5,
+  mensuralRestSemiminima: 0xe9f6,
+  mensuralRestFusa: 0xe9f7,
+  mensuralRestSemifusa: 0xe9f8,
+};

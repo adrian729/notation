@@ -1,4 +1,5 @@
 import { engravingDefaults, glyphAdvanceWidth, glyphAnchor, glyphBBox } from '../font/metadata.js';
+import { DEFAULT_FONT, type FontFamily } from '../font/glyphs.js';
 import type { NotationOptions } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/notation-model';
 import type {
@@ -25,7 +26,7 @@ const DOT_GAP = 0.2;
 const DOT_SPACING = 0.1;
 const BREATH_GAP = 0.35;
 
-const NOTEHEAD_GLYPH: Record<DurationBase, string> = {
+const MODERN_NOTEHEAD_GLYPH: Record<DurationBase, string> = {
   breve: 'noteheadDoubleWhole',
   whole: 'noteheadWhole',
   half: 'noteheadHalf',
@@ -36,7 +37,26 @@ const NOTEHEAD_GLYPH: Record<DurationBase, string> = {
   '64th': 'noteheadBlack',
 };
 
-const REST_GLYPH: Record<DurationBase, string> = {
+// Both tables are keyed by the whole DurationBase, and both are exhaustive on it.
+// Longa and maxima therefore have nowhere to land: the outlines are subset into
+// the mensural family, but extending DurationBase is a product decision about
+// which note values ear training should offer, so it is not an engraving fix.
+const MENSURAL_NOTEHEAD_GLYPH: Record<DurationBase, string> = {
+  breve: 'mensuralWhiteBrevis',
+  whole: 'mensuralWhiteSemibrevis',
+  half: 'mensuralNoteheadMinimaWhite',
+  quarter: 'mensuralNoteheadSemiminimaWhite',
+  eighth: 'mensuralNoteheadSemiminimaWhite',
+  '16th': 'mensuralNoteheadSemiminimaWhite',
+  '32nd': 'mensuralNoteheadSemiminimaWhite',
+  '64th': 'mensuralNoteheadSemiminimaWhite',
+};
+
+function noteheadGlyph(base: DurationBase, family: FontFamily): string {
+  return (family === 'mensural' ? MENSURAL_NOTEHEAD_GLYPH : MODERN_NOTEHEAD_GLYPH)[base]!;
+}
+
+const MODERN_REST_GLYPH: Record<DurationBase, string> = {
   breve: 'restDoubleWhole',
   whole: 'restWhole',
   half: 'restHalf',
@@ -46,6 +66,21 @@ const REST_GLYPH: Record<DurationBase, string> = {
   '32nd': 'rest32nd',
   '64th': 'rest64th',
 };
+
+const MENSURAL_REST_GLYPH: Record<DurationBase, string> = {
+  breve: 'mensuralRestLongaPerfecta',
+  whole: 'mensuralRestSemibrevis',
+  half: 'mensuralRestMinima',
+  quarter: 'mensuralRestSemiminima',
+  eighth: 'mensuralRestFusa',
+  '16th': 'mensuralRestSemifusa',
+  '32nd': 'mensuralRestSemifusa',
+  '64th': 'mensuralRestSemifusa',
+};
+
+function restGlyph(base: DurationBase, family: FontFamily): string {
+  return (family === 'mensural' ? MENSURAL_REST_GLYPH : MODERN_REST_GLYPH)[base]!;
+}
 
 const FLAG_GLYPH: Partial<Record<DurationBase, readonly [string, string]>> = {
   eighth: ['flag8thUp', 'flag8thDown'],
@@ -128,10 +163,11 @@ export function vertical(
   normalized: NormalizedScore,
   score: TemporalScore,
   resolved: AccidentalScore,
-  _options?: NotationOptions,
+  options?: NotationOptions,
 ): VerticalScore {
   const diagnostics: Diagnostic[] = [];
   const elements: VerticalElement[] = [];
+  const family = options?.font ?? DEFAULT_FONT;
   const twoVoice = twoVoiceMeasures(score);
   const upVoice = computeUpVoice(normalized, score, twoVoice);
   const elementBeam = beamDirectionsByElement(normalized, score, twoVoice, upVoice, diagnostics);
@@ -143,7 +179,7 @@ export function vertical(
       const key = measureKey(staff.index, measure.index);
       const shared = twoVoice.has(key);
       const laidOut = rows.map((row) =>
-        layOut(row, measure, resolved, shared, upVoice.get(key) ?? 0, elementBeam.get(row.id)),
+        layOut(row, measure, resolved, shared, upVoice.get(key) ?? 0, elementBeam.get(row.id), family),
       );
       if (shared) {
         resolveSharedTicks(laidOut);
@@ -289,6 +325,7 @@ function layOut(
   shared: boolean,
   upVoice: 0 | 1,
   beamInfo?: BeamMembership,
+  family: FontFamily = DEFAULT_FONT,
 ): VerticalElement {
   const duration: Duration = {
     base: row.base,
@@ -309,7 +346,7 @@ function layOut(
   };
 
   if (row.kind === 'rest') {
-    const rest = layOutRest(row, duration, shared, upVoice);
+    const rest = layOutRest(row, duration, shared, upVoice, family);
     return {
       ...base,
       noteheads: [],
@@ -320,8 +357,8 @@ function layOut(
   }
 
   const notes = row.notes;
-  const glyph = NOTEHEAD_GLYPH[duration.base] ?? 'noteheadBlack';
-  const width = glyphAdvanceWidth(glyph);
+  const glyph = noteheadGlyph(duration.base, family);
+  const width = glyphAdvanceWidth(glyph, family);
   const heads = notes.map((note) => ({
     note,
     staffPosition: staffPositionOf(note.pitch, measure.clef),
@@ -361,7 +398,7 @@ function layOut(
   });
 
   const leftWidth = packAccidentals(noteheads);
-  const stem = layOutStem(duration, dir, noteheads, row.stem, beamInfo !== undefined);
+  const stem = layOutStem(duration, dir, noteheads, row.stem, beamInfo !== undefined, family);
   const element: VerticalElement = {
     ...base,
     noteheads,
@@ -549,11 +586,17 @@ const REST_Y: Partial<Record<DurationBase, number>> = {
 };
 const REST_BASELINE = MIDDLE_LINE;
 
-function layOutRest(row: TemporalElement, duration: Duration, shared: boolean, upVoice: 0 | 1): RestLayout {
-  const glyph = row.wholeBar ? 'restWhole' : (REST_GLYPH[duration.base] ?? 'restQuarter');
+function layOutRest(
+  row: TemporalElement,
+  duration: Duration,
+  shared: boolean,
+  upVoice: 0 | 1,
+  family: FontFamily,
+): RestLayout {
+  const glyph = row.wholeBar ? 'restWhole' : restGlyph(duration.base, family);
   const anchor = row.wholeBar ? REST_Y.whole! : (REST_Y[duration.base] ?? REST_BASELINE);
   const y = row.staffPosition ?? anchor + (shared ? -voiceDirection(row.voice, upVoice) : 0);
-  const width = glyphAdvanceWidth(glyph);
+  const width = glyphAdvanceWidth(glyph, family);
   return {
     glyph,
     y,
@@ -604,13 +647,14 @@ function layOutStem(
   noteheads: readonly NoteheadLayout[],
   stemOverride: TemporalElement['stem'],
   beamed: boolean,
+  family: FontFamily,
 ): StemLayout | undefined {
   if (STEMLESS.has(duration.base) || noteheads.length === 0) return undefined;
   const glyph = noteheads[0]!.glyph;
   const thickness = stemThickness();
   const top = Math.min(...noteheads.map((n) => n.staffPosition));
   const bottom = Math.max(...noteheads.map((n) => n.staffPosition));
-  const anchor = glyphAnchor(glyph, dir === 1 ? 'stemUpSE' : 'stemDownNW');
+  const anchor = stemAnchor(glyph, dir, thickness, family);
   const attachX = anchor ? anchor[0] : dir === 1 ? noteheads[0]!.width : 0;
   const attachY = anchor ? -anchor[1] : 0;
 
@@ -633,6 +677,39 @@ function layOutStem(
 
 function stemThickness(): number {
   return engravingDefaults.stemThickness;
+}
+
+/**
+ * A round notehead takes its stem at the tangent point SMuFL records in
+ * `stemUpSE`/`stemDownNW`. A lozenge notehead instead takes it at the horizontal
+ * centre, and SMuFL does not record that: the lozenges carry no anchors, and
+ * where one is present it sits on the vertical midline at the bounding-box
+ * edge, exactly as for a round head. So the centred attachment is synthesised
+ * from the bounding box instead.
+ *
+ * A lozenge also meets the stem on its diagonal edges, so a stem stopping at the
+ * vertex leaves a white wedge between the stem's sides and the head. Burying it
+ * exactly to the depth where the lozenge has widened to the stem's own width
+ * closes that wedge with nothing to spare: any deeper and the stem reaches into
+ * the hollow of a white notehead.
+ */
+const LOZENGE_NOTEHEADS = new Set(['mensuralNoteheadMinimaWhite', 'mensuralNoteheadSemiminimaWhite']);
+
+function stemAnchor(
+  glyph: string,
+  dir: 1 | -1,
+  thickness: number,
+  family: FontFamily,
+): readonly [number, number] | undefined {
+  if (LOZENGE_NOTEHEADS.has(glyph)) {
+    const { bBoxNE, bBoxSW } = glyphBBox(glyph, family);
+    const halfWidth = (bBoxNE[0] + bBoxSW[0]) / 2;
+    const bury = (halfHeight: number): number => (halfHeight * (thickness / 2)) / halfWidth;
+    return dir === 1
+      ? [halfWidth + thickness / 2, bBoxNE[1] - bury(bBoxNE[1])]
+      : [halfWidth - thickness / 2, bBoxSW[1] + bury(-bBoxSW[1])];
+  }
+  return glyphAnchor(glyph, dir === 1 ? 'stemUpSE' : 'stemDownNW', family);
 }
 
 export function stemX(elementX: number, stem: StemLayout): number {
