@@ -41,24 +41,21 @@
   color: var(--pn-staff, #999);
 }
 
-/* Mensural printing ruled the staff in red. The ruling is held back from full
-   opacity so it sits with the page and lets the black notes on top of it stay
-   legible. Only the ruling is red; barlines go with the other signage below. */
-.pn-notation[data-pn-font='mensural'] [data-pn='staff-line'] {
+/* Mensural printing ruled the staff in red. Ledger lines rule the same way — they
+   are the staff reaching past its edge, not signage. The ruling is held back from
+   full opacity so it sits with the page and lets the black notes on it stay legible. */
+.pn-notation[data-pn-font='mensural'] :is([data-pn='staff-line'], [data-pn='ledger-line']) {
   color: var(--pn-staff-mensural, oklch(0.52 0.175 32));
   opacity: 0.6;
 }
 
 /* Non-note signage in lapis. Accidentals and dots go blue too — they belong to the
-   pitch, not to the notehead. Clefs, noteheads, stems, flags and beams stay ink:
-   a gold clef read as a different visual weight from everything around it. */
+   pitch, not to the notehead. Clefs, noteheads, stems, flags and beams stay ink. */
 .pn-notation[data-pn-font='mensural'] :is(
     [data-pn='barline'],
-    [data-pn='time-signature'],
     [data-pn='key-accidental'],
     [data-pn='accidental'],
     [data-pn='dot'],
-    [data-pn='ledger-line'],
     [data-pn='rest'],
     [data-pn='slur'],
     [data-pn='tie'],
@@ -66,6 +63,13 @@
     [data-pn='tuplet-number']
   ) {
   color: var(--pn-lapis-mensural, oklch(0.49 0.2 262));
+}
+
+/* The meter is the one place two digits stack, so they are told apart by value
+   rather than hue: count stays ink, beat unit goes gold. Two mid-tones of
+   different hue are not separable at this size; dark against mid is. */
+.pn-notation[data-pn-font='mensural'] [data-pn='time-signature-denominator'] {
+  color: var(--pn-gold-mensural, oklch(0.5 0.1 68));
 }
 .pn-notation [data-pn='element'] {
   outline: none;
