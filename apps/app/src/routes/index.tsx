@@ -50,7 +50,7 @@ function HomePage() {
       <header className="-mt-loose flex flex-col items-center gap-base text-center">
         <img src={LOGO_URL} alt="" className="size-[5.75rem] sm:size-30" />
         <div className="flex flex-col items-center gap-tight">
-          <h1 className="font-display text-[1.75rem] sm:text-[3rem]">
+          <h1 className="font-display text-title sm:text-display">
             <TitleText title="Polyhymnia" />
           </h1>
           <p className="max-w-[52ch] text-body text-muted-foreground">
@@ -77,10 +77,8 @@ function HomePage() {
                   {exercise.folio}
                 </span>
                 <span className="flex min-w-0 flex-col gap-tight">
-                  <span
-                    className="font-display text-subhead transition-colors group-hover:text-primary-strong"
-                  >
-                    {exercise.title}
+                  <span className="font-display text-heading text-primary-strong">
+                    <TitleText title={exercise.title} />
                   </span>
                   <span className="max-w-[64ch] text-body text-muted-foreground">{exercise.description}</span>
                 </span>
@@ -90,7 +88,7 @@ function HomePage() {
         </ol>
       </section>
 
-      <footer aria-hidden="true" className="border-t border-border pt-base">
+      <footer aria-hidden="true" className="pt-base">
         <Notation score={SALTARELLO} />
       </footer>
     </div>

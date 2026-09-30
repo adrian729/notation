@@ -72,7 +72,7 @@ export function LessonSummary<Q, A>({
             )}
           >
             <div className="flex items-center justify-between gap-4">
-              <span className="text-sm font-medium text-muted-foreground">
+              <span className="text-meta font-medium text-muted-foreground">
                 Question {i + 1} · {a.correct ? 'Correct' : `Wrong${summaryNote ? summaryNote(a) : ''}`}
               </span>
               <Button size="sm" variant="outline" onClick={() => onReplayQuestion(a.question)}>

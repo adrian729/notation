@@ -143,19 +143,19 @@ function CustomPage() {
                 aria-label={chord.name}
                 onClick={() => toggleChord(chord.id)}
                 className={cn(
-                  'flex flex-col items-center rounded-lg border px-2 py-1.5 text-sm leading-tight outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50',
+                  'flex flex-col items-center rounded-lg border px-2 py-1.5 text-meta leading-tight outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50',
                   checked
                     ? 'border-primary-strong bg-primary/15 font-medium text-primary-strong'
                     : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
                 )}
               >
                 <span>{chord.name}</span>
-                <span className="text-xs opacity-75">{chord.symbol}</span>
+                <span className="text-meta opacity-75">{chord.symbol}</span>
               </button>
             );
           })}
         </div>
-        <p className="text-xs text-muted-foreground">{selected.size} selected</p>
+        <p className="text-meta text-muted-foreground">{selected.size} selected</p>
       </Section>
 
       <Section

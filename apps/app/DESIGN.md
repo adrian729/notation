@@ -38,12 +38,12 @@ Four families, four roles, no overlap. Display and data come from `@fontsource-v
 
 | Token | Size | Line height | Tracking | Role |
 | --- | --- | --- | --- | --- |
-| `--text-display` | 3.5rem | 1.05 | −0.02em | Wordmark only |
-| `--text-title` | 2rem | 1.15 | −0.015em | `h1` |
-| `--text-heading` | 1.3125rem | 1.3 | −0.01em | `h2`, exercise titles |
-| `--text-subhead` | 1.0625rem | 1.4 | 0 | `h3`, card titles |
-| `--text-body` | 1rem | 1.6 | 0 | Prose, list rows |
-| `--text-meta` | 0.8125rem | 1.4 | 0.02em | Labels, captions, small print — uppercase only for section labels |
+| `--text-display` | 3.75rem | 1.05 | −0.02em | Wordmark only |
+| `--text-title` | 2.25rem | 1.15 | −0.015em | `h1` |
+| `--text-heading` | 1.5rem | 1.3 | −0.01em | `h2`, exercise titles |
+| `--text-subhead` | 1.3125rem | 1.4 | 0 | `h3`, card titles |
+| `--text-body` | 1.1875rem | 1.6 | 0 | Prose, list rows |
+| `--text-meta` | 1rem | 1.4 | 0.02em | Labels, captions, small print — uppercase only for section labels |
 
 Weights: 400 and 600 for text; 400/600/700 for display. No 500, no 800, no 900.
 

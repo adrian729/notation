@@ -62,7 +62,7 @@ export function SetChip({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex items-center gap-1 rounded-full border px-3 py-1 text-meta font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50',
         active ? 'border-primary-strong bg-primary/15 text-primary-strong' : 'border-border hover:bg-muted',
       )}
     >
@@ -72,7 +72,7 @@ export function SetChip({
 }
 
 export function SubHeading({ children }: { children: ReactNode }) {
-  return <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-strong">{children}</h3>;
+  return <h3 className="font-display text-meta font-semibold uppercase tracking-wider text-primary-strong">{children}</h3>;
 }
 
 export function HelpPopover({ label, children }: { label: string; children: ReactNode }) {
@@ -85,7 +85,7 @@ export function HelpPopover({ label, children }: { label: string; children: Reac
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-3 text-sm leading-relaxed"
+        className="flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-3 text-meta leading-relaxed"
       >
         {children}
       </PopoverContent>
@@ -142,8 +142,8 @@ export function OptionCard({
           ))}
       </span>
       <span className="flex flex-col gap-1">
-        <span className="text-sm font-medium">{title}</span>
-        <span className="text-xs leading-relaxed text-muted-foreground">{text}</span>
+        <span className="text-meta font-medium">{title}</span>
+        <span className="text-meta leading-relaxed text-muted-foreground">{text}</span>
       </span>
     </button>
   );
@@ -165,8 +165,8 @@ export function TempoSection({ tempo, onSelect }: { tempo: Tempo; onSelect: (tem
               option === tempo ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
             )}
           >
-            <span className="text-sm font-medium">{TEMPO_TITLE[option]}</span>
-            <span className={cn('text-xs tabular-nums', option === tempo ? 'opacity-80' : 'text-muted-foreground')}>
+            <span className="text-meta font-medium">{TEMPO_TITLE[option]}</span>
+            <span className={cn('text-meta tabular-nums', option === tempo ? 'opacity-80' : 'text-muted-foreground')}>
               {TEMPO_NOTE_DURATION[option]} s
             </span>
           </button>
@@ -190,7 +190,7 @@ export function RangeSection({
       <div className="grid grid-cols-2 gap-3">
         {(['low', 'high'] as const).map((end) => (
           <div key={end} className="flex flex-col gap-1.5">
-            <label id={`range-${end}`} className="text-xs font-medium text-muted-foreground">
+            <label id={`range-${end}`} className="text-meta font-medium text-muted-foreground">
               {end === 'low' ? 'Lowest note' : 'Highest note'}
             </label>
             <Select value={search[end]} onValueChange={(value) => update({ [end]: value })}>
@@ -267,7 +267,7 @@ export function QuestionsSection({
               onKeyDown={(e) => {
                 if (e.key === 'Enter') e.currentTarget.blur();
               }}
-              className="w-14 border-x border-input bg-transparent text-center text-base font-semibold tabular-nums outline-none"
+              className="w-14 border-x border-input bg-transparent text-center text-body font-semibold tabular-nums outline-none"
             />
             <button
               type="button"
@@ -296,7 +296,7 @@ export function QuestionsSection({
             </SetChip>
           </div>
         </div>
-        <p id="question-count-help" className="min-h-[2lh] text-xs text-muted-foreground sm:min-h-0">
+        <p id="question-count-help" className="min-h-[2lh] text-meta text-muted-foreground sm:min-h-0">
           {endless
             ? 'No question limit. Keep going until you press Finish.'
             : `The session ends after ${countValue} question${countValue === 1 ? '' : 's'} and shows your score. Any number from ${QUESTION_COUNT_MIN} to ${QUESTION_COUNT_MAX}.`}

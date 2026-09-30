@@ -63,9 +63,9 @@ export function CustomFrame({ lessonsTo, help, summary, errors, onReset, runner,
 
       <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 border-t bg-background/95 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
         {errors.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{summary.join(' · ')}</p>
+          <p className="text-meta text-muted-foreground">{summary.join(' · ')}</p>
         ) : (
-          <ul className="text-sm text-destructive" role="alert">
+          <ul className="text-meta text-destructive" role="alert">
             {errors.map((err) => (
               <li key={err}>{err}</li>
             ))}

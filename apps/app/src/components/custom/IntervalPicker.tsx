@@ -90,7 +90,7 @@ export function IntervalPicker({
       title="Intervals"
       description={description}
       action={
-        <div className="flex rounded-lg border border-border p-0.5 text-xs" role="group" aria-label="Interval names">
+        <div className="flex rounded-lg border border-border p-0.5 text-meta" role="group" aria-label="Interval names">
           {([false, true] as const).map((long) => (
             <button
               key={String(long)}
@@ -130,7 +130,7 @@ export function IntervalPicker({
             <Plus className="size-3" />
             Second octave
           </SetChip>
-          <span className="text-xs text-muted-foreground">The selected intervals one octave wider too</span>
+          <span className="text-meta text-muted-foreground">The selected intervals one octave wider too</span>
         </div>
       </div>
       {(['simple', 'compound'] as const).map((group) => (
@@ -147,7 +147,7 @@ export function IntervalPicker({
                   aria-label={intervalIdDisplayName(id)}
                   onClick={() => toggleInterval(id)}
                   className={cn(
-                    'rounded-lg border px-2 py-1.5 text-sm outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50',
+                    'rounded-lg border px-2 py-1.5 text-meta outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50',
                     checked
                       ? 'border-primary-strong bg-primary/15 font-medium text-primary-strong'
                       : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -160,7 +160,7 @@ export function IntervalPicker({
           </div>
         </div>
       ))}
-      <p className="text-xs text-muted-foreground">{selectedIntervals.size} selected</p>
+      <p className="text-meta text-muted-foreground">{selectedIntervals.size} selected</p>
     </Section>
   );
 }

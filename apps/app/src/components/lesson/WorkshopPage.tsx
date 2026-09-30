@@ -34,7 +34,7 @@ export function WorkshopPage({
         <div className="flex flex-col gap-tight">
           <div className="flex flex-wrap items-center justify-between gap-base">
             <div className="flex min-w-0 items-center gap-1">
-              <h1 className="font-display text-title">
+              <h1 className="font-display text-title text-primary-strong">
                 <TitleText title={title} />
               </h1>
               <OverviewHelpPopover ariaLabel={`About ${title}`} sections={overview} />

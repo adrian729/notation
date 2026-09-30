@@ -70,7 +70,7 @@ function TocList({ modules, active }: { modules: readonly TocModule[]; active: s
               <span aria-hidden className="rubricated font-specimen shrink-0 tabular-nums">
                 {ROMAN[i] ?? i + 1}
               </span>
-              <span className="rubricated font-specimen">
+              <span className="rubricated">
                 {family}
                 {variant && <span className="text-muted-foreground"> — {variant}</span>}
               </span>

@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { RevealStaff } from '@/components/lesson/RevealStaff';
 import { LessonRunner, type AnswerRenderProps } from '@/components/lesson/LessonRunner';
 import { answerTileClass, answerTileState } from '@/components/lesson/answerTiles';
+import { Initial } from '@/components/Initial';
 import type { AnsweredQuestion, Tempo } from '@/exercises/shared';
 import {
   buildQuestionEvents,
@@ -15,6 +16,13 @@ import {
   type ExerciseOptions,
   type Question,
 } from '@/exercises/interval-comparison';
+
+const INITIAL_TONE: Record<'idle' | 'correct' | 'wrong' | 'other', string> = {
+  idle: '[--initial-letter:var(--foreground)] [--initial-frame:var(--rubric)]',
+  correct: '[--initial-letter:var(--success-strong)] [--initial-frame:var(--success)]',
+  wrong: '[--initial-letter:var(--destructive)] [--initial-frame:var(--destructive)]',
+  other: '[--initial-letter:var(--muted-foreground)] [--initial-frame:var(--border)]',
+};
 
 interface RunnerProps {
   options: ExerciseOptions;
@@ -105,16 +113,18 @@ function AnswerGrid({
             'flex min-h-40 flex-col items-center justify-center gap-tight rounded-lg border bg-card px-tight py-base outline-none transition-colors duration-fast ease-out-quart disabled:cursor-not-allowed',
             answerTileClass(answerTileState(choice, correct, selected, answered)),
             answered && (choice === correct || choice === selected) ? 'border-2' : 'border',
+            choice === 'same' && (answered ? undefined : 'text-primary-strong'),
+            choice !== 'same' && INITIAL_TONE[answerTileState(choice, correct, selected, answered)],
           )}
         >
-          <span
-            className={cn('font-specimen leading-none', choice === 'same' ? 'text-title' : 'text-display')}
-          >
-            {choice === 'same' ? 'Same' : choice}
-          </span>
-          {!answered && (
-            <span className="rubricated font-specimen text-meta text-rubric-strong">key {choice === 'same' ? 'S' : choice}</span>
+          {choice === 'same' ? (
+            <span className="font-display text-title leading-none">Same</span>
+          ) : (
+            <Initial letter={choice} className="text-display leading-none" />
           )}
+          <span className="rubricated font-specimen text-meta text-muted-foreground">
+            key {choice === 'same' ? 'S' : choice}
+          </span>
         </button>
       ))}
     </div>
@@ -132,6 +142,7 @@ export function Runner({ options, title, lessonId, onBack, onNextLesson }: Runne
       onNextLesson={onNextLesson}
       generate={generate}
       buildEvents={(question) => buildQuestionEvents(question, options.tempo)}
+      buildChoiceEvents={(question, choice) => choiceEvents(question, choice, options.tempo)}
       isCorrect={isCorrect}
       saveResult={recordLessonResult}
       prompt="Which interval is larger, or are they the same?"

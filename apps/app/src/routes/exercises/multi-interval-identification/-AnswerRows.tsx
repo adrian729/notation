@@ -59,7 +59,7 @@ export function AnswerRows({
         const right = answered && choice === row.size;
         return (
           <div key={index} className="flex flex-col gap-2">
-            <div className="flex h-5 items-center justify-between text-sm">
+            <div className="flex h-6 items-center justify-between text-meta">
               <span className="font-medium">{rowLabel(index, rowCount)}</span>
               {answered && (
                 <span
@@ -87,7 +87,7 @@ export function AnswerRows({
                     onClick={() => choose(index, id)}
                     style={{ gridRow: cell.row, gridColumn: cell.column }}
                     className={cn(
-                      'flex h-10 items-center justify-center rounded-lg border-2 px-1 text-sm font-semibold sm:h-11',
+                      'flex h-10 items-center justify-center rounded-lg border-2 px-1 text-meta font-semibold sm:h-11',
                       answerTileClass(state),
                       !answered && choice === id && 'border-primary-strong bg-primary/15 text-primary-strong',
                     )}

@@ -49,7 +49,7 @@ function ChordReveal({ question }: { question: Question }) {
   const chord = chordById(question.quality);
   return (
     <div className="flex w-full max-w-[46rem] flex-col items-center gap-1">
-      <span className="min-h-6 text-center text-base font-medium text-muted-foreground">
+      <span className="min-h-6 text-center text-body font-medium text-muted-foreground">
         {question.noteNames[0]} {chord.name.toLowerCase()} — {question.noteNames.join(' ')}
       </span>
       <RevealStaff>
@@ -95,8 +95,8 @@ function AnswerGrid({
               answerTileClass(answerTileState(id, question.quality, selected, answered)),
             )}
           >
-            <span className="min-w-0 max-w-full text-sm font-semibold sm:text-base">{chord.name}</span>
-            <span className="text-xs opacity-75">{chord.symbol}</span>
+            <span className="min-w-0 max-w-full text-meta font-semibold sm:text-body">{chord.name}</span>
+            <span className="text-meta opacity-75">{chord.symbol}</span>
           </button>
         );
       })}

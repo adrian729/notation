@@ -48,7 +48,7 @@ function answerGridClass(count: number): string {
 function IntervalSingle({ question }: { question: Question }) {
   return (
     <div className="flex w-full max-w-[46rem] flex-col items-center gap-1">
-      <span className="text-base font-medium text-muted-foreground">{question.tones.name}</span>
+      <span className="text-body font-medium text-muted-foreground">{question.tones.name}</span>
       <RevealStaff>
         <NotesReveal
           pitches={[question.tones.from, question.tones.to]}
@@ -91,7 +91,7 @@ function AnswerGrid({
           aria-label={answered ? `Hear ${intervalIdDisplayName(id)}` : undefined}
           onClick={() => (answered ? hear(events(withAnswer(question, id))) : answer(id))}
           className={cn(
-            'flex h-16 items-center justify-center rounded-xl border-2 px-2 text-center text-sm font-semibold leading-tight sm:text-base',
+            'flex h-16 items-center justify-center rounded-xl border-2 px-2 text-center text-meta font-semibold leading-tight sm:text-body',
             answerTileClass(answerTileState(id, correct, selected, answered)),
           )}
         >

@@ -41,6 +41,7 @@ export interface LessonRunnerProps<Q, A, O extends RunnerOptions> {
   onNextLesson?: () => void;
   generate: (options: O, previous?: Q) => Q;
   buildEvents: (question: Q) => NoteEvent[];
+  buildChoiceEvents?: (question: Q, choice: A) => NoteEvent[];
   isCorrect: (question: Q, answer: A) => boolean;
   saveResult: (lessonId: string, percent: number, passed: boolean) => void;
   prompt: string;
@@ -128,6 +129,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
   onNextLesson,
   generate,
   buildEvents,
+  buildChoiceEvents,
   isCorrect,
   saveResult,
   prompt,
@@ -276,11 +278,15 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
       const choice = answerKeys[normalized];
       if (choice === undefined) return;
       e.preventDefault();
+      if (state.phase === 'answered' && buildChoiceEvents && state.question) {
+        hear(buildChoiceEvents(state.question, choice));
+        return;
+      }
       answer(choice);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [replay, goNext, answer, answerKeys]);
+  }, [replay, goNext, answer, hear, answerKeys, buildChoiceEvents, state.phase, state.question]);
 
   const segments = useMemo(() => progressSegments(state.flow), [state.flow]);
   const answeredYet = state.phase !== 'playing';
@@ -292,7 +298,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
           <ExerciseMasthead />
         </nav>
         <p className="rubricated font-specimen text-meta text-rubric-strong">{exerciseTitle}</p>
-        <p className="text-base font-medium" role="status">
+        <p className="text-body font-medium" role="status">
           Couldn&apos;t create a question.
         </p>
         <div className="flex gap-3">
@@ -367,7 +373,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
                 seg === 'upcoming' && 'bg-border',
                 seg === 'right' && 'bg-success',
                 seg === 'wrong' && 'bg-destructive',
-                state.phase === 'playing' && i === state.flow.answered.length && 'bg-primary',
+                state.phase === 'playing' && i === state.flow.answered.length && 'bg-rubric',
               )}
             />
           ))}
@@ -385,7 +391,7 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
       </p>
 
       {blocked && (
-        <p className="text-center text-sm text-muted-foreground" role="status">
+        <p className="text-center text-meta text-muted-foreground" role="status">
           Tap Play question to enable sound.
         </p>
       )}
@@ -419,11 +425,13 @@ export function LessonRunner<Q, A, O extends RunnerOptions>({
           >
             <TimerOff />
             Stay
-            <span
-              aria-hidden
-              className="absolute inset-x-0 bottom-0 h-0.5 origin-left animate-countdown bg-primary-strong"
-              style={{ animationDuration: `${AUTO_NEXT_DELAY_MS}ms` }}
-            />
+            {autoNextArmed && (
+              <span
+                aria-hidden
+                className="absolute inset-x-0 bottom-0 h-0.5 origin-left animate-countdown bg-primary-strong"
+                style={{ animationDuration: `${AUTO_NEXT_DELAY_MS}ms` }}
+              />
+            )}
           </Button>
         )}
       </div>
