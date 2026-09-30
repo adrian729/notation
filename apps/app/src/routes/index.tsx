@@ -3,14 +3,24 @@ import type { MnxDocument } from '@polyhymnia/notation-model';
 import { LOGO_URL } from '@/lib/logo';
 import { TitleText } from '@/components/Initial';
 import { SaltarelloScore } from '@/components/SaltarelloScore';
-import { FlourishRule, Ornament, OrnamentRule } from '@/components/Ornament';
+import { BarBorder, FlourishRule, FrameBorder, Ornament, OrnamentRule, type FrameSpec } from '@/components/Ornament';
 import saltarello from '@/assets/scores/saltarello.mnx.json';
+import anafiles from '@/assets/illustrations/cantigas/anafiles.webp';
 
 export const Route = createFileRoute('/')({
   component: HomePage,
 });
 
 const SALTARELLO = saltarello as MnxDocument;
+
+const HERO_FRAME: FrameSpec = {
+  top: 'acanthus-t',
+  bottom: 'acanthus-b',
+  left: 'acanthus-l',
+  right: 'acanthus-r',
+  corners: { tl: 'acanthus-tl', tr: 'acanthus-tr', bl: 'acanthus-bl', br: 'acanthus-br' },
+  inner: { tl: 'leaf-tl', tr: 'leaf-tr', bl: 'leaf-bl', br: 'leaf-br' },
+};
 
 const EXERCISES = [
   {
@@ -47,18 +57,20 @@ function HomePage() {
         <span>Ear training</span>
       </div>
 
-      <header className="ornament-corners -mt-tight flex flex-col items-center gap-base border border-primary-strong/40 px-loose py-loose text-center [--corner-size:3rem]">
-        <img src={LOGO_URL} alt="" className="size-[5.75rem] sm:size-30" />
-        <div className="flex flex-col items-center gap-tight">
-          <h1 className="font-display text-title sm:text-display">
-            <TitleText title="Polyhymnia" />
-          </h1>
-          <p className="max-w-[52ch] text-body text-muted-foreground">
-            Ear training for musicians: the difference between reading music and hearing it.
-          </p>
-        </div>
-        <OrnamentRule name="fleur-de-lis" className="w-full max-w-md" />
-      </header>
+      <FrameBorder frame={HERO_FRAME} className="-my-loose">
+        <header className="flex flex-col items-center gap-base text-center">
+          <img src={LOGO_URL} alt="" className="size-[5.75rem] sm:size-30" />
+          <div className="flex flex-col items-center gap-tight">
+            <h1 className="font-display text-title sm:text-display">
+              <TitleText title="Polyhymnia" />
+            </h1>
+            <p className="max-w-[52ch] text-body text-muted-foreground">
+              Ear training for musicians: the difference between reading music and hearing it.
+            </p>
+          </div>
+          <OrnamentRule name="fleur-de-lis" className="w-full max-w-md" />
+        </header>
+      </FrameBorder>
 
       <section aria-labelledby="exercises" className="flex flex-col gap-base">
         <h2 id="exercises" className="rubricated font-specimen text-subhead text-muted-foreground">
@@ -92,8 +104,17 @@ function HomePage() {
       </section>
 
       <footer className="flex flex-col gap-loose">
-        <Ornament name="tailpiece" className="mx-auto size-14 text-primary-strong" />
-        <SaltarelloScore score={SALTARELLO} />
+        <img
+          src={anafiles}
+          alt="Two heralds blowing long trumpets, from the Cantigas de Santa María"
+          width={822}
+          height={638}
+          className="mx-auto h-auto w-full max-w-sm -translate-x-[8.2%]"
+        />
+        <Ornament name="running-vine" className="mx-auto h-8 w-64 text-primary-strong" />
+        <BarBorder>
+          <SaltarelloScore score={SALTARELLO} />
+        </BarBorder>
       </footer>
     </div>
   );
