@@ -197,6 +197,8 @@
   --pn-selected: oklch(0.47 0.17 30);
   --pn-playing: oklch(0.5 0.18 32);
   --pn-cursor: oklch(0.52 0.1 30);
+  --pn-staff-mensural: var(--primary);
+  --pn-lapis-mensural: var(--color-blue-600);
 }
 
 .dark .pn-notation {
@@ -206,4 +208,6 @@
   --pn-selected: oklch(0.74 0.14 34);
   --pn-playing: oklch(0.8 0.14 34);
   --pn-cursor: oklch(0.8 0.1 30);
+  --pn-staff-mensural: var(--primary);
+  --pn-lapis-mensural: var(--color-blue-400);
 }

@@ -1,9 +1,14 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { Notation } from '@polyhymnia/notation-react';
+import type { MnxDocument } from '@polyhymnia/notation-model';
 import { LOGO_URL } from '@/lib/logo';
+import saltarello from '@/assets/scores/saltarello.mnx.json';
 
 export const Route = createFileRoute('/')({
   component: HomePage,
 });
+
+const SALTARELLO = saltarello as MnxDocument;
 
 const DISPLAY_WONK = { fontVariationSettings: '"opsz" 144, "SOFT" 0, "WONK" 1' } as const;
 
@@ -87,6 +92,9 @@ function HomePage() {
         </ol>
       </section>
 
+      <footer aria-hidden="true" className="border-t border-border pt-base">
+        <Notation score={SALTARELLO} />
+      </footer>
     </div>
   );
 }
