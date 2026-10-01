@@ -1,0 +1,186 @@
+export type GlyphTable = Readonly<Record<string, number>>;
+
+export interface GlyphStyle {
+  readonly name: string;
+  readonly glyphs: GlyphTable;
+  readonly core: GlyphTable;
+  readonly optional: GlyphTable;
+}
+
+const MODERN_GLYPHS: GlyphTable = {
+  gClef: 0xe050,
+  gClef8vb: 0xe052,
+  gClef8va: 0xe053,
+  cClef: 0xe05c,
+  fClef: 0xe062,
+  fClef8vb: 0xe064,
+  fClef8va: 0xe065,
+  gClefChange: 0xe07a,
+  cClefChange: 0xe07b,
+  fClefChange: 0xe07c,
+  timeSig0: 0xe080,
+  timeSig1: 0xe081,
+  timeSig2: 0xe082,
+  timeSig3: 0xe083,
+  timeSig4: 0xe084,
+  timeSig5: 0xe085,
+  timeSig6: 0xe086,
+  timeSig7: 0xe087,
+  timeSig8: 0xe088,
+  timeSig9: 0xe089,
+  timeSigCommon: 0xe08a,
+  timeSigCutCommon: 0xe08b,
+  noteheadDoubleWhole: 0xe0a0,
+  noteheadWhole: 0xe0a2,
+  noteheadHalf: 0xe0a3,
+  noteheadBlack: 0xe0a4,
+  augmentationDot: 0xe1e7,
+  flag8thUp: 0xe240,
+  flag8thDown: 0xe241,
+  flag16thUp: 0xe242,
+  flag16thDown: 0xe243,
+  flag32ndUp: 0xe244,
+  flag32ndDown: 0xe245,
+  flag64thUp: 0xe246,
+  flag64thDown: 0xe247,
+  accidentalFlat: 0xe260,
+  accidentalNatural: 0xe261,
+  accidentalSharp: 0xe262,
+  accidentalDoubleSharp: 0xe263,
+  accidentalDoubleFlat: 0xe264,
+  accidentalParensLeft: 0xe26a,
+  accidentalParensRight: 0xe26b,
+  restDoubleWhole: 0xe4e2,
+  restWhole: 0xe4e3,
+  restHalf: 0xe4e4,
+  restQuarter: 0xe4e5,
+  rest8th: 0xe4e6,
+  rest16th: 0xe4e7,
+  rest32nd: 0xe4e8,
+  rest64th: 0xe4e9,
+  tuplet0: 0xe880,
+  tuplet1: 0xe881,
+  tuplet2: 0xe882,
+  tuplet3: 0xe883,
+  tuplet4: 0xe884,
+  tuplet5: 0xe885,
+  tuplet6: 0xe886,
+  tuplet7: 0xe887,
+  tuplet8: 0xe888,
+  tuplet9: 0xe889,
+  tupletColon: 0xe88a,
+  repeatDot: 0xe044,
+  breathMarkComma: 0xe4ce,
+  caesura: 0xe4d1,
+};
+
+const MODERN_OPTIONAL = ['gClefChange', 'cClefChange', 'fClefChange'];
+
+const MENSURAL_GLYPHS: GlyphTable = {
+  ...MODERN_GLYPHS,
+  mensuralGclef: 0xe900,
+  mensuralFclef: 0xe903,
+  mensuralCclef: 0xe905,
+  mensuralWhiteMaxima: 0xe95c,
+  mensuralWhiteLonga: 0xe95d,
+  mensuralWhiteBrevis: 0xe95e,
+  mensuralWhiteMinima: 0xe95f,
+  mensuralWhiteSemiminima: 0xe960,
+  mensuralWhiteFusa: 0xe961,
+  mensuralWhiteSemibrevis: 0xe962,
+  mensuralNoteheadMaximaWhite: 0xe933,
+  mensuralNoteheadLongaWhite: 0xe937,
+  mensuralNoteheadMinimaWhite: 0xe93c,
+  mensuralNoteheadSemiminimaWhite: 0xe93d,
+  mensuralRestMaxima: 0xe9f0,
+  mensuralRestLongaPerfecta: 0xe9f1,
+  mensuralRestLongaImperfecta: 0xe9f2,
+  mensuralRestBrevis: 0xe9f3,
+  mensuralRestSemibrevis: 0xe9f4,
+  mensuralRestMinima: 0xe9f5,
+  mensuralRestSemiminima: 0xe9f6,
+  mensuralRestFusa: 0xe9f7,
+  mensuralRestSemifusa: 0xe9f8,
+  mensuralProlation1: 0xe910,
+  mensuralProlation2: 0xe911,
+  mensuralProlation3: 0xe912,
+  mensuralProlation4: 0xe913,
+  mensuralProlation5: 0xe914,
+  mensuralProlation6: 0xe915,
+  mensuralProlation7: 0xe916,
+  mensuralProlation8: 0xe917,
+  mensuralProlation9: 0xe918,
+  mensuralProlation10: 0xe919,
+  mensuralProlation11: 0xe91a,
+  mensuralProlationCombiningDot: 0xe920,
+  mensuralProlationCombiningTwoDots: 0xe921,
+  mensuralProlationCombiningThreeDots: 0xe922,
+  mensuralProlationCombiningThreeDotsTri: 0xe923,
+  mensuralProlationCombiningDotVoid: 0xe924,
+  mensuralProlationCombiningStroke: 0xe925,
+  mensuralProportion1: 0xe926,
+  mensuralProportion2: 0xe927,
+  mensuralProportion3: 0xe928,
+  mensuralProportion4: 0xe929,
+  mensuralProportionMajor: 0xe92b,
+  mensuralProportionMinor: 0xe92a,
+  mensuralProportionProportioDupla1: 0xe91c,
+  mensuralProportionProportioDupla2: 0xe91d,
+  mensuralProportionProportioTripla: 0xe91e,
+  mensuralProportionProportioQuadrupla: 0xe91f,
+  mensuralProportionTempusPerfectum: 0xe91b,
+  mensuralTempusPerfectumHoriz: 0xe92e,
+  mensuralTempusImperfectumHoriz: 0xe92f,
+  mensuralModusPerfectumVert: 0xe92c,
+  mensuralModusImperfectumVert: 0xe92d,
+  mensuralCombStemUp: 0xe93e,
+  mensuralCombStemDown: 0xe93f,
+  mensuralCombStemUpFlagRight: 0xe941,
+  mensuralCombStemDownFlagRight: 0xe942,
+  mensuralCombStemUpFlagLeft: 0xe943,
+  mensuralCombStemDownFlagLeft: 0xe944,
+  mensuralCombStemUpFlagFlared: 0xe945,
+  mensuralCombStemDownFlagFlared: 0xe946,
+  mensuralCombStemUpFlagExtended: 0xe947,
+  mensuralCombStemDownFlagExtended: 0xe948,
+  mensuralCombStemUpFlagSemiminima: 0xe949,
+  mensuralCombStemDownFlagSemiminima: 0xe94a,
+  mensuralCombStemUpFlagFusa: 0xe94b,
+  mensuralCombStemDownFlagFusa: 0xe94c,
+  mensuralCombStemDiagonal: 0xe940,
+};
+
+const MENSURAL_CORE = [
+  ...Object.keys(MODERN_GLYPHS).filter((name) => !MODERN_OPTIONAL.includes(name)),
+  'mensuralWhiteBrevis',
+  'mensuralWhiteSemibrevis',
+  'mensuralNoteheadMinimaWhite',
+  'mensuralNoteheadSemiminimaWhite',
+  'mensuralRestLongaPerfecta',
+  'mensuralRestSemibrevis',
+  'mensuralRestMinima',
+  'mensuralRestSemiminima',
+  'mensuralRestFusa',
+  'mensuralRestSemifusa',
+];
+
+function pick(glyphs: GlyphTable, keep: (name: string) => boolean): GlyphTable {
+  return Object.fromEntries(Object.entries(glyphs).filter(([name]) => keep(name)));
+}
+
+function style(name: string, glyphs: GlyphTable, isCore: (name: string) => boolean): GlyphStyle {
+  return {
+    name,
+    glyphs,
+    core: pick(glyphs, isCore),
+    optional: pick(glyphs, (glyph) => !isCore(glyph)),
+  };
+}
+
+export const modernStyle: GlyphStyle = style('modern', MODERN_GLYPHS, (name) => !MODERN_OPTIONAL.includes(name));
+
+export const mensuralStyle: GlyphStyle = style('mensural', MENSURAL_GLYPHS, (name) => MENSURAL_CORE.includes(name));
+
+export const glyphStyles = { modern: modernStyle, mensural: mensuralStyle } as const;
+
+export type GlyphStyleName = keyof typeof glyphStyles;

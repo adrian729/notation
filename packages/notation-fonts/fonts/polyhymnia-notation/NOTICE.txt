@@ -1,0 +1,11 @@
+PolyhymniaNotation is a modified version of the font Bravura 1.482.
+
+Original font: Bravura 1.482
+Copyright: Copyright © 2015, Steinberg Media Technologies GmbH (http://www.steinberg.net/), with Reserved Font Name "Bravura".
+Upstream: https://github.com/steinbergmedia/bravura
+Licence: SIL Open Font License 1.1 (see OFL.txt in this directory).
+
+Modifications:
+- subsetted to 64 glyphs, the glyph tables of @polyhymnia/notation-fonts (src/styles.ts);
+- renamed to "PolyhymniaNotation": the licence reserves the font name "Bravura", and a subset does not preserve Functional Equivalence, so per OFL-FAQ 2.6 the Reserved Font Name may not be kept on the modified font.
+- converted to WOFF2.
