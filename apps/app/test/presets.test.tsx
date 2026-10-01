@@ -1,32 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { parsePitch } from '@polyhymnia/mnx';
 import { NotesReveal } from '@/components/presets/NotesReveal';
-import { fittingMeter, scalePitches } from '@/components/presets/shared';
-
-const names = (root: string, scale: Parameters<typeof scalePitches>[1], desc = false) =>
-  scalePitches(parsePitch(root), scale, desc).map(
-    (p) => p.step + (p.alter ? (p.alter > 0 ? '#'.repeat(p.alter) : 'b'.repeat(-p.alter)) : '') + p.octave,
-  );
-
-describe('scale spelling', () => {
-  it('spells the major scale with one letter per degree', () => {
-    expect(names('D4', 'major')).toEqual(['D4', 'E4', 'F#4', 'G4', 'A4', 'B4', 'C#5', 'D5']);
-  });
-
-  it('raises only the 7th in harmonic minor', () => {
-    expect(names('A3', 'harmonicMinor')).toEqual(['A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G#4', 'A4']);
-  });
-
-  it('uses the classical descending form for melodic minor', () => {
-    expect(names('A3', 'melodicMinor')).toEqual(['A3', 'B3', 'C4', 'D4', 'E4', 'F#4', 'G#4', 'A4']);
-    expect(names('A3', 'melodicMinor', true)).toEqual(['A4', 'G4', 'F4', 'E4', 'D4', 'C4', 'B3', 'A3']);
-  });
-
-  it('reverses the same pitch set for every other scale', () => {
-    expect(names('C4', 'major', true)).toEqual(names('C4', 'major').reverse());
-  });
-});
+import { fittingMeter } from '@/components/presets/shared';
 
 describe('fittingMeter', () => {
   it('fits the meter to the content so no padding rest is invented', () => {

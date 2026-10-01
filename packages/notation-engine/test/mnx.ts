@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { parsePitch } from '@polyhymnia/mnx';
+import { parsePitch } from '@polyhymnia/music-theory';
 import type {
   Clef,
   Event,

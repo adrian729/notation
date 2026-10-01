@@ -1,4 +1,5 @@
-import { pitchToMidi, Rational as R } from '@polyhymnia/mnx';
+import { Rational as R } from '@polyhymnia/mnx';
+import { pitchToMidi } from '@polyhymnia/music-theory';
 import {
   noteValueSpecLength,
   toMnxPitch,

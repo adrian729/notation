@@ -1,4 +1,4 @@
-export * from './chords.js';
+export { CHORDS, chordById, isChordId, type ChordId } from '@polyhymnia/music-theory';
 export * from './sets.js';
 export * from './options.js';
 export * from './customSearch.js';

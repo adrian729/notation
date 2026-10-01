@@ -1,8 +1,9 @@
 import type { NotationOptions } from '../options.js';
 import { DEFAULT_OPTIONS } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/mnx';
+import { keyAlterations, STEP_LETTERS } from '@polyhymnia/music-theory';
 import type { NormalizedScore, NoteId, StaffPitch } from './records.js';
-import { accidentalGlyph, keyAlterations } from './staff.js';
+import { accidentalGlyph } from './staff.js';
 import { elementsByStaffMeasureKey, indexElementsByStaffMeasure } from './temporal.js';
 import type { TemporalScore } from './temporal.js';
 
@@ -37,7 +38,7 @@ export function accidentals(
     let carriedAlterations = new Map<string, number>();
 
     for (const measure of staff.measures) {
-      const key = keyAlterations(measure.key);
+      const key = keyAlterations(measure.key.fifths);
       const state = new Map<string, number>();
       const writtenHere = new Map<string, number>();
       const elements = elementIndex.get(elementsByStaffMeasureKey(staff.index, measure.index)) ?? [];
@@ -50,7 +51,7 @@ export function accidentals(
         for (const note of el.notes) {
           const { pitch } = note;
           const slot = `${pitch.step}:${pitch.octave}`;
-          const effective = state.get(slot) ?? key.get(pitch.step) ?? 0;
+          const effective = state.get(slot) ?? key.get(STEP_LETTERS[pitch.step]) ?? 0;
           const policy = note.accidentalPolicy ?? 'auto';
 
           const tieSlot = tieKey(pitch);
@@ -85,7 +86,7 @@ export function accidentals(
           });
 
           state.set(slot, pitch.alter);
-          if (pitch.alter !== (key.get(pitch.step) ?? 0)) writtenHere.set(slot, pitch.alter);
+          if (pitch.alter !== (key.get(STEP_LETTERS[pitch.step]) ?? 0)) writtenHere.set(slot, pitch.alter);
           else writtenHere.delete(slot);
           carriedAlterations.delete(slot);
 

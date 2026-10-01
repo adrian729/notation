@@ -2,17 +2,14 @@ import type { PlayingMode } from '../shared/playing.js';
 import {
   buildTones,
   direction,
-  pitchAbove,
   toTones,
   clefForMidis,
-  midiOfToken,
-  midiToPitch,
+  midiToPitchRng,
   withinRange,
   type IntervalTones,
   type Rng,
 } from '../shared/tones.js';
-import { intervalById, type IntervalId } from '../shared/intervals.js';
-import { pitchToMidi } from '@polyhymnia/mnx';
+import { intervalById, midiOf, pitchToMidi, transpose, type IntervalId } from '@polyhymnia/music-theory';
 import type { IdentificationOptions } from './options.js';
 
 export interface Question {
@@ -39,7 +36,7 @@ function sameSignature(a: QuestionSignature, b: QuestionSignature): boolean {
 export function withAnswer(question: Question, size: IntervalId): Question {
   const { mode, tones } = question;
   const dir = direction(mode);
-  const other = pitchAbove(tones.root, intervalById(size), dir);
+  const other = transpose(tones.root, intervalById(size), dir);
   return { ...question, size, tones: toTones(size, mode, dir, tones.root, other) };
 }
 
@@ -50,8 +47,8 @@ export function generateQuestion(
   rng: Rng = Math.random,
   last?: QuestionSignature,
 ): Question {
-  const low = midiOfToken(options.range.low);
-  const high = midiOfToken(options.range.high);
+  const low = midiOf(options.range.low);
+  const high = midiOf(options.range.high);
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const mode = options.playingModes[Math.floor(rng() * options.playingModes.length)]!;
@@ -63,7 +60,7 @@ export function generateQuestion(
     if (rootLow > rootHigh) continue;
 
     const rootMidi = rootLow + Math.floor(rng() * (rootHigh - rootLow + 1));
-    const root = midiToPitch(rootMidi, rng);
+    const root = midiToPitchRng(rootMidi, rng);
     const tones = buildTones(size, root, mode);
     if (!withinRange(tones, low, high)) continue;
 

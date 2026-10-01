@@ -1,4 +1,5 @@
-import { INTERVAL_FAMILIES, type IntervalId } from '../shared/intervals.js';
+import type { IntervalId } from '@polyhymnia/music-theory';
+import { INTERVAL_FAMILIES } from '../shared/intervals.js';
 import { validateRange } from '../shared/range.js';
 import type { PlayingMode, RangeOption } from '../shared/playing.js';
 import {

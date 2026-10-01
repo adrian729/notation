@@ -1,4 +1,5 @@
-import { INTERVAL_FAMILIES, intervalById, type IntervalId } from '../shared/intervals.js';
+import { intervalById, type IntervalId } from '@polyhymnia/music-theory';
+import { INTERVAL_FAMILIES } from '../shared/intervals.js';
 
 export type SetId =
   'core' | 'sixths' | 'sevenths' | 'simple' | 'core-compound' | 'thirteenths' | 'fourteenths' | 'compound' | 'all';

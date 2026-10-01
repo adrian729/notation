@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { parsePitch } from '@polyhymnia/mnx';
 import type { MnxDocument } from '@polyhymnia/mnx';
 import { melodic } from '@polyhymnia/audio';
+import { midiOf, parsePitch } from '@polyhymnia/music-theory';
 import { createSound } from '../sound.js';
 import { FontNotation } from '../font.js';
 
@@ -58,7 +58,7 @@ export function IntervalId() {
     setQuestion(next);
     setChecked(false);
     setMessage('Which interval did you hear?');
-    sound.playEvents(melodic([next.from, next.to], { noteDuration: 0.5 }));
+    sound.playEvents(melodic([next.from, next.to].map(midiOf), { noteDuration: 0.5 }));
   }, [sound]);
 
   const answer = useCallback(

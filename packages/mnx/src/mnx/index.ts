@@ -1,7 +1,6 @@
 export * from './types.js';
 export * from './read.js';
 export * from './time.js';
-export * from './pitch.js';
 export { Rational, rational } from './rational.js';
 export { assignIds } from './ids.js';
 export { elementIds } from './element-ids.js';

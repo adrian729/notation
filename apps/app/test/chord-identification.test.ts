@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePitch, pitchToMidi, stepNumberOf } from '@polyhymnia/mnx';
+import { parsePitch, pitchToMidi, stepNumberOf } from '@polyhymnia/music-theory';
 import { CHORDS, generateQuestion, playbacksFor } from '@/exercises/chord-identification';
 import { deterministicRng } from '@/exercises/shared';
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { STEP_LETTERS } from '@polyhymnia/mnx';
+import { intervalById, STEP_LETTERS, tryMidiOf } from '@polyhymnia/music-theory';
 import {
   generateQuestion,
   normalizeOptions,
@@ -7,7 +7,7 @@ import {
   type MultiIntervalOptions,
   validateOptions,
 } from '@/exercises/multi-interval-identification';
-import { deterministicRng, intervalById, rangeForIntervals, tokenMidi } from '@/exercises/shared';
+import { deterministicRng, rangeForIntervals } from '@/exercises/shared';
 
 function letterIndex(token: string): number {
   const letter = token[0]!;
@@ -64,14 +64,14 @@ describe('multi-interval generateQuestion', () => {
   for (const { label, options } of CASES) {
     it(label, () => {
       const rng = deterministicRng(7);
-      const low = tokenMidi(options.range.low)!;
-      const high = tokenMidi(options.range.high)!;
+      const low = tryMidiOf(options.range.low)!;
+      const high = tryMidiOf(options.range.high)!;
       let last: string | undefined;
       for (let i = 0; i < 200; i++) {
         const q = generateQuestion(options, rng, last);
         last = q.rows.map((row) => row.size).join(',');
-        const ref = tokenMidi(q.reference)!;
-        const midis = q.rows.map((row) => tokenMidi(row.pitch)!);
+        const ref = tryMidiOf(q.reference)!;
+        const midis = q.rows.map((row) => tryMidiOf(row.pitch)!);
         expect(options.noteCounts).toContain(q.rows.length + 1);
         expect(options.playingModes).toContain(q.mode);
         expect(midis.every((m) => m > ref)).toBe(true);

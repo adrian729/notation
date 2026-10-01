@@ -1,7 +1,8 @@
-import { noteValueLength, pitchToMidi, stepNumberOf, STEP_LETTERS } from '@polyhymnia/mnx';
+import { noteValueLength } from '@polyhymnia/mnx';
 import type { Key, NoteValue, Pitch, Time } from '@polyhymnia/mnx';
 import type { FontFamily, LayoutResult } from '@polyhymnia/notation-engine';
 import type { CSSProperties } from 'react';
+import { scaleFifths, type ScaleName } from '@polyhymnia/music-theory';
 
 export interface RevealBaseProps {
   font?: FontFamily;
@@ -26,48 +27,8 @@ export function durationKey(duration: NoteValue): string {
   return `${duration.base}.${duration.dots ?? 0}`;
 }
 
-export type ScaleName = 'major' | 'naturalMinor' | 'harmonicMinor' | 'melodicMinor';
-
-const PATTERNS: Record<ScaleName, readonly number[]> = {
-  major: [0, 2, 4, 5, 7, 9, 11, 12],
-  naturalMinor: [0, 2, 3, 5, 7, 8, 10, 12],
-  harmonicMinor: [0, 2, 3, 5, 7, 8, 11, 12],
-  melodicMinor: [0, 2, 3, 5, 7, 9, 11, 12],
-};
-
-function letterOf(n: number): Pitch['step'] {
-  return STEP_LETTERS[((n % 7) + 7) % 7]!;
-}
-
-export function scalePitches(root: Pitch, scale: ScaleName, descending = false): Pitch[] {
-  const pattern = scale === 'melodicMinor' && descending ? PATTERNS.naturalMinor : PATTERNS[scale];
-  const rootStep = stepNumberOf(root.step);
-  const rootSemitone = pitchToMidi(root);
-
-  const ascending = pattern.map((semitones, degree): Pitch => {
-    const letterIndex = rootStep + degree;
-    const step = letterOf(letterIndex);
-    const octave = root.octave + Math.floor(letterIndex / 7);
-    const natural = pitchToMidi({ step, octave });
-    const alter = clampAlter(rootSemitone + semitones - natural);
-    return alter === 0 ? { step, octave } : { step, alter, octave };
-  });
-
-  return descending ? ascending.reverse() : ascending;
-}
-
-function clampAlter(alter: number): number {
-  return Math.max(-2, Math.min(2, alter));
-}
-
-const MAJOR_FIFTHS_BASE = [0, 2, 4, -1, 1, 3, 5] as const;
+export type { ScaleName } from '@polyhymnia/music-theory';
 
 export function scaleKey(root: Pitch, scale: ScaleName): Key {
-  const majorFifths = MAJOR_FIFTHS_BASE[stepNumberOf(root.step)]! + 7 * (root.alter ?? 0);
-  const fifths = scale === 'major' ? majorFifths : majorFifths - 3;
-  return { fifths: clampFifths(fifths) };
-}
-
-function clampFifths(fifths: number): number {
-  return Math.max(-7, Math.min(7, fifths));
+  return { fifths: scaleFifths(root, scale) };
 }

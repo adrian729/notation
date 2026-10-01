@@ -1,9 +1,20 @@
-import { pitchToMidi } from '@polyhymnia/mnx';
-import { chordById, chordSpan, type ChordId, type ChordQuality } from './chords.js';
+import {
+  chordById,
+  chordSpan,
+  formatPitch,
+  midiOf,
+  parseSpelledPitch,
+  pitchToMidi,
+  spellRelative,
+  transpose,
+  tryMidiOf,
+  type ChordId,
+  type ChordQuality,
+  type SpelledPitch,
+} from '@polyhymnia/music-theory';
 import type { ChordPlayback } from './playback.js';
 import type { ChordOptions } from './options.js';
-import { spellRelative, pitchToToken, tokenMidi, tokenPitch, type SpelledPitch } from '../shared/spelling.js';
-import { clefForMidis, midiOfToken, midiToPitch, pickOne, pitchAbove, randomInt, type Rng } from '../shared/tones.js';
+import { clefForMidis, midiToPitchRng, pickOne, randomInt, type Rng } from '../shared/tones.js';
 
 export interface Question {
   playback: ChordPlayback;
@@ -26,7 +37,7 @@ function chordQuestion(playback: ChordPlayback, quality: ChordId, spelled: reado
   return {
     playback,
     quality,
-    pitches: spelled.map(pitchToToken),
+    pitches: spelled.map(formatPitch),
     noteNames: spelled.map((pitch) => `${pitch.step}${ACCIDENTAL_GLYPH[pitch.alter]}`),
     clef: clefForMidis(spelled.map(pitchToMidi)),
   };
@@ -34,24 +45,24 @@ function chordQuestion(playback: ChordPlayback, quality: ChordId, spelled: reado
 
 export function withAnswer(question: Question, quality: ChordId): Question {
   const chord = chordById(quality);
-  const root = tokenPitch(question.pitches[0]!);
-  const spelled = spellChord(chord, root) ?? [root, ...chord.above.map((spec) => pitchAbove(root, spec))];
+  const root = parseSpelledPitch(question.pitches[0]!);
+  const spelled = spellChord(chord, root) ?? [root, ...chord.above.map((spec) => transpose(root, spec))];
   return chordQuestion(question.playback, quality, spelled);
 }
 
 export function questionSignature(q: Question): string {
-  return `${q.quality}|${midiOfToken(q.pitches[0]!)}|${q.playback}`;
+  return `${q.quality}|${midiOf(q.pitches[0]!)}|${q.playback}`;
 }
 
 export function generateQuestion(options: ChordOptions, rng: Rng = Math.random, last?: string): Question {
-  const low = tokenMidi(options.range.low)!;
-  const high = tokenMidi(options.range.high)!;
+  const low = tryMidiOf(options.range.low)!;
+  const high = tryMidiOf(options.range.high)!;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const playback = pickOne(options.playbacks, rng);
     const quality = pickOne(options.chords, rng);
     const chord = chordById(quality);
 
-    const root = midiToPitch(randomInt(rng, low, high - chordSpan(chord)), rng);
+    const root = midiToPitchRng(randomInt(rng, low, high - chordSpan(chord)), rng);
     const spelled = spellChord(chord, root);
     if (!spelled) continue;
 

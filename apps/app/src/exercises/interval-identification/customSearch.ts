@@ -2,7 +2,7 @@ import { enumParam, listParam, NAME_STYLES, type NameStyle } from '../shared/cus
 import type { PlayingMode } from '../shared/playing.js';
 import { parseRangeSearch, type RangeSearch } from '../shared/range.js';
 import { parseSessionSearch, sessionFromSearch, type SessionSearch } from '../shared/session.js';
-import { INTERVAL_SIZES, type IntervalId } from '../shared/intervals.js';
+import { INTERVAL_SIZES, type IntervalId } from '@polyhymnia/music-theory';
 import { DEFAULT_OPTIONS, PLAYING_MODES, type IdentificationOptions } from './options.js';
 
 export interface CustomSearch extends SessionSearch, RangeSearch {

@@ -1,5 +1,5 @@
-import { midiOfPitch } from '@polyhymnia/audio';
 import type { Sample } from '@polyhymnia/audio/sampler';
+import { midiOf } from '@polyhymnia/music-theory';
 
 export const INSTRUMENTS = [
   { id: 'synth', label: 'Synth' },
@@ -12,18 +12,18 @@ export const INSTRUMENTS = [
 export type InstrumentId = (typeof INSTRUMENTS)[number]['id'];
 export type SampledInstrumentId = Exclude<InstrumentId, 'synth'>;
 
-const E2 = midiOfPitch('E2');
-const C6 = midiOfPitch('C6');
-const C7 = midiOfPitch('C7');
+const E2 = midiOf('E2');
+const C6 = midiOf('C6');
+const C7 = midiOf('C7');
 const NOTE_NAMES = ['C', 'Cs', 'D', 'Ds', 'E', 'F', 'Fs', 'G', 'Gs', 'A', 'As', 'B'];
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
 const SAMPLED_MIDI: Record<SampledInstrumentId, readonly number[]> = {
-  guitar: [...range(E2, midiOfPitch('B4')), ...['D5', 'D#5', 'E5', 'G5', 'G#5', 'C6'].map(midiOfPitch)],
+  guitar: [...range(E2, midiOf('B4')), ...['D5', 'D#5', 'E5', 'G5', 'G#5', 'C6'].map(midiOf)],
   cello: range(E2, C6),
   clarinet: range(E2, C7),
-  piano: range(midiOfPitch('D#2'), C7).filter((midi) => (midi - midiOfPitch('D#2')) % 3 === 0),
+  piano: range(midiOf('D#2'), C7).filter((midi) => (midi - midiOf('D#2')) % 3 === 0),
 };
 
 export function isInstrumentId(value: unknown): value is InstrumentId {
