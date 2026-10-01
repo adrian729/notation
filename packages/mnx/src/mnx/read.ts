@@ -5,7 +5,7 @@ export interface Diagnostic {
   code: string;
   message: string;
   measureIndex?: number;
-  voice?: 0 | 1;
+  voice?: number;
   tick?: number;
 }
 

@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { beamGroups, type BeamableEvent } from '../src/mnx/beam.js';
-import { rational as R } from '../src/mnx/rational.js';
-import type { Rational } from '../src/mnx/rational.js';
-import type { Meter } from '../src/mnx/meter.js';
-import type { NoteValueBase } from '../src/mnx/types.js';
+import { rational as R } from '@polyhymnia/mnx';
+import type { NoteValueBase, Rational } from '@polyhymnia/mnx';
+import { beamGroups, type BeamableEvent } from '../src/layout/beam-policy/beam.js';
+import type { Meter } from '../src/layout/beam-policy/meter.js';
 
 const BASE_LEN: Record<string, [number, number]> = {
   whole: [1, 1],

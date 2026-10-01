@@ -14,5 +14,7 @@ export type {
   ElementNode,
   ElementNodeKind,
   ElementPosition,
+  ElementScope,
+  MintContext,
   NoteId,
 } from './element-ids.js';
