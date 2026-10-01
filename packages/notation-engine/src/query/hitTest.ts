@@ -1,4 +1,4 @@
-import type { Pitch as MnxPitch } from '@polyhymnia/notation-model';
+import type { Pitch as MnxPitch } from '@polyhymnia/mnx';
 import { toMnxPitch, type NoteId, type StepNumber } from '../layout/records.js';
 import { STAFF_HEIGHT, keyAlterOf, stepIndexAt } from '../layout/staff.js';
 import type { Box, ElementBox, LayoutResult, MeasureBox, Slot, SystemBox } from '../layout/types.js';

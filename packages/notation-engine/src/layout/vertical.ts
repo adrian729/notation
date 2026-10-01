@@ -1,7 +1,7 @@
 import { engravingDefaults, glyphAdvanceWidth, glyphAnchor, glyphBBox } from '../font/metadata.js';
 import { DEFAULT_FONT, type FontFamily } from '../font/glyphs.js';
 import type { NotationOptions } from '../options.js';
-import type { Diagnostic } from '@polyhymnia/notation-model';
+import type { Diagnostic } from '@polyhymnia/mnx';
 import type {
   ClefSpec,
   Duration,

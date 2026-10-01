@@ -274,7 +274,7 @@ Grounded in `AGENTS.md`, `notation/interaction.md`, `notation/audio.md`, `notati
 ## 2.1 What we have today
 
 - **Rendering** (`notation-react`): `<Notation score>` renders MNX with treble, bass, alto and tenor clefs, all keys, meters, tuplets, ties, slurs and two voices per staff. `Notation.Interaction` resolves `element`/`slot`/`point` hits into `activate`/`hover` intents; `Notation.Marks` draws app states, selection and a preview ghost without re-layout; `Notation.Playback` (`notes`/`cursor`) plus `setPlaybackTick` draws highlight and cursor from an app-supplied tick. Presets: `NotesReveal`, `ScaleReveal` (major, natural/harmonic/melodic minor).
-- **Editing** (`notation-model`): `applyIntent({type:'setPitches'})` sets, clears or chords one event; rhythm never changes.
+- **Editing** (`mnx`): `applyIntent({type:'setPitches'})` sets, clears or chords one event; rhythm never changes.
 - **Audio** (`@polyhymnia/audio`): `melodic`, `harmonic`, `concat`, `shift`, `transpose`, `midiOfPitch`, `eventsFromTimeMap` (repeats, voltas, D.S. al Fine via `playOrder`, tempo override, `tickAtSeconds` for the cursor); `./webaudio` has only `synthInstrument` behind the `Instrument` seam. Deferred in `audio.md`: count-in, metronome, seek/loop, dynamics velocity, grace notes, tempo ramps.
 - **App** (`apps/web`): three fixed-content demos — `NoteHeard` (click the note heard), `Dictation` (pitch-only, first note given, ♭/♮/♯ toggle, Check), `ErrorDetection` (pitch variant played through `melodic` with one fixed note length) — plus `ScorePlayer` and `sound.ts` (`createSound`, `midiOfId`). No question generation, routing, settings, persistence or statistics.
 
@@ -357,12 +357,12 @@ Verdicts: **Supported** = a working demo of the mechanic exists; only content ge
 
 ## 2.3 Gaps table
 
-Placement follows `AGENTS.md`: a new concern becomes a new package; `notation-model`/`notation-engine` stay DOM-free; browser APIs only behind DOM entries (like `audio/webaudio`); apps consume packages through public exports; quiz data never goes in MNX; the notation and audio packages run no clocks. Size: S ≤ 3 days, M ≤ 2 weeks, L > 2 weeks (estimate). Order = suggested sequence.
+Placement follows `AGENTS.md`: a new concern becomes a new package; `mnx`/`notation-engine` stay DOM-free; browser APIs only behind DOM entries (like `audio/webaudio`); apps consume packages through public exports; quiz data never goes in MNX; the notation and audio packages run no clocks. Size: S ≤ 3 days, M ≤ 2 weeks, L > 2 weeks (estimate). Order = suggested sequence.
 
 | # | Capability | Needed by | Where it should live | Size | Order |
 | --- | --- | --- | --- | --- | --- |
 | G1 | **Exercise generation layer**: exercise definitions (JSON params, levels), seeded question generators, theory tables (intervals, chords, scales, progressions with correct spelling), pure evaluation (multiple choice, per-note partial credit, answer identification modes) | Every exercise, F8, F13–F15 | New DOM-free package (e.g. `packages/exercise`); needs an `AGENTS.md` module/direction entry | L | 1 |
-| G2 | **Pitch math in the model**: pitch → midi, spelled interval/transposition, midi → spelled pitch | G1, G14, excerpt transposition | `notation-model` ("pitch/rational/duration math"), added only when G1 consumes it | S | 1 |
+| G2 | **Pitch math in the model**: pitch → midi, spelled interval/transposition, midi → spelled pitch | G1, G14, excerpt transposition | `mnx` ("pitch/rational/duration math"), added only when G1 consumes it | S | 1 |
 | G3 | **App shell and exercise runner**: routing, lesson flow (mandatory and supplementary questions, thresholds, next-step), settings, option locking, auto-advance, intros | F1–F3, F5, F6, F10–F13 | `apps/web` | L | 1 |
 | G4 | **Scheduler / adaptive engine**: weak-item weighting, early finish, supplementary questions | F4 | New pure package (knows only item keys) or inside G1 | M | 3 |
 | G5 | **Results storage and statistics**: attempts, best scores, per-item stats, presets, custom items | F7, F8, F9 | `apps/web` behind a small storage interface | S–M | 2 |
@@ -389,7 +389,7 @@ Placement follows `AGENTS.md`: a new concern becomes a new package; `notation-mo
 - **Tie-tail ids missing from `timemap.byId`**: a tie-merged `TimeMapEntry` carries only the tie head's ids (`toEntry` in `packages/notation-engine/src/query/timemap.ts`), so `byId(tailId)` is `undefined` and `midiOfId` falls back to the hit's key-derived pitch. Affects click-to-hear and checks on tied notes (NoteHeard, error detection; EarMaster itself only fixed ties in rhythm error detection in 7.3.2). Fix in `notation-engine` with one regression test.
 - **`HitResult` element pitch ignores the written accidental**: it is derived from staff position plus key signature because `ElementBox` carries no written `Pitch` (`interaction.md`). Affects any exercise reading a clicked existing note's pitch. Fix: carry the written pitch on `ElementBox`.
 - **Parallel `ids` / `midiNotes` arrays** (plus a separate `midi` for single notes) in `TimeMapEntry`: `midiOfId` and `eventsFromTimeMap` pair them by index. Fragile; per-member `{ id, midi }` records would be safer (breaking change across engine and audio).
-- **Pitch → midi in `notation-model`** (resolved): `pitchToMidi` is shared by engine, audio, react presets and the app. Spelled intervals exist only in the app (`apps/app/src/exercises/shared/spelling.ts`); no transposition exists anywhere (G2).
+- **Pitch → midi in `mnx`** (resolved): `pitchToMidi` is shared by engine, audio, react presets and the app. Spelled intervals exist only in the app (`apps/app/src/exercises/shared/spelling.ts`); no transposition exists anywhere (G2).
 - **Single part laid out**: only `parts[0]` is laid out (`layout/normalize.ts`), only staff 1 of a part, and `applyIntent`/`elementIds` address part 0 only. Blocks accompaniment, grand staff and SATB (G16, G18).
 - **Voltas, jumps and fermatas not drawn**: endings and D.S. al Fine are honoured in playback via `playOrder` but not engraved; fermata not drawn. Affects score-library excerpts and EarMaster-style repeat display in clapback and singback.
 - Also pending: mid-score clef change layout (`roadmap.md` E4) and the one-line percussion staff for rhythm exercises (deferred).

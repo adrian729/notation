@@ -1,4 +1,4 @@
-import { pitchToMidi } from '@polyhymnia/notation-model';
+import { pitchToMidi } from '@polyhymnia/mnx';
 import { intervalById, type IntervalId } from './intervals.js';
 import {
   pickPreferredRoot,

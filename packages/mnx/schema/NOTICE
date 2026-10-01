@@ -42,6 +42,6 @@ License
 
 Preservation
 
-  `pnpm mnx:update <commit>` (packages/notation-model/scripts/mnx-update.mjs)
+  `pnpm mnx:update <commit>` (packages/mnx/scripts/mnx-update.mjs)
   re-vendors mnx-schema.json, examples/*.json and SOURCE from a new commit;
   it must never delete or overwrite this NOTICE file.

@@ -29,9 +29,9 @@ importers:
       '@polyhymnia/audio':
         specifier: workspace:*
         version: link:../../packages/audio
-      '@polyhymnia/notation-model':
+      '@polyhymnia/mnx':
         specifier: workspace:*
-        version: link:../../packages/notation-model
+        version: link:../../packages/mnx
       '@polyhymnia/notation-react':
         specifier: workspace:*
         version: link:../../packages/notation-react
@@ -96,12 +96,12 @@ importers:
       '@polyhymnia/audio':
         specifier: workspace:*
         version: link:../../packages/audio
+      '@polyhymnia/mnx':
+        specifier: workspace:*
+        version: link:../../packages/mnx
       '@polyhymnia/notation-engine':
         specifier: workspace:*
         version: link:../../packages/notation-engine
-      '@polyhymnia/notation-model':
-        specifier: workspace:*
-        version: link:../../packages/notation-model
       '@polyhymnia/notation-react':
         specifier: workspace:*
         version: link:../../packages/notation-react
@@ -130,12 +130,12 @@ importers:
 
   packages/audio:
     dependencies:
+      '@polyhymnia/mnx':
+        specifier: workspace:*
+        version: link:../mnx
       '@polyhymnia/notation-engine':
         specifier: workspace:*
         version: link:../notation-engine
-      '@polyhymnia/notation-model':
-        specifier: workspace:*
-        version: link:../notation-model
     devDependencies:
       typescript:
         specifier: ^5.7.0
@@ -144,29 +144,7 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
 
-  packages/notation-engine:
-    dependencies:
-      '@polyhymnia/notation-model':
-        specifier: workspace:*
-        version: link:../notation-model
-    devDependencies:
-      '@types/node':
-        specifier: ^26.6.2
-        version: 26.6.2
-      ajv:
-        specifier: 8.20.0
-        version: 8.20.0
-      fast-check:
-        specifier: ^3.23.0
-        version: 3.23.2
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-      vitest:
-        specifier: ^3.0.0
-        version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
-
-  packages/notation-model:
+  packages/mnx:
     devDependencies:
       '@types/node':
         specifier: ^26.6.2
@@ -187,14 +165,94 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
 
+  packages/mnx-score:
+    dependencies:
+      '@polyhymnia/mnx':
+        specifier: workspace:*
+        version: link:../mnx
+      '@polyhymnia/music-theory':
+        specifier: workspace:*
+        version: link:../music-theory
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.2
+        version: 26.6.2
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
+
+  packages/music-theory:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.2
+        version: 26.6.2
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
+
+  packages/notation-engine:
+    dependencies:
+      '@polyhymnia/mnx':
+        specifier: workspace:*
+        version: link:../mnx
+      '@polyhymnia/mnx-score':
+        specifier: workspace:*
+        version: link:../mnx-score
+      '@polyhymnia/music-theory':
+        specifier: workspace:*
+        version: link:../music-theory
+      '@polyhymnia/notation-fonts':
+        specifier: workspace:*
+        version: link:../notation-fonts
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.2
+        version: 26.6.2
+      ajv:
+        specifier: 8.20.0
+        version: 8.20.0
+      fast-check:
+        specifier: ^3.23.0
+        version: 3.23.2
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
+
+  packages/notation-fonts:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.2
+        version: 26.6.2
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
+
   packages/notation-react:
     dependencies:
+      '@polyhymnia/mnx':
+        specifier: workspace:*
+        version: link:../mnx
+      '@polyhymnia/mnx-score':
+        specifier: workspace:*
+        version: link:../mnx-score
       '@polyhymnia/notation-engine':
         specifier: workspace:*
         version: link:../notation-engine
-      '@polyhymnia/notation-model':
+      '@polyhymnia/notation-fonts':
         specifier: workspace:*
-        version: link:../notation-model
+        version: link:../notation-fonts
     devDependencies:
       '@testing-library/react':
         specifier: ^16.0.0
@@ -223,12 +281,12 @@ importers:
 
   tools/musicxml-to-mnx:
     dependencies:
+      '@polyhymnia/mnx':
+        specifier: workspace:*
+        version: link:../../packages/mnx
       '@polyhymnia/notation-engine':
         specifier: workspace:*
         version: link:../../packages/notation-engine
-      '@polyhymnia/notation-model':
-        specifier: workspace:*
-        version: link:../../packages/notation-model
       ajv:
         specifier: 8.20.0
         version: 8.20.0

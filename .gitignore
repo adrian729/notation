@@ -5,7 +5,10 @@ node_modules/
 apps/app/dist/
 apps/web/dist/
 packages/notation-react/dist/
-packages/notation-model/dist/
+packages/mnx/dist/
+packages/music-theory/dist/
+packages/mnx-score/dist/
+packages/notation-fonts/dist/
 packages/notation-engine/dist/
 packages/audio/dist/
 tools/*/dist/

@@ -1,5 +1,5 @@
-import { noteValueLength, pitchToMidi, stepNumberOf, STEP_LETTERS } from '@polyhymnia/notation-model';
-import type { Key, NoteValue, Pitch, Time } from '@polyhymnia/notation-model';
+import { noteValueLength, pitchToMidi, stepNumberOf, STEP_LETTERS } from '@polyhymnia/mnx';
+import type { Key, NoteValue, Pitch, Time } from '@polyhymnia/mnx';
 import type { FontFamily, LayoutResult } from '@polyhymnia/notation-engine';
 import type { CSSProperties } from 'react';
 

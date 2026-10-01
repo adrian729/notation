@@ -1,5 +1,5 @@
 import { intervalById, type IntervalId } from '../shared/intervals.js';
-import { pitchToMidi } from '@polyhymnia/notation-model';
+import { pitchToMidi } from '@polyhymnia/mnx';
 import { spellRelative, type SpelledMember, type SpelledPitch } from '../shared/spelling.js';
 import {
   buildTones,

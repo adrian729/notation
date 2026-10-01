@@ -6,11 +6,10 @@ const packages = fileURLToPath(new URL('../', import.meta.url));
 export default defineConfig({
   resolve: {
     alias: [
-      {
-        find: /^@polyhymnia\/notation-model\/build$/,
-        replacement: `${packages}notation-model/src/build/index.ts`,
-      },
-      { find: /^@polyhymnia\/notation-model$/, replacement: `${packages}notation-model/src/index.ts` },
+      { find: /^@polyhymnia\/mnx$/, replacement: `${packages}mnx/src/index.ts` },
+      { find: /^@polyhymnia\/mnx\/edit$/, replacement: `${packages}mnx/src/edit/index.ts` },
+      { find: /^@polyhymnia\/mnx-score$/, replacement: `${packages}mnx-score/src/index.ts` },
+      { find: /^@polyhymnia\/notation-fonts$/, replacement: `${packages}notation-fonts/src/index.ts` },
       { find: /^@polyhymnia\/notation-engine$/, replacement: `${packages}notation-engine/src/index.ts` },
     ],
   },

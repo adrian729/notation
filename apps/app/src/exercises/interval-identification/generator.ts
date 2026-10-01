@@ -12,7 +12,7 @@ import {
   type Rng,
 } from '../shared/tones.js';
 import { intervalById, type IntervalId } from '../shared/intervals.js';
-import { pitchToMidi } from '@polyhymnia/notation-model';
+import { pitchToMidi } from '@polyhymnia/mnx';
 import type { IdentificationOptions } from './options.js';
 
 export interface Question {

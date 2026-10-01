@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { parsePitch } from '@polyhymnia/notation-model';
+import { parsePitch } from '@polyhymnia/mnx';
 import type {
   Clef,
   Event,
@@ -12,7 +12,7 @@ import type {
   Sequence,
   SequenceContent,
   Tuplet,
-} from '@polyhymnia/notation-model';
+} from '@polyhymnia/mnx';
 
 export const TREBLE: Clef = { sign: 'G', staffPosition: -2 };
 export const BASS: Clef = { sign: 'F', staffPosition: 2 };

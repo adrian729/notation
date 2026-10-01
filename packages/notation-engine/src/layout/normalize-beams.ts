@@ -1,5 +1,5 @@
-import { beamGroups, beatGroupingFor, Rational as R } from '@polyhymnia/notation-model';
-import type { BeamableEvent, MnxDocument, Rational } from '@polyhymnia/notation-model';
+import { beamGroups, beatGroupingFor, Rational as R } from '@polyhymnia/mnx';
+import type { BeamableEvent, MnxDocument, Rational } from '@polyhymnia/mnx';
 import type { NotationOptions } from '../options.js';
 import {
   noteValueSpecLength,

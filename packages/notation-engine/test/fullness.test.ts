@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { MnxDocument } from '@polyhymnia/notation-model';
+import type { MnxDocument } from '@polyhymnia/mnx';
 import { layoutScore } from '../src/layout/index.js';
 import { normalize } from '../src/layout/normalize.js';
 import { temporal } from '../src/layout/temporal.js';

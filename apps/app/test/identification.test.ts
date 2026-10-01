@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generateQuestion, type IdentificationOptions } from '@/exercises/interval-identification';
 import { intervalById, tokenMidi } from '@/exercises/shared';
-import { pitchToMidi } from '@polyhymnia/notation-model';
+import { pitchToMidi } from '@polyhymnia/mnx';
 
 function mulberry32(seed: number) {
   let a = seed;

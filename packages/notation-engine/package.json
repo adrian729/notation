@@ -16,7 +16,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@polyhymnia/notation-model": "workspace:*"
+    "@polyhymnia/mnx": "workspace:*",
+    "@polyhymnia/mnx-score": "workspace:*",
+    "@polyhymnia/music-theory": "workspace:*",
+    "@polyhymnia/notation-fonts": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.0",

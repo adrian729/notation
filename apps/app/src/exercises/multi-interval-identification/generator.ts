@@ -1,4 +1,4 @@
-import { pitchToMidi } from '@polyhymnia/notation-model';
+import { pitchToMidi } from '@polyhymnia/mnx';
 import { clefForMidis, midiOfToken, midiToPitch, pickOne, pitchAbove, randomInt, type Rng } from '../shared/tones.js';
 import { intervalById, type IntervalId } from '../shared/intervals.js';
 import { pitchToToken, spellRelative, tokenPitch } from '../shared/spelling.js';

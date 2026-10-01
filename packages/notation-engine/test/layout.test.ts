@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Clef, MnxDocument } from '@polyhymnia/notation-model';
+import type { Clef, MnxDocument } from '@polyhymnia/mnx';
 import { layoutScore } from '../src/layout/index.js';
 import type { NotationOptions } from '../src/options.js';
 import type { NoteId } from '../src/layout/records.js';

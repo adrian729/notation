@@ -4,13 +4,13 @@
 
 ```
 packages/
-  notation-model/          # @polyhymnia/notation-model — thin MNX layer, pure TS, zero deps, no DOM in tsconfig lib
+  mnx/          # @polyhymnia/mnx — thin MNX layer, pure TS, zero deps, no DOM in tsconfig lib
     schema/                  mnx-schema.json  examples/<52 files>  SOURCE   (mnx.md)
     scripts/                 mnx-update.mjs  gen-mnx-types.mjs
     src/mnx/                 types.ts (generated)  read.ts  time.ts  meter.ts  pitch.ts  rational.ts  ids.ts  element-ids.ts  beam.ts  index.ts
     src/edit/                 apply.ts  cleanup.ts  types.ts  index.ts   — `applyIntent` (interaction.md)
     test/
-  notation-engine/         # @polyhymnia/notation-engine — pure TS, depends on notation-model only, no DOM — runs in Node
+  notation-engine/         # @polyhymnia/notation-engine — pure TS, depends on mnx only, no DOM — runs in Node
     src/options.ts           NotationOptions, DEFAULT_OPTIONS
     src/font/                metadata.ts metadata.json glyphs.ts   (name -> codepoint)
     src/layout/
@@ -23,7 +23,7 @@ packages/
     src/query/               hitTest.ts slots.ts measures.ts preview.ts timemap.ts playorder.ts
     assets/                   polyhymnia-notation.woff2 OFL.txt NOTICE.txt   (exported as `./assets/*`)
     test/                     fixtures/ (MNX JSON), __golden__/ (golden.test.ts snapshots), __snapshots__/, conformance.test.ts, schema.test.ts, mnx-mapping.test.ts, golden.test.ts, layout.test.ts, pipeline.test.ts, interaction.test.ts, fullness.test.ts, rational.test.ts, key-clef-corpus.test.ts, playorder.test.ts, mnx.ts (test helper)
-  notation-react/            # depends on notation-model + notation-engine; peer: react ^19
+  notation-react/            # depends on mnx + notation-engine; peer: react ^19
     src/  Notation.tsx  Interaction.tsx  Marks.tsx  index.ts
     src/presets/               NotesReveal.tsx  ScaleReveal.tsx  mnxBuild.ts  shared.ts  index.ts  (build MNX internally)
     styles/notation.css        # default theme, all custom properties
@@ -31,7 +31,7 @@ packages/
     test/                      interaction.test.tsx notation.test.tsx
   notation-font/                # build-time only, never in the runtime dep tree
     manifest.ts build.mjs sync.mjs filter_metadata.py rename_and_compress.py NOTICE.txt dist/
-  audio/                     # @polyhymnia/audio — depends on notation-model + notation-engine (types only), no react; `.` pure, `./webaudio` DOM (audio.md)
+  audio/                     # @polyhymnia/audio — depends on mnx + notation-engine (types only), no react; `.` pure, `./webaudio` DOM (audio.md)
     src/  events.ts pitch.ts instrument.ts index.ts  webaudio/{synth,player,context,index}.ts
     test/
 apps/web/                        # imports @polyhymnia/notation-react and @polyhymnia/audio; demo scores under src/scores/*.mnx.json; demo exercises under src/exercises/, sound wiring in src/sound.ts, score playback in src/ScorePlayer.tsx
@@ -39,14 +39,14 @@ apps/app/                        # @polyhymnia/app — the ear-training product 
 tools/musicxml-to-mnx/           # offline content pipeline, not a runtime package — interface.md "Authoring scores"
 ```
 
-Dependency direction: `notation-model` ← `notation-engine` ← {`notation-react`, `audio`} ← {`apps/web`, `apps/app`}. Each layer depends only on the layers to its left; `notation-react` and `audio` never import each other.
+Dependency direction: `mnx` ← `notation-engine` ← {`notation-react`, `audio`} ← {`apps/web`, `apps/app`}. Each layer depends only on the layers to its left; `notation-react` and `audio` never import each other.
 
-- `notation-model` — a thin layer over MNX, nothing else: the vendored schema and its 52 official examples, generated `MnxDocument`/`Event`/`Note`/… types, `readMnx()` (version check), `Rational`, `noteValueLength`/`tupletRatio` (MNX note-value and tuplet math, also used by the engine), pitch math (`parsePitch`, `pitchToMidi`, `STEP_LETTERS`, `stepNumberOf`, used by engine, audio, react presets and the app), positional-id derivation (`mnx/element-ids.ts`: `elementIds`, `idAt`, `nodeOf`), and edit application (`edit/`: `applyIntent`, pure MNX → MNX, `interaction.md`). No custom score model, no builders (`AGENTS.md`). No dependencies at all besides its own devDependencies (Ajv, `json-schema-to-typescript`, both build/test-time only).
-- `notation-engine` — font metrics, the layout pipeline reading MNX directly, `query/` (timemap), plus `NotationOptions`. The root entry exports only what consumers use (`layoutScore`, `hitTest` + `HIT_STAFF_MARGIN`, `previewShapes`, `LayoutResult` and its shape types, `TimeMap`, `NotationOptions`, `ClefSpec`/`KeySpec`/`StaffPitch`/`TimeSpec`, `HitKind`/`HitOptions`/`HitResult`, `PreviewNote`); pipeline stages stay internal. Consumers import each symbol from its owning package; `notation-react` exports only React things. Its output, `LayoutResult`, is the renderer-agnostic contract: a future Vue (or any other) rendering package depends on `notation-model` + `notation-engine` exactly as `notation-react` does, and reimplements only the rendering layer.
+- `mnx` — a thin layer over MNX, nothing else: the vendored schema and its 52 official examples, generated `MnxDocument`/`Event`/`Note`/… types, `readMnx()` (version check), `Rational`, `noteValueLength`/`tupletRatio` (MNX note-value and tuplet math, also used by the engine), pitch math (`parsePitch`, `pitchToMidi`, `STEP_LETTERS`, `stepNumberOf`, used by engine, audio, react presets and the app), positional-id derivation (`mnx/element-ids.ts`: `elementIds`, `idAt`, `nodeOf`), and edit application (`edit/`: `applyIntent`, pure MNX → MNX, `interaction.md`). No custom score model, no builders (`AGENTS.md`). No dependencies at all besides its own devDependencies (Ajv, `json-schema-to-typescript`, both build/test-time only).
+- `notation-engine` — font metrics, the layout pipeline reading MNX directly, `query/` (timemap), plus `NotationOptions`. The root entry exports only what consumers use (`layoutScore`, `hitTest` + `HIT_STAFF_MARGIN`, `previewShapes`, `LayoutResult` and its shape types, `TimeMap`, `NotationOptions`, `ClefSpec`/`KeySpec`/`StaffPitch`/`TimeSpec`, `HitKind`/`HitOptions`/`HitResult`, `PreviewNote`); pipeline stages stay internal. Consumers import each symbol from its owning package; `notation-react` exports only React things. Its output, `LayoutResult`, is the renderer-agnostic contract: a future Vue (or any other) rendering package depends on `mnx` + `notation-engine` exactly as `notation-react` does, and reimplements only the rendering layer.
 - `audio` — sound from a `TimeMap`: pure event builders and `eventsFromTimeMap` on `.`, Web Audio synth and player on `./webaudio` (`audio.md`). Imports model (runtime) and engine (types only).
 - `notation-react` — the React rendering layer. Presets build MNX internally (`interface.md`) from small typed props (`PitchToken`, MNX note values); there is no public builder API to re-export.
 
-Enforcement: no lint script — the package manifests and tsconfigs are the enforcement. pnpm's strict `node_modules` means a package can only import what its `package.json` declares, so `notation-model` (no runtime dependencies) cannot reach the engine (relative-path imports across packages are not blocked by pnpm; there are none, and review keeps it that way), and `notation-engine` (depends on `notation-model` only) cannot reach React. Both `tsconfig.json`s exclude `"DOM"` from `lib`, so any DOM or React reference in either is a compile error on the day it's written.
+Enforcement: no lint script — the package manifests and tsconfigs are the enforcement. pnpm's strict `node_modules` means a package can only import what its `package.json` declares, so `mnx` (no runtime dependencies) cannot reach the engine (relative-path imports across packages are not blocked by pnpm; there are none, and review keeps it that way), and `notation-engine` (depends on `mnx` only) cannot reach React. Both `tsconfig.json`s exclude `"DOM"` from `lib`, so any DOM or React reference in either is a compile error on the day it's written.
 
 `notation-font` is build-time-only — fontTools/Python never appear in `npm install`. `build.mjs` writes to `notation-font/dist/` and then runs `sync.mjs` (also runnable alone as `node sync.mjs`), which copies byte-identical files to where the runtime packages read them: `metadata.json` → `notation-engine/src/font/`, the `.woff2` + `OFL.txt` + `NOTICE.txt` → `notation-engine/assets/`, and the `.woff2` → `notation-react/styles/`.
 

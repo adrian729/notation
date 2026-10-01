@@ -8,7 +8,7 @@
     "test": "pnpm -r --filter=./packages/* --filter=./tools/* test",
     "dev": "pnpm --filter @polyhymnia/app dev",
     "dev:demo": "pnpm --filter @polyhymnia/web dev --port 5174 --strictPort",
-    "mnx:update": "pnpm --filter @polyhymnia/notation-model mnx:update"
+    "mnx:update": "pnpm --filter @polyhymnia/mnx mnx:update"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

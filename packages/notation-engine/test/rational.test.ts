@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { noteValueLength, Rational as R, rational } from '@polyhymnia/notation-model';
-import type { NoteValueBase } from '@polyhymnia/notation-model';
+import { noteValueLength, Rational as R, rational } from '@polyhymnia/mnx';
+import type { NoteValueBase } from '@polyhymnia/mnx';
 import { normalize } from '../src/layout/normalize.js';
 import type { NormalizedElement } from '../src/layout/records.js';
 import { temporal } from '../src/layout/temporal.js';

@@ -15,7 +15,7 @@
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource-variable/texturina": "5.3.0",
     "@polyhymnia/audio": "workspace:*",
-    "@polyhymnia/notation-model": "workspace:*",
+    "@polyhymnia/mnx": "workspace:*",
     "@polyhymnia/notation-react": "workspace:*",
     "@tanstack/react-router": "^1.170.0",
     "class-variance-authority": "^0.7.1",

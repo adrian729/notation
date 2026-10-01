@@ -1,4 +1,4 @@
-import type { Diagnostic } from '@polyhymnia/notation-model';
+import type { Diagnostic } from '@polyhymnia/mnx';
 import { engravingDefaults } from '../font/metadata.js';
 import type { NotationOptions } from '../options.js';
 import type { BeamsResult } from './beams.js';

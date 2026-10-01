@@ -1,5 +1,5 @@
 import type { PreviewNote } from '@polyhymnia/notation-engine';
-import type { NoteId } from '@polyhymnia/notation-model';
+import type { NoteId } from '@polyhymnia/mnx';
 
 export interface NotationMarksProps {
   states?: Readonly<Record<NoteId, string>>;

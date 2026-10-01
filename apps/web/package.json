@@ -12,7 +12,7 @@
   "dependencies": {
     "@polyhymnia/audio": "workspace:*",
     "@polyhymnia/notation-engine": "workspace:*",
-    "@polyhymnia/notation-model": "workspace:*",
+    "@polyhymnia/mnx": "workspace:*",
     "@polyhymnia/notation-react": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

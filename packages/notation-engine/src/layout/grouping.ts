@@ -1,5 +1,5 @@
 import type { NotationOptions } from '../options.js';
-import type { Diagnostic } from '@polyhymnia/notation-model';
+import type { Diagnostic } from '@polyhymnia/mnx';
 import type { NormalizedScore, NoteId, TupletDisplay } from './records.js';
 import type { TemporalScore } from './temporal.js';
 

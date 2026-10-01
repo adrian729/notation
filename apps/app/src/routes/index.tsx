@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import type { MnxDocument } from '@polyhymnia/notation-model';
+import type { MnxDocument } from '@polyhymnia/mnx';
 import { LOGO_URL } from '@/lib/logo';
 import { TitleText } from '@/components/Initial';
 import { SaltarelloScore } from '@/components/SaltarelloScore';

@@ -1,4 +1,4 @@
-import type { Diagnostic, ElementIds, ElementPosition, Slur, Tie } from '@polyhymnia/notation-model';
+import type { Diagnostic, ElementIds, ElementPosition, Slur, Tie } from '@polyhymnia/mnx';
 import type { ElementNote, NormalizedSlur, NormalizedTie, NoteId } from './records.js';
 
 export type MutableNote = { -readonly [K in keyof ElementNote]: ElementNote[K] };

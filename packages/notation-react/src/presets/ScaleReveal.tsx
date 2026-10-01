@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { JSX } from 'react';
-import { parsePitch } from '@polyhymnia/notation-model';
-import type { NoteValue } from '@polyhymnia/notation-model';
+import { parsePitch } from '@polyhymnia/mnx';
+import type { NoteValue } from '@polyhymnia/mnx';
 import type { ClefSpec } from '@polyhymnia/notation-engine';
 import { Notation } from '../Notation.js';
 import { durationKey, fittingMeter, scaleKey, scalePitches } from './shared.js';

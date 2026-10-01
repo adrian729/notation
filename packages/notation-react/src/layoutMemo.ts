@@ -1,6 +1,6 @@
 import { layoutScore } from '@polyhymnia/notation-engine';
 import type { LayoutResult, NotationOptions } from '@polyhymnia/notation-engine';
-import type { MnxDocument } from '@polyhymnia/notation-model';
+import type { MnxDocument } from '@polyhymnia/mnx';
 
 const NO_OPTIONS: NotationOptions = {};
 const layouts = new WeakMap<MnxDocument, WeakMap<NotationOptions, LayoutResult>>();

@@ -1,5 +1,5 @@
-import { Rational as R } from '@polyhymnia/notation-model';
-import type { Diagnostic, Rational } from '@polyhymnia/notation-model';
+import { Rational as R } from '@polyhymnia/mnx';
+import type { Diagnostic, Rational } from '@polyhymnia/mnx';
 import type { NotationOptions } from '../options.js';
 import {
   decomposeLength,

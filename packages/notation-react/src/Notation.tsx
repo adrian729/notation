@@ -20,7 +20,7 @@ import type {
   TimeMap,
   ViewBox,
 } from '@polyhymnia/notation-engine';
-import type { MnxDocument, NoteId } from '@polyhymnia/notation-model';
+import type { MnxDocument, NoteId } from '@polyhymnia/mnx';
 import { InteractionChild, clientToLayoutPoint, hitIdentity, resolveHitOptions } from './Interaction.js';
 import type { NotationInteractionProps, NotationIntent } from './Interaction.js';
 import { memoLayout } from './layoutMemo.js';

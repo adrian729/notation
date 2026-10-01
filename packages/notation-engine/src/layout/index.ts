@@ -1,5 +1,5 @@
 import type { NotationOptions } from '../options.js';
-import type { Diagnostic, MnxDocument } from '@polyhymnia/notation-model';
+import type { Diagnostic, MnxDocument } from '@polyhymnia/mnx';
 import { accidentals } from './accidentals.js';
 import { beams } from './beams.js';
 import { breakSystems } from './break.js';

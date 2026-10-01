@@ -4,7 +4,7 @@ MNX (W3C Community Group, `w3c-cg/mnx`) is the component's only score format —
 
 ## Where MNX is read
 
-Only `notation-engine/src/layout/normalize.ts` reads the raw MNX document. It calls `readMnx()` (`notation-model/src/mnx/read.ts`) to check `mnx.version`, then flattens `parts[0]`'s sequences into flat `NormalizedElement`/`NormalizedGap` records (`layout/normalize.ts`) that carry only what later stages need — a resolved clef/key/time per measure, one flat list of events per voice. `layout/temporal.ts` turns those into `TemporalElement` rows (onset/duration in ticks) — it does timing only, it does not read the document. Every stage after `temporal` reads only these flat records (`layout/records.ts`'s types), never the MNX document itself. This is the boundary `AGENTS.md` requires: if MNX gains a field the engine doesn't yet support, exactly one file (`normalize.ts`) changes.
+Only `notation-engine/src/layout/normalize.ts` reads the raw MNX document. It calls `readMnx()` (`mnx/src/mnx/read.ts`) to check `mnx.version`, then flattens `parts[0]`'s sequences into flat `NormalizedElement`/`NormalizedGap` records (`layout/normalize.ts`) that carry only what later stages need — a resolved clef/key/time per measure, one flat list of events per voice. `layout/temporal.ts` turns those into `TemporalElement` rows (onset/duration in ticks) — it does timing only, it does not read the document. Every stage after `temporal` reads only these flat records (`layout/records.ts`'s types), never the MNX document itself. This is the boundary `AGENTS.md` requires: if MNX gains a field the engine doesn't yet support, exactly one file (`normalize.ts`) changes.
 
 `layoutScore(doc: MnxDocument, options)` is the pipeline entry point; `options.divisions` (ticks per quarter note) defaults to 3360.
 
@@ -25,7 +25,7 @@ Reading `parts[0]` only, `staff 1` only, up to 2 sequences (voices) per measure:
 | `event` with `notes.length > 1` | chord — one `ElementNote` per member |
 | `event.rest` | rest; `rest.staffPosition` → the rest's forced staff line/space |
 | `sequence.fullMeasure` | a whole-bar rest (`wholeBar: true`) — see "Whole-bar rests" below |
-| `tuplet` container | flattened: children get a `TupletRef { id, actual, normal, display? }`, `actual`/`normal` from `inner`/`outer` reduced to lowest terms (`tupletRatio`, `notation-model/src/mnx/time.ts`). `bracket`/`showNumber`/`placement` are carried through to `display` (only when at least one is given); `showValue` is not drawn, `mnx-unsupported`. A tuplet nested inside another is flattened into one combined ratio + `mnx-unsupported` (message says the content "keeps only the outer tuplet's ratio" when the inner ratio itself is unsupported, vs "laid out untupled" for an unnested tuplet); its `display` is the innermost tuplet's own |
+| `tuplet` container | flattened: children get a `TupletRef { id, actual, normal, display? }`, `actual`/`normal` from `inner`/`outer` reduced to lowest terms (`tupletRatio`, `mnx/src/mnx/time.ts`). `bracket`/`showNumber`/`placement` are carried through to `display` (only when at least one is given); `showValue` is not drawn, `mnx-unsupported`. A tuplet nested inside another is flattened into one combined ratio + `mnx-unsupported` (message says the content "keeps only the outer tuplet's ratio" when the inner ratio itself is unsupported, vs "laid out untupled" for an unnested tuplet); its `display` is the innermost tuplet's own |
 | `parts[0].measures[i].beams[]` | See "Beams" below |
 | `note.accidentalDisplay` | absent → `'auto'`; `show: false` → `'never'`; `show: true` → `'always'`; `show: true` + `enclosure.symbol: 'parentheses'` → `'cautionary'` |
 | `note.ties[].target`/`targetType` | resolved to a start/stop pair by MNX note id — the earlier note gets `tie: 'start'`/`'continue'`, the resolved target gets `'stop'`/`'continue'`. Only `targetType: 'nextNote'` or an absent `targetType` is drawn this way; `crossVoice`/`arpeggio`/`crossJump` are not drawn, + `mnx-unsupported`. An unresolved target → diagnostic `tie-target-unresolved`, no tie drawn. `tie.lv` (laissez-vibrer) is not drawn, `mnx-unsupported` |
@@ -78,7 +78,7 @@ A 2nd voice (`sequences[1]`) is parsed, carried through `temporal`, and laid out
 `mnx.support.useBeams` decides whether the engine invents beams (`w3c-cg/mnx` support object docs; `phase3-rhythm.md` "DECISIONS FROM RESEARCH"):
 
 - **`useBeams: true`**: only what's explicitly in a measure's `beams[]` gets beamed. A measure with no `beams` entry is left entirely unbeamed (flags).
-- **`useBeams` false or absent** (the default): a measure with an explicit `beams[]` uses exactly that; a measure with none is auto-beamed by the engine, using `notation-model/src/mnx/beam.ts`'s `beamGroups` (driven by `options.beaming` — see `interface.md`). Auto-beaming never goes through MNX: it calls the model's grouping core directly with the engine's own element ids, so it never mints an id or mutates anything.
+- **`useBeams` false or absent** (the default): a measure with an explicit `beams[]` uses exactly that; a measure with none is auto-beamed by the engine, using `mnx/src/mnx/beam.ts`'s `beamGroups` (driven by `options.beaming` — see `interface.md`). Auto-beaming never goes through MNX: it calls the model's grouping core directly with the engine's own element ids, so it never mints an id or mutates anything.
 
 Either way, the result is one `NormalizedBeam` per beamed run:
 
@@ -103,7 +103,7 @@ Beam id = the MNX `beams[].id` when given, otherwise `{firstElementId}.beam` via
 
 Every element the engine lays out gets an id: the MNX `id` when the document supplies one, otherwise a deterministic positional id. Content an app references — playback highlight, quiz lookups, click targets — **must** carry a real MNX `id`; a positional id is stable only until the document is edited.
 
-Id synthesis is a single shared implementation, `elementIds(doc)` in `notation-model` (`@polyhymnia/notation-model`'s `elementIds`/`ElementIds`/`NoteId`). It walks `parts[0]`'s staff-1 sequences once, in the same order and with the same rules the engine used to apply inline, and hands back a position-keyed lookup (`idAt(pos)`/`nodeOf(id)`/`mint(candidate)`/`diagnostics`, where a position is `{ measureIndex, sequenceIndex, path }` plus a `note` index for chord members or a `fullMeasureRest` marker, and `nodeOf` returns the entry — `{ measureIndex, sequenceIndex, path, note?, element }` — with `element: { kind, node }` typed per kind from the generated MNX types, kind being `event`, `chordNote`, `tuplet` or `fullMeasureRest`). `mint(candidate)` is for ids assigned outside that walk (beams). Collision suffixes are `~n` everywhere: `assignIds` (the MusicXML tool) mints through the same `mintId`. `notation-engine`'s `normalize.ts` no longer synthesizes ids itself; it only looks up what `elementIds` already computed.
+Id synthesis is a single shared implementation, `elementIds(doc)` in `mnx` (`@polyhymnia/mnx`'s `elementIds`/`ElementIds`/`NoteId`). It walks `parts[0]`'s staff-1 sequences once, in the same order and with the same rules the engine used to apply inline, and hands back a position-keyed lookup (`idAt(pos)`/`nodeOf(id)`/`mint(candidate)`/`diagnostics`, where a position is `{ measureIndex, sequenceIndex, path }` plus a `note` index for chord members or a `fullMeasureRest` marker, and `nodeOf` returns the entry — `{ measureIndex, sequenceIndex, path, note?, element }` — with `element: { kind, node }` typed per kind from the generated MNX types, kind being `event`, `chordNote`, `tuplet` or `fullMeasureRest`). `mint(candidate)` is for ids assigned outside that walk (beams). Collision suffixes are `~n` everywhere: `assignIds` (the MusicXML tool) mints through the same `mintId`. `notation-engine`'s `normalize.ts` no longer synthesizes ids itself; it only looks up what `elementIds` already computed.
 
 Positional id shapes (measure `m`, sequence `s`, event index `k` within its voice):
 
@@ -122,8 +122,8 @@ Every explicit `id` in the document is scanned up front, so a positional id is n
 
 ## Time: rationals internally, integer ticks at the boundary
 
-- Inside the layout pipeline (from `temporal` on): `Rational { n: number; d: number }` (`notation-model/src/mnx/rational.ts`, re-exported as `Rational` from `@polyhymnia/notation-model/mnx`), gcd-normalized. Exact arithmetic, no float epsilon bugs (`3 × triplet-eighth = 1 quarter` exactly).
-- `normalize.ts` converts every MNX note-value/tuplet/fraction to a `Rational` via `noteValueLength`/`tupletRatio` (`notation-model/src/mnx/time.ts`) before any arithmetic; `temporal.ts` sums those rationals to get onsets and only rounds to integer ticks (`Rational.toTicks`) when producing its output rows.
+- Inside the layout pipeline (from `temporal` on): `Rational { n: number; d: number }` (`mnx/src/mnx/rational.ts`, re-exported as `Rational` from `@polyhymnia/mnx/mnx`), gcd-normalized. Exact arithmetic, no float epsilon bugs (`3 × triplet-eighth = 1 quarter` exactly).
+- `normalize.ts` converts every MNX note-value/tuplet/fraction to a `Rational` via `noteValueLength`/`tupletRatio` (`mnx/src/mnx/time.ts`) before any arithmetic; `temporal.ts` sums those rationals to get onsets and only rounds to integer ticks (`Rational.toTicks`) when producing its output rows.
 - `options.divisions` (default 3360 = 2⁵×3×5×7) is an engine option, not document data — MNX carries no `divisions` field. 3360 divides evenly down to a 64th (needs 2⁴) crossed with triplets/quintuplets/septuplets; conventional 768/960 cannot represent a 64th-note septuplet exactly. `readMnx`/`normalize` reject a non-positive/non-integer `options.divisions`, diagnostic `invalid-divisions`, and fall back to the default.
 
 ## Pickup and fullness rules
@@ -140,7 +140,7 @@ Every tick of a measure must be covered — the engine still enforces this, but 
 
 ## Diagnostics
 
-One shape everywhere (`notation-model/src/mnx/read.ts`'s `Diagnostic`, re-exported from `@polyhymnia/notation-model/mnx`):
+One shape everywhere (`mnx/src/mnx/read.ts`'s `Diagnostic`, re-exported from `@polyhymnia/mnx/mnx`):
 
 ```ts
 interface Diagnostic {
@@ -185,7 +185,7 @@ Codes actually produced today (verify against `normalize.ts`/`temporal.ts`/`vert
 
 ## Pinned schema, examples, and updating
 
-The MNX schema and its 52 official example documents are vendored at one pinned commit in `packages/notation-model/schema/`:
+The MNX schema and its 52 official example documents are vendored at one pinned commit in `packages/mnx/schema/`:
 
 ```
 schema/
@@ -194,7 +194,7 @@ schema/
   SOURCE                 # commit, commit date, schema $id, supported mnx.version
 ```
 
-Never hand-edit any of these, or the generated `notation-model/src/mnx/types.ts` (`json-schema-to-typescript` output, checked in, regenerated by `pnpm gen:mnx-types`) — `AGENTS.md`. Upgrade deliberately with:
+Never hand-edit any of these, or the generated `mnx/src/mnx/types.ts` (`json-schema-to-typescript` output, checked in, regenerated by `pnpm gen:mnx-types`) — `AGENTS.md`. Upgrade deliberately with:
 
 ```sh
 pnpm mnx:update <commit>

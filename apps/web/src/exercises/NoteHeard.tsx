@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NotationHandle, NotationIntent } from '@polyhymnia/notation-react';
-import type { MnxDocument, NoteId } from '@polyhymnia/notation-model';
+import type { MnxDocument, NoteId } from '@polyhymnia/mnx';
 import { createSound, midiOfId } from '../sound.js';
 import score from '../scores/exercise-note-heard.mnx.json';
 import { FontNotation } from '../font.js';

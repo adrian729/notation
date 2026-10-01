@@ -1,5 +1,5 @@
-import { noteValueLength, Rational as R, STEP_LETTERS, stepNumberOf } from '@polyhymnia/notation-model';
-import type { Diagnostic, Pitch, NoteId as ModelNoteId, Rational } from '@polyhymnia/notation-model';
+import { noteValueLength, Rational as R, STEP_LETTERS, stepNumberOf } from '@polyhymnia/mnx';
+import type { Diagnostic, Pitch, NoteId as ModelNoteId, Rational } from '@polyhymnia/mnx';
 
 export type NoteId = ModelNoteId;
 

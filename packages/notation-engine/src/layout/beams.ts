@@ -1,4 +1,4 @@
-import type { Diagnostic } from '@polyhymnia/notation-model';
+import type { Diagnostic } from '@polyhymnia/mnx';
 import { engravingDefaults } from '../font/metadata.js';
 import type { JustifiedScore } from './justify.js';
 import type { NormalizedBeam, NoteId } from './records.js';

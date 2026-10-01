@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { MnxDocument } from '@polyhymnia/notation-model';
+import type { MnxDocument } from '@polyhymnia/mnx';
 import { NotesReveal, ScaleReveal } from '@polyhymnia/notation-react/presets';
 import { NoteHeard, Dictation, ErrorDetection, IntervalId } from './exercises/index.js';
 import { Example } from './Example.js';

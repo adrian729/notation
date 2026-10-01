@@ -1,1 +1,1 @@
-export { assignIds } from '@polyhymnia/notation-model';
+export { assignIds } from '@polyhymnia/mnx';

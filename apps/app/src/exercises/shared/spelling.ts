@@ -1,5 +1,5 @@
 import { intervalDisplayName } from './intervals.js';
-import { parsePitch, pitchToMidi, STEP_LETTERS, stepNumberOf, type Pitch } from '@polyhymnia/notation-model';
+import { parsePitch, pitchToMidi, STEP_LETTERS, stepNumberOf, type Pitch } from '@polyhymnia/mnx';
 
 export type SpelledPitch = Pick<Required<Pitch>, 'step' | 'alter' | 'octave'>;
 

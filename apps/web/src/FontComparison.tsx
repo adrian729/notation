@@ -1,5 +1,5 @@
 import { Notation } from '@polyhymnia/notation-react';
-import type { MnxDocument } from '@polyhymnia/notation-model';
+import type { MnxDocument } from '@polyhymnia/mnx';
 import { Example } from './Example.js';
 import { FontNotation, FontToggle } from './font.js';
 

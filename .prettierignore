@@ -1,8 +1,8 @@
 .worktrees/
 *.md
 apps/app/src/routeTree.gen.ts
-packages/notation-model/schema/
-packages/notation-model/src/mnx/types.ts
+packages/mnx/schema/
+packages/mnx/src/mnx/types.ts
 **/test/__golden__/
 **/test/__snapshots__/
 **/test/fixtures/

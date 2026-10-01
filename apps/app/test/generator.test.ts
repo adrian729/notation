@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { generateQuestion, validateExerciseOptions } from '@/exercises/interval-comparison/generator';
 import { intervalById } from '@/exercises/shared/intervals';
 import { normalizeOptions } from '@/exercises/interval-comparison/options';
-import { parsePitch, pitchToMidi } from '@polyhymnia/notation-model';
+import { parsePitch, pitchToMidi } from '@polyhymnia/mnx';
 
 function mulberry32(seed: number) {
   let a = seed;

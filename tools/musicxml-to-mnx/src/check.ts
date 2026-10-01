@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import Ajv2020, { type ErrorObject } from 'ajv/dist/2020.js';
 import { layoutScore, type LayoutResult } from '@polyhymnia/notation-engine';
-import { readMnx, type Diagnostic } from '@polyhymnia/notation-model';
+import { readMnx, type Diagnostic } from '@polyhymnia/mnx';
 
-const SCHEMA_PATH = createRequire(import.meta.url).resolve('@polyhymnia/notation-model/schema');
+const SCHEMA_PATH = createRequire(import.meta.url).resolve('@polyhymnia/mnx/schema');
 
 export const UNSUPPORTED_ALLOWLIST: readonly string[] = ['part name'];
 

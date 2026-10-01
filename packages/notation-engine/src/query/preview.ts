@@ -1,4 +1,4 @@
-import type { Pitch as MnxPitch } from '@polyhymnia/notation-model';
+import type { Pitch as MnxPitch } from '@polyhymnia/mnx';
 import { engravingDefaults, glyphAdvanceWidth } from '../font/metadata.js';
 import { glyphCodepoint } from '../font/glyphs.js';
 import { DEFAULT_FONT, type FontFamily } from '../font/glyphs.js';

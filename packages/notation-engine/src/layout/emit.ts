@@ -1,6 +1,6 @@
 import { engravingDefaults, glyphAdvanceWidth, glyphBBox } from '../font/metadata.js';
 import { DEFAULT_FONT, glyphCodepoint, type FontFamily } from '../font/glyphs.js';
-import type { Diagnostic } from '@polyhymnia/notation-model';
+import type { Diagnostic } from '@polyhymnia/mnx';
 import {
   describePitch,
   type Duration,

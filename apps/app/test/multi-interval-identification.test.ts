@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { STEP_LETTERS } from '@polyhymnia/notation-model';
+import { STEP_LETTERS } from '@polyhymnia/mnx';
 import {
   generateQuestion,
   normalizeOptions,

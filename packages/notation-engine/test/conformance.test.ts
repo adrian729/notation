@@ -1,10 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import type { MnxDocument } from '@polyhymnia/notation-model';
+import type { MnxDocument } from '@polyhymnia/mnx';
 import { layoutScore } from '../src/layout/index.js';
 
-const EXAMPLES = fileURLToPath(new URL('../../notation-model/schema/examples/', import.meta.url));
+const EXAMPLES = fileURLToPath(new URL('../../mnx/schema/examples/', import.meta.url));
 const examples = readdirSync(EXAMPLES)
   .filter((f) => f.endsWith('.json'))
   .map((f) => f.replace(/\.json$/, ''))

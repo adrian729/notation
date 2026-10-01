@@ -1,6 +1,6 @@
 import { engravingDefaults, glyphAdvanceWidth } from '../font/metadata.js';
 import { DEFAULT_OPTIONS, type NotationOptions } from '../options.js';
-import type { Diagnostic } from '@polyhymnia/notation-model';
+import type { Diagnostic } from '@polyhymnia/mnx';
 import type { ClefSpec, KeySpec, NormalizedMeasure, NormalizedScore, TimeSpec } from './records.js';
 import { clefEquals, clefGlyph, keySignature } from './staff.js';
 import type { TemporalScore } from './temporal.js';

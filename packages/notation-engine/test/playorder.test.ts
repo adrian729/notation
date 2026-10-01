@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import type { MnxDocument } from '@polyhymnia/notation-model';
+import type { MnxDocument } from '@polyhymnia/mnx';
 import { layoutScore } from '../src/layout/index.js';
 import { fixture } from './mnx.js';
 
 function example(name: string): MnxDocument {
   return JSON.parse(
-    readFileSync(new URL(`../../notation-model/schema/examples/${name}.json`, import.meta.url), 'utf8'),
+    readFileSync(new URL(`../../mnx/schema/examples/${name}.json`, import.meta.url), 'utf8'),
   ) as MnxDocument;
 }
 

@@ -1,4 +1,4 @@
-import { pitchToMidi } from '@polyhymnia/notation-model';
+import { pitchToMidi } from '@polyhymnia/mnx';
 import { chordById, chordSpan, type ChordId, type ChordQuality } from './chords.js';
 import type { ChordPlayback } from './playback.js';
 import type { ChordOptions } from './options.js';

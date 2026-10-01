@@ -1,5 +1,5 @@
-import { parsePitch } from '@polyhymnia/notation-model';
-import type { Clef, Event, MnxDocument, NoteValue, Pitch, Time } from '@polyhymnia/notation-model';
+import { parsePitch } from '@polyhymnia/mnx';
+import type { Clef, Event, MnxDocument, NoteValue, Pitch, Time } from '@polyhymnia/mnx';
 import type { ClefSpec } from '@polyhymnia/notation-engine';
 
 const CLEFS: Record<ClefSpec['kind'], Clef> = {

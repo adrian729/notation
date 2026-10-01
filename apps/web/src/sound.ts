@@ -2,7 +2,7 @@ import { createAudioContext, createSharedPlayer, unlockAudio } from '@polyhymnia
 import type { Playback, Player } from '@polyhymnia/audio/webaudio';
 import { midiOfPitch } from '@polyhymnia/audio';
 import type { NoteEvent, PitchLike } from '@polyhymnia/audio';
-import type { NoteId } from '@polyhymnia/notation-model';
+import type { NoteId } from '@polyhymnia/mnx';
 import type { TimeMap } from '@polyhymnia/notation-engine';
 
 export interface Sound {

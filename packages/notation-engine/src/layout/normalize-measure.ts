@@ -1,4 +1,4 @@
-import type { Clef, Diagnostic, MeasureGlobal, PartMeasure } from '@polyhymnia/notation-model';
+import type { Clef, Diagnostic, MeasureGlobal, PartMeasure } from '@polyhymnia/mnx';
 import { DEFAULT_DIVISIONS, type ClefSpec, type KeySpec, type NormalizedMeasure, type TimeSpec } from './records.js';
 import { asArray, asObject, type Reader } from './normalize-reader.js';
 

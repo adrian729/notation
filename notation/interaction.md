@@ -1,6 +1,6 @@
 # Interaction
 
-Hit-testing, slots, `MeasureBox`, `<Notation.Interaction>`/`<Notation.Marks>`, and `applyIntent`'s one intent (`setPitches`) are all implemented (`query/hitTest.ts`, `query/slots.ts`, `query/preview.ts` in `notation-engine`; `Interaction.tsx`, `Marks.tsx` in `notation-react`; `edit/apply.ts` in `notation-model`). Everything under "Deferred editor features" below is design-only and out of scope until an exercise actually needs it. Written against MNX throughout, since that's the only score format there is to design against (`AGENTS.md`).
+Hit-testing, slots, `MeasureBox`, `<Notation.Interaction>`/`<Notation.Marks>`, and `applyIntent`'s one intent (`setPitches`) are all implemented (`query/hitTest.ts`, `query/slots.ts`, `query/preview.ts` in `notation-engine`; `Interaction.tsx`, `Marks.tsx` in `notation-react`; `edit/apply.ts` in `mnx`). Everything under "Deferred editor features" below is design-only and out of scope until an exercise actually needs it. Written against MNX throughout, since that's the only score format there is to design against (`AGENTS.md`).
 
 ## Hit-testing
 
@@ -23,7 +23,7 @@ type HitResult =
   | { kind:'point'; measureIndex:number; systemIndex:number; x:number; tick:number; staffPosition:number; pitch:Pitch };
 ```
 
-`NoteId` is a plain string — the MNX id when the document supplies one, else the engine's deterministic positional id (`mnx.md`'s ID rule). `Pitch` here is MNX's pitch shape, `{ step: 'A'..'G'; alter?: number; octave: number }` (`notation-model`'s `types.ts`), the same shape `parsePitch('C#4')` produces — `hitTest` omits `alter` when it's 0.
+`NoteId` is a plain string — the MNX id when the document supplies one, else the engine's deterministic positional id (`mnx.md`'s ID rule). `Pitch` here is MNX's pitch shape, `{ step: 'A'..'G'; alter?: number; octave: number }` (`mnx`'s `types.ts`), the same shape `parsePitch('C#4')` produces — `hitTest` omits `alter` when it's 0.
 
 Resolution: a system is found first from `p.y` (staff band ±4 sp, a ledger-line allowance — a point further off-staff than that misses every kind and `hitTest` returns `null`); `element` is tried against every `ElementBox` in that system regardless of measure (its own padded `hitBox`, expanded by `opts.radius`); a chord's several member boxes resolve to the member whose `staffPosition` is nearest the click, and among members on the same position (a chromatic unison's side-by-side noteheads) to the one whose box centre is horizontally nearest. `slot`/`point` then need a `MeasureBox` found from `p.x` within that system — no matching measure means both miss. `element`'s `pitch` is `null` for a rest, otherwise the same key-relative derivation as `slot`/`point` (below) from the box's own `staffPosition`, not the note's true written accidental — `ElementBox` doesn't carry the written `Pitch`, only position.
 
@@ -40,7 +40,7 @@ interface Slot extends SlotRef {
 }
 ```
 
-Generation, per measure/voice: one slot per column's element at that voice (`query/slots.ts`) — no grid subdivision. A whole-bar (`fullMeasure`) rest gets one slot spanning the whole measure's content band (`MeasureBox.contentX` to the measure's right edge) instead of a column band; its `eventId` is the same id `isFullMeasureRest` checks in `notation-model`, so a dictation `setPitches` against it correctly no-ops with `intent-target-unsupported` (below) rather than editing something that isn't a real event. Non-whole-bar slots tile the measure column-to-column: each column's band runs from its own x to the next column's x (or the measure's content-right edge for the last column), so bands are contiguous with no gaps or overlaps.
+Generation, per measure/voice: one slot per column's element at that voice (`query/slots.ts`) — no grid subdivision. A whole-bar (`fullMeasure`) rest gets one slot spanning the whole measure's content band (`MeasureBox.contentX` to the measure's right edge) instead of a column band; its `eventId` is the same id `isFullMeasureRest` checks in `mnx`, so a dictation `setPitches` against it correctly no-ops with `intent-target-unsupported` (below) rather than editing something that isn't a real event. Non-whole-bar slots tile the measure column-to-column: each column's band runs from its own x to the next column's x (or the measure's content-right edge for the last column), so bands are contiguous with no gaps or overlaps.
 
 `staffPosition = round(y*2)/2`. `pitch` = invert the pitch→y formula (`architecture.md`) + current key signature's alteration for that step, expressed as an MNX pitch — clicking the F line in D major yields F♯, not F♮ (`opts.insertAlteration: 'key' | 'natural'` switches this; `'natural'` always yields `alter: 0`).
 
@@ -107,11 +107,11 @@ interface NotationMarksProps {
 
 `states[id]` and `selection` are written imperatively onto the existing element `<g>` ref map in an effect — the same mechanism `setPlaybackTick`'s `data-pn-playing` already uses — so changing exercise state (given/locked/correct/incorrect) never re-runs `layoutScore` and never disturbs element identity. `preview` renders a `<g data-pn="preview">` from `previewShapes(layout, preview)`, React-owned nodes, removed when `preview` is `null`.
 
-Exercise state itself — which ids are given, which is currently being asked, whether an answer was right — is app state keyed by `NoteId`, passed in through `states`/`selection` fully controlled; it never lives in MNX, in `LayoutResult`, or anywhere inside `notation-engine`/`notation-model` (`AGENTS.md`).
+Exercise state itself — which ids are given, which is currently being asked, whether an answer was right — is app state keyed by `NoteId`, passed in through `states`/`selection` fully controlled; it never lives in MNX, in `LayoutResult`, or anywhere inside `notation-engine`/`mnx` (`AGENTS.md`).
 
 ## Applying intents
 
-`applyIntent` ships from `notation-model` (`@polyhymnia/notation-model`), not `notation-engine` — edits are document surgery, not layout, and the model already owns id synthesis (`mnx.md` "ID rule") that an edit has to stay consistent with. It's not wired into `<Notation>`: the quiz layer can reject an edit (wrong answer, locked measure) without fighting the renderer. It is a pure **MNX → MNX** function: everything in the document it doesn't touch passes through `===` unchanged (`AGENTS.md`).
+`applyIntent` ships from `mnx` (`@polyhymnia/mnx`), not `notation-engine` — edits are document surgery, not layout, and the model already owns id synthesis (`mnx.md` "ID rule") that an edit has to stay consistent with. It's not wired into `<Notation>`: the quiz layer can reject an edit (wrong answer, locked measure) without fighting the renderer. It is a pure **MNX → MNX** function: everything in the document it doesn't touch passes through `===` unchanged (`AGENTS.md`).
 
 ```ts
 type EditIntent = { type: 'setPitches'; event: NoteId; pitches: readonly Pitch[] };

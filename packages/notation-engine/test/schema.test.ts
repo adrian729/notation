@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
 
-const SCHEMA = fileURLToPath(new URL('../../notation-model/schema/mnx-schema.json', import.meta.url));
+const SCHEMA = fileURLToPath(new URL('../../mnx/schema/mnx-schema.json', import.meta.url));
 const FIXTURES = fileURLToPath(new URL('./fixtures/', import.meta.url));
 const WEB_SCORES = fileURLToPath(new URL('../../../apps/web/src/scores/', import.meta.url));
 

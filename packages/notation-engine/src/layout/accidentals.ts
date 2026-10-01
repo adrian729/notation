@@ -1,6 +1,6 @@
 import type { NotationOptions } from '../options.js';
 import { DEFAULT_OPTIONS } from '../options.js';
-import type { Diagnostic } from '@polyhymnia/notation-model';
+import type { Diagnostic } from '@polyhymnia/mnx';
 import type { NormalizedScore, NoteId, StaffPitch } from './records.js';
 import { accidentalGlyph, keyAlterations } from './staff.js';
 import { elementsByStaffMeasureKey, indexElementsByStaffMeasure } from './temporal.js';

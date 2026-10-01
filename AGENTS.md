@@ -1,8 +1,8 @@
 # Modules
-- Each package (`notation-model`, `notation-engine`, `notation-react`, `audio`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-font` is a font build pipeline (not yet a pnpm workspace package) whose outputs are synced into engine/react assets.
+- Each package (`mnx`, `notation-engine`, `notation-react`, `audio`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-font` is a font build pipeline (not yet a pnpm workspace package) whose outputs are synced into engine/react assets.
 - Dependency direction only: model ← engine ← {react, audio}; tools may use model + engine. Never import upward or sideways.
 - Cross-package imports go through the package name and entry points declared in its `package.json` `exports`, never relative paths or deep `src/` paths. Every cross-package import must be declared in that package's `package.json`.
-- `notation-model` and `notation-engine`: no DOM, no React, no Node APIs (`lib` excludes DOM). Renderer-specific code lives only in a renderer package (`notation-react`, future others).
+- `mnx` and `notation-engine`: no DOM, no React, no Node APIs (`lib` excludes DOM). Renderer-specific code lives only in a renderer package (`notation-react`, future others).
 - New concern that doesn't fit an existing package's role → new package, not a folder inside another.
 - `apps/*` consume packages only through their public exports; no app code inside packages.
 
@@ -38,9 +38,9 @@
 - App/quiz data about notes lives in the app, keyed by note id, never in the MNX document.
 
 # MNX schema
-- Pinned in `packages/notation-model/schema/` (`SOURCE` = commit, date, version). Upgrade only via `pnpm mnx:update <commit>`, deliberately. Never hand-edit the schema, examples, or generated `src/mnx/types.ts`.
+- Pinned in `packages/mnx/schema/` (`SOURCE` = commit, date, version). Upgrade only via `pnpm mnx:update <commit>`, deliberately. Never hand-edit the schema, examples, or generated `src/mnx/types.ts`.
 
-# notation-model
+# mnx
 - Thin layer only: vendored schema + examples, generated types, `readMnx` version check, pitch/rational/duration math, `parsePitch`. Add code only for a current consumer; no speculative helpers.
 - Beat grouping (`beamGroups`) lives here; the engine auto-beams with it. Edit operations (`applyIntent`) = pure MNX → MNX functions that preserve untouched content.
 

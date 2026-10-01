@@ -606,11 +606,11 @@ Exercise generators (random melodies within a key, range and step constraints; p
 
 ### 2.5 Gaps and build order
 
-Placement follows `AGENTS.md`: dependency direction `model ← engine ← {react, audio}`; a new concern becomes a new package; `notation-model`/`notation-engine` and audio's `.` entry stay DOM-free; apps consume packages only through `exports`; quiz data never in MNX; no clocks in `notation-*` or audio. Size: S ≤ 3 days, M ≤ 2 weeks, L > 2 weeks *(proposal)*. Order = suggested sequence.
+Placement follows `AGENTS.md`: dependency direction `model ← engine ← {react, audio}`; a new concern becomes a new package; `mnx`/`notation-engine` and audio's `.` entry stay DOM-free; apps consume packages only through `exports`; quiz data never in MNX; no clocks in `notation-*` or audio. Size: S ≤ 3 days, M ≤ 2 weeks, L > 2 weeks *(proposal)*. Order = suggested sequence.
 
 | Capability | Needed by | Size | Where it lives | Order |
 |---|---|---|---|---|
-| Pitch/interval math in the model (pitch → midi, interval with correct spelling, midi → spelled `Pitch`) | E1–E6, E10, E11, MIDI spelling | S | `notation-model` (fits "pitch math"; add only when a consumer exists) | 1 |
+| Pitch/interval math in the model (pitch → midi, interval with correct spelling, midi → spelled `Pitch`) | E1–E6, E10, E11, MIDI spelling | S | `mnx` (fits "pitch math"; add only when a consumer exists) | 1 |
 | Exercise engine: types, seeded PRNG, item keys, theory tables, generators for button exercises, pure evaluation | Every exercise | L | New DOM-free package (e.g. `packages/exercise`); needs an `AGENTS.md` direction entry | 1 |
 | App shell: routing, exercise runner, settings, answer grid, stats view | Everything user-facing | L | `apps/web` (hand-rolled routing: simple work, write it ourselves) | 1 |
 | Local persistence (versioned, export/import) | Stats, levels, SRS | S–M | `apps/web`, behind a small interface | 2 |
@@ -639,7 +639,7 @@ Placement follows `AGENTS.md`: dependency direction `model ← engine ← {react
 | Tie-tail ids missing from `timemap.byId`: a tie-merged `TimeMapEntry` is built from the tie head, so `ids` hold only the head's ids and `byId(tailId)` is `undefined`; `midiOfId` then falls back to the hit's pitch | Clicking tied notes in note-heard, error detection, hover-to-hear | `notation-engine` `query/timemap.ts`; one regression test |
 | `HitResult` element `pitch` ignores the written accidental: derived from staff position + key, because `ElementBox` carries no written `Pitch` | Any exercise reading the clicked note's pitch (labels, sound fallback, answer checks on existing notes) | `notation-engine`: carry written pitch on `ElementBox` |
 | Parallel `ids` / `midiNotes` arrays (plus separate `midi`) in `TimeMapEntry`; lookups use `indexOf` in `midiOfId` and `eventsFromTimeMap` | Fragile id → sound lookups | `notation-engine` + `audio` (breaking: per-member `{ id, midi }`) |
-| ~~No pitch → midi in `notation-model`~~ resolved: `pitchToMidi` in `notation-model` is used by engine, audio, react presets and the app | — | `notation-model` |
+| ~~No pitch → midi in `mnx`~~ resolved: `pitchToMidi` in `mnx` is used by engine, audio, react presets and the app | — | `mnx` |
 | Only `parts[0]` is laid out (`normalize.ts`); `applyIntent` addresses part 0, staff 1, first two sequences | Accompanied dictation, harmonic dictation | Engine, model |
 | Volta (`ending`), `jump` and fermata emit `mnx-unsupported` "not drawn"; repeats still play via `playOrder` | Library excerpts show no endings or fermatas | `notation-engine` |
 

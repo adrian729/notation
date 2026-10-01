@@ -1,4 +1,4 @@
-import type { Diagnostic } from '@polyhymnia/notation-model';
+import type { Diagnostic } from '@polyhymnia/mnx';
 import type { MeasureFlows } from '../layout/records.js';
 
 export interface PlaySegment {

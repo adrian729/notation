@@ -1,4 +1,4 @@
-import type { Diagnostic } from '@polyhymnia/notation-model';
+import type { Diagnostic } from '@polyhymnia/mnx';
 import type { ClefSpec, KeySpec, NoteId, StaffPitch } from './records.js';
 import type { TimeMap } from '../query/timemap.js';
 

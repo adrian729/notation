@@ -39,7 +39,7 @@ The interesting part is the notation stack: it renders MNX to glyphs in the brow
 
 | Package | Role |
 |---|---|
-| `@polyhymnia/notation-model` | Pinned MNX schema with generated types, plus pitch, rational and duration maths. The only package that reads score documents. |
+| `@polyhymnia/mnx` | Pinned MNX schema with generated types, plus pitch, rational and duration maths. The only package that reads score documents. |
 | `@polyhymnia/notation-engine` | Renderer-agnostic layout: MNX → flat records → positioned glyphs, plus hit-testing and a `TimeMap` for playback. No DOM. |
 | `@polyhymnia/notation-react` | React components that draw an engine `LayoutResult`, with playback highlight and answer entry. |
 | `@polyhymnia/audio` | Derives sound from a `TimeMap`. Only its `./webaudio` and `./sampler` entries touch Web Audio. |

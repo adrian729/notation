@@ -1,4 +1,4 @@
-import { elementIds, noteValueLength, readMnx, tupletRatio, Rational as R } from '@polyhymnia/notation-model';
+import { elementIds, noteValueLength, readMnx, tupletRatio, Rational as R } from '@polyhymnia/mnx';
 import type {
   Diagnostic,
   ElementPosition,
@@ -12,7 +12,7 @@ import type {
   Sequence,
   Slur,
   Tie,
-} from '@polyhymnia/notation-model';
+} from '@polyhymnia/mnx';
 import type { NotationOptions } from '../options.js';
 import {
   DEFAULT_TIME,

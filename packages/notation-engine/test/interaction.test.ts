@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { applyIntent, parsePitch } from '@polyhymnia/notation-model';
+import { applyIntent, parsePitch } from '@polyhymnia/mnx';
 import { layoutScore } from '../src/layout/index.js';
 import { hitTest } from '../src/query/hitTest.js';
 import { previewShapes } from '../src/query/preview.js';

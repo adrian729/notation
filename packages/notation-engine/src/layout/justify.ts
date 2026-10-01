@@ -1,5 +1,5 @@
 import { DEFAULT_OPTIONS, type NotationOptions } from '../options.js';
-import type { Diagnostic } from '@polyhymnia/notation-model';
+import type { Diagnostic } from '@polyhymnia/mnx';
 import { chromeWidth, measureWidth, type HorizontalColumn } from './horizontal.js';
 import type { BreakScore, SystemMeasure } from './break.js';
 

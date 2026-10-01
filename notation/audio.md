@@ -1,6 +1,6 @@
 # Audio
 
-`packages/audio` (`@polyhymnia/audio`) makes sound for ear-training exercises. It imports `notation-model` (`Pitch`, `parsePitch`) and `notation-engine` (types only, `TimeMap`); it never reads MNX documents and never imports React. Rules live in `AGENTS.md` under "Audio".
+`packages/audio` (`@polyhymnia/audio`) makes sound for ear-training exercises. It imports `mnx` (`Pitch`, `parsePitch`) and `notation-engine` (types only, `TimeMap`); it never reads MNX documents and never imports React. Rules live in `AGENTS.md` under "Audio".
 
 ## Entries
 

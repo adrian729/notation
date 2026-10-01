@@ -22,7 +22,9 @@
   },
   "dependencies": {
     "@polyhymnia/notation-engine": "workspace:*",
-    "@polyhymnia/notation-model": "workspace:*"
+    "@polyhymnia/mnx": "workspace:*",
+    "@polyhymnia/mnx-score": "workspace:*",
+    "@polyhymnia/notation-fonts": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

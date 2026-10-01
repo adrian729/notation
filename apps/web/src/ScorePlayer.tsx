@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NotationHandle, PlaybackView } from '@polyhymnia/notation-react';
-import type { MnxDocument } from '@polyhymnia/notation-model';
+import type { MnxDocument } from '@polyhymnia/mnx';
 import { eventsFromTimeMap } from '@polyhymnia/audio';
 import type { Playback } from '@polyhymnia/audio/webaudio';
 import { createSound } from './sound.js';

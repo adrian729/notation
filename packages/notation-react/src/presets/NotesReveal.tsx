@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { JSX } from 'react';
-import type { NoteValue } from '@polyhymnia/notation-model';
+import type { NoteValue } from '@polyhymnia/mnx';
 import type { ClefSpec, LayoutResult, NotationOptions } from '@polyhymnia/notation-engine';
 import { Notation } from '../Notation.js';
 import { memoLayout } from '../layoutMemo.js';
