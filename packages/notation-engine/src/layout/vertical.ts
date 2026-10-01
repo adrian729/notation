@@ -1,8 +1,6 @@
-import { styleOf } from '../font/context.js';
-import { engravingDefaults, glyphAdvanceWidth, glyphAnchor, glyphBBox } from '../font/metadata.js';
-import { DEFAULT_FONT, type FontFamily } from '../font/glyphs.js';
-import type { NotationOptions } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/mnx';
+import { mensuralStyle, type GlyphStyle } from '@polyhymnia/notation-fonts';
+import type { FontContext } from '../font/context.js';
 import type {
   ClefSpec,
   Duration,
@@ -53,10 +51,6 @@ const MENSURAL_NOTEHEAD_GLYPH: Record<DurationBase, string> = {
   '64th': 'mensuralNoteheadSemiminimaWhite',
 };
 
-function noteheadGlyph(base: DurationBase, family: FontFamily): string {
-  return (family === 'mensural' ? MENSURAL_NOTEHEAD_GLYPH : MODERN_NOTEHEAD_GLYPH)[base]!;
-}
-
 const MODERN_REST_GLYPH: Record<DurationBase, string> = {
   breve: 'restDoubleWhole',
   whole: 'restWhole',
@@ -78,10 +72,6 @@ const MENSURAL_REST_GLYPH: Record<DurationBase, string> = {
   '32nd': 'mensuralRestSemifusa',
   '64th': 'mensuralRestSemifusa',
 };
-
-function restGlyph(base: DurationBase, family: FontFamily): string {
-  return (family === 'mensural' ? MENSURAL_REST_GLYPH : MODERN_REST_GLYPH)[base]!;
-}
 
 const FLAG_GLYPH: Partial<Record<DurationBase, readonly [string, string]>> = {
   eighth: ['flag8thUp', 'flag8thDown'],
@@ -164,11 +154,11 @@ export function vertical(
   normalized: NormalizedScore,
   score: TemporalScore,
   resolved: AccidentalScore,
-  options?: NotationOptions,
+  fonts: FontContext,
 ): VerticalScore {
   const diagnostics: Diagnostic[] = [];
   const elements: VerticalElement[] = [];
-  const family = styleOf(options);
+  const styled: StyledFonts = { fonts, policy: stylePolicy(fonts.style) };
   const twoVoice = twoVoiceMeasures(score);
   const upVoice = computeUpVoice(normalized, score, twoVoice);
   const elementBeam = beamDirectionsByElement(normalized, score, twoVoice, upVoice, diagnostics);
@@ -180,11 +170,11 @@ export function vertical(
       const key = measureKey(staff.index, measure.index);
       const shared = twoVoice.has(key);
       const laidOut = rows.map((row) =>
-        layOut(row, measure, resolved, shared, upVoice.get(key) ?? 0, elementBeam.get(row.id), family),
+        layOut(row, measure, resolved, shared, upVoice.get(key) ?? 0, elementBeam.get(row.id), styled),
       );
       if (shared) {
-        resolveSharedTicks(laidOut);
-        resolveSharedRests(laidOut, upVoice.get(key) ?? 0);
+        resolveSharedTicks(fonts, laidOut);
+        resolveSharedRests(fonts, laidOut, upVoice.get(key) ?? 0);
       }
       elements.push(...laidOut);
     }
@@ -325,9 +315,10 @@ function layOut(
   resolved: AccidentalScore,
   shared: boolean,
   upVoice: 0 | 1,
-  beamInfo?: BeamMembership,
-  family: FontFamily = DEFAULT_FONT,
+  beamInfo: BeamMembership | undefined,
+  styled: StyledFonts,
 ): VerticalElement {
+  const { fonts } = styled;
   const duration: Duration = {
     base: row.base,
     dots: row.dots,
@@ -347,19 +338,19 @@ function layOut(
   };
 
   if (row.kind === 'rest') {
-    const rest = layOutRest(row, duration, shared, upVoice, family);
+    const rest = layOutRest(row, duration, shared, upVoice, styled);
     return {
       ...base,
       noteheads: [],
       rest,
       leftWidth: 0,
-      rightWidth: rest.width + dotsWidth(duration.dots),
+      rightWidth: rest.width + dotsWidth(fonts, duration.dots),
     };
   }
 
   const notes = row.notes;
-  const glyph = noteheadGlyph(duration.base, family);
-  const width = glyphAdvanceWidth(glyph, family);
+  const glyph = styled.policy.noteheads[duration.base];
+  const width = fonts.advanceWidth(glyph);
   const heads = notes.map((note) => ({
     note,
     staffPosition: staffPositionOf(note.pitch, measure.clef),
@@ -391,15 +382,15 @@ function layOut(
               parenthesized: acc.parenthesized,
               dx: 0,
               y: head.staffPosition,
-              width: glyphAdvanceWidth(acc.glyph),
+              width: fonts.advanceWidth(acc.glyph),
             },
           }
         : {}),
     } satisfies NoteheadLayout;
   });
 
-  const leftWidth = packAccidentals(noteheads);
-  const stem = layOutStem(duration, dir, noteheads, row.stem, beamInfo !== undefined, family);
+  const leftWidth = packAccidentals(fonts, noteheads);
+  const stem = layOutStem(duration, dir, noteheads, row.stem, beamInfo !== undefined, styled);
   const element: VerticalElement = {
     ...base,
     noteheads,
@@ -407,7 +398,7 @@ function layOut(
     leftWidth,
     rightWidth: 0,
   };
-  placeRight(element, headExtent(noteheads), shared);
+  placeRight(fonts, element, headExtent(noteheads), shared);
   return element;
 }
 
@@ -415,19 +406,19 @@ function headExtent(noteheads: readonly NoteheadLayout[]): number {
   return noteheads.reduce((max, n) => Math.max(max, n.dx + n.width), 0);
 }
 
-function placeRight(element: VerticalElement, extent: number, shared: boolean): void {
+function placeRight(fonts: FontContext, element: VerticalElement, extent: number, shared: boolean): void {
   const { dots } = element.duration;
   const below = shared && element.voice === 1;
   for (const head of element.noteheads) {
-    head.dots = dotPositions(dots, extent, head.staffPosition, below);
+    head.dots = dotPositions(fonts, dots, extent, head.staffPosition, below);
   }
-  const noteRight = extent + dotsWidth(dots);
+  const noteRight = extent + dotsWidth(fonts, dots);
   const breath = layOutBreath(element.source.breath, noteRight);
   if (breath) element.breath = breath;
-  element.rightWidth = noteRight + (breath ? BREATH_GAP + glyphAdvanceWidth(breath.glyph) : 0);
+  element.rightWidth = noteRight + (breath ? BREATH_GAP + fonts.advanceWidth(breath.glyph) : 0);
 }
 
-function resolveSharedTicks(elements: readonly VerticalElement[]): void {
+function resolveSharedTicks(fonts: FontContext, elements: readonly VerticalElement[]): void {
   const byTick = new Map<number, VerticalElement[]>();
   for (const el of elements) {
     if (el.noteheads.length === 0) continue;
@@ -445,23 +436,26 @@ function resolveSharedTicks(elements: readonly VerticalElement[]): void {
     if (shift) shiftElement(shift.element, shift.by);
 
     const extent = Math.max(...group.map((e) => headExtent(e.noteheads)));
-    for (const el of group) placeRight(el, extent, true);
+    for (const el of group) placeRight(fonts, el, extent, true);
 
-    const leftWidth = packAccidentals(group.flatMap((e) => e.noteheads));
+    const leftWidth = packAccidentals(
+      fonts,
+      group.flatMap((e) => e.noteheads),
+    );
     for (const el of group) el.leftWidth = leftWidth;
   }
 }
 
-function restRange(el: VerticalElement): [number, number] {
-  const bbox = glyphBBox(el.rest!.glyph);
+function restRange(fonts: FontContext, el: VerticalElement): [number, number] {
+  const bbox = fonts.bbox(el.rest!.glyph);
   return [el.rest!.y - bbox.bBoxNE[1], el.rest!.y - bbox.bBoxSW[1]];
 }
 
-function noteRange(el: VerticalElement): [number, number] {
+function noteRange(fonts: FontContext, el: VerticalElement): [number, number] {
   let top = Infinity;
   let bottom = -Infinity;
   for (const head of el.noteheads) {
-    const bbox = glyphBBox(head.glyph);
+    const bbox = fonts.bbox(head.glyph);
     top = Math.min(top, head.staffPosition - bbox.bBoxNE[1]);
     bottom = Math.max(bottom, head.staffPosition - bbox.bBoxSW[1]);
   }
@@ -476,9 +470,9 @@ function rangesOverlap(a: readonly [number, number], b: readonly [number, number
   return a[0] < b[1] && b[0] < a[1];
 }
 
-function clearRest(el: VerticalElement, avoid: readonly [number, number][], dir: 1 | -1): void {
+function clearRest(fonts: FontContext, el: VerticalElement, avoid: readonly [number, number][], dir: 1 | -1): void {
   const rest = el.rest!;
-  const bbox = glyphBBox(rest.glyph);
+  const bbox = fonts.bbox(rest.glyph);
   const topOffset = -bbox.bBoxNE[1];
   const bottomOffset = -bbox.bBoxSW[1];
   let y = rest.y;
@@ -491,12 +485,12 @@ function clearRest(el: VerticalElement, avoid: readonly [number, number][], dir:
   }
   if (moved) y = dir === -1 ? Math.floor(y) : Math.ceil(y);
   rest.y = y;
-  rest.dots = dotPositions(rest.dots.length as 0 | 1 | 2, rest.width, y, false);
+  rest.dots = dotPositions(fonts, rest.dots.length as 0 | 1 | 2, rest.width, y, false);
 }
 
-function symmetricClearRests(upEl: VerticalElement, downEl: VerticalElement): void {
-  const upBBox = glyphBBox(upEl.rest!.glyph);
-  const downBBox = glyphBBox(downEl.rest!.glyph);
+function symmetricClearRests(fonts: FontContext, upEl: VerticalElement, downEl: VerticalElement): void {
+  const upBBox = fonts.bbox(upEl.rest!.glyph);
+  const downBBox = fonts.bbox(downEl.rest!.glyph);
   const upBottomOffset = -upBBox.bBoxSW[1];
   const downTopOffset = -downBBox.bBoxNE[1];
   let upY = upEl.rest!.y;
@@ -513,12 +507,12 @@ function symmetricClearRests(upEl: VerticalElement, downEl: VerticalElement): vo
     downY = Math.ceil(downY);
   }
   upEl.rest!.y = upY;
-  upEl.rest!.dots = dotPositions(upEl.rest!.dots.length as 0 | 1 | 2, upEl.rest!.width, upY, false);
+  upEl.rest!.dots = dotPositions(fonts, upEl.rest!.dots.length as 0 | 1 | 2, upEl.rest!.width, upY, false);
   downEl.rest!.y = downY;
-  downEl.rest!.dots = dotPositions(downEl.rest!.dots.length as 0 | 1 | 2, downEl.rest!.width, downY, false);
+  downEl.rest!.dots = dotPositions(fonts, downEl.rest!.dots.length as 0 | 1 | 2, downEl.rest!.width, downY, false);
 }
 
-function resolveSharedRests(elements: readonly VerticalElement[], upVoice: 0 | 1): void {
+function resolveSharedRests(fonts: FontContext, elements: readonly VerticalElement[], upVoice: 0 | 1): void {
   const byTick = new Map<number, VerticalElement[]>();
   for (const el of elements) {
     const bucket = byTick.get(el.tick);
@@ -535,11 +529,11 @@ function resolveSharedRests(elements: readonly VerticalElement[], upVoice: 0 | 1
     const downFree = downEl.rest && downEl.source.staffPosition === undefined;
 
     if (upEl.rest && downEl.rest && upFree && downFree) {
-      symmetricClearRests(upEl, downEl);
+      symmetricClearRests(fonts, upEl, downEl);
       continue;
     }
-    if (upFree) clearRest(upEl, [downEl.rest ? restRange(downEl) : noteRange(downEl)], -1);
-    if (downFree) clearRest(downEl, [upEl.rest ? restRange(upEl) : noteRange(upEl)], 1);
+    if (upFree) clearRest(fonts, upEl, [downEl.rest ? restRange(fonts, downEl) : noteRange(fonts, downEl)], -1);
+    if (downFree) clearRest(fonts, downEl, [upEl.rest ? restRange(fonts, upEl) : noteRange(fonts, upEl)], 1);
   }
 }
 
@@ -592,18 +586,18 @@ function layOutRest(
   duration: Duration,
   shared: boolean,
   upVoice: 0 | 1,
-  family: FontFamily,
+  { fonts, policy }: StyledFonts,
 ): RestLayout {
-  const glyph = row.wholeBar ? 'restWhole' : restGlyph(duration.base, family);
+  const glyph = row.wholeBar ? 'restWhole' : policy.rests[duration.base];
   const anchor = row.wholeBar ? REST_Y.whole! : (REST_Y[duration.base] ?? REST_BASELINE);
   const y = row.staffPosition ?? anchor + (shared ? -voiceDirection(row.voice, upVoice) : 0);
-  const width = glyphAdvanceWidth(glyph, family);
+  const width = fonts.advanceWidth(glyph);
   return {
     glyph,
     y,
     width,
     wholeBar: row.wholeBar === true,
-    dots: row.wholeBar ? [] : dotPositions(duration.dots, width, y, false),
+    dots: row.wholeBar ? [] : dotPositions(fonts, duration.dots, width, y, false),
   };
 }
 
@@ -648,14 +642,14 @@ function layOutStem(
   noteheads: readonly NoteheadLayout[],
   stemOverride: TemporalElement['stem'],
   beamed: boolean,
-  family: FontFamily,
+  styled: StyledFonts,
 ): StemLayout | undefined {
   if (STEMLESS.has(duration.base) || noteheads.length === 0) return undefined;
   const glyph = noteheads[0]!.glyph;
-  const thickness = stemThickness();
+  const thickness = styled.fonts.engravingDefaults.stemThickness;
   const top = Math.min(...noteheads.map((n) => n.staffPosition));
   const bottom = Math.max(...noteheads.map((n) => n.staffPosition));
-  const anchor = stemAnchor(glyph, dir, thickness, family);
+  const anchor = stemAnchor(styled, glyph, dir, thickness);
   const attachX = anchor ? anchor[0] : dir === 1 ? noteheads[0]!.width : 0;
   const attachY = anchor ? -anchor[1] : 0;
 
@@ -676,10 +670,6 @@ function layOutStem(
   return { dir, dx, width: thickness, yTop, yBottom, drawn, ...(flag ? { flag } : {}) };
 }
 
-function stemThickness(): number {
-  return engravingDefaults.stemThickness;
-}
-
 /**
  * A round notehead takes its stem at the tangent point SMuFL records in
  * `stemUpSE`/`stemDownNW`. A lozenge notehead instead takes it at the horizontal
@@ -697,20 +687,47 @@ function stemThickness(): number {
 const LOZENGE_NOTEHEADS = new Set(['mensuralNoteheadMinimaWhite', 'mensuralNoteheadSemiminimaWhite']);
 
 function stemAnchor(
+  { fonts, policy }: StyledFonts,
   glyph: string,
   dir: 1 | -1,
   thickness: number,
-  family: FontFamily,
 ): readonly [number, number] | undefined {
-  if (LOZENGE_NOTEHEADS.has(glyph)) {
-    const { bBoxNE, bBoxSW } = glyphBBox(glyph, family);
+  if (policy.centredStems.has(glyph)) {
+    const { bBoxNE, bBoxSW } = fonts.bbox(glyph);
     const halfWidth = (bBoxNE[0] + bBoxSW[0]) / 2;
     const bury = (halfHeight: number): number => (halfHeight * (thickness / 2)) / halfWidth;
     return dir === 1
       ? [halfWidth + thickness / 2, bBoxNE[1] - bury(bBoxNE[1])]
       : [halfWidth - thickness / 2, bBoxSW[1] + bury(-bBoxSW[1])];
   }
-  return glyphAnchor(glyph, dir === 1 ? 'stemUpSE' : 'stemDownNW', family);
+  return fonts.anchor(glyph, dir === 1 ? 'stemUpSE' : 'stemDownNW');
+}
+
+interface StylePolicy {
+  noteheads: Readonly<Record<DurationBase, string>>;
+  rests: Readonly<Record<DurationBase, string>>;
+  centredStems: ReadonlySet<string>;
+}
+
+interface StyledFonts {
+  fonts: FontContext;
+  policy: StylePolicy;
+}
+
+const MODERN_POLICY: StylePolicy = {
+  noteheads: MODERN_NOTEHEAD_GLYPH,
+  rests: MODERN_REST_GLYPH,
+  centredStems: new Set(),
+};
+
+const MENSURAL_POLICY: StylePolicy = {
+  noteheads: MENSURAL_NOTEHEAD_GLYPH,
+  rests: MENSURAL_REST_GLYPH,
+  centredStems: LOZENGE_NOTEHEADS,
+};
+
+function stylePolicy(style: GlyphStyle): StylePolicy {
+  return style === mensuralStyle ? MENSURAL_POLICY : MODERN_POLICY;
 }
 
 export function stemX(elementX: number, stem: StemLayout): number {
@@ -727,9 +744,15 @@ function ledgerLines(staffPosition: number): number[] {
   return lines;
 }
 
-function dotPositions(dots: 0 | 1 | 2, fromX: number, y: number, below: boolean): { dx: number; y: number }[] {
+function dotPositions(
+  fonts: FontContext,
+  dots: 0 | 1 | 2,
+  fromX: number,
+  y: number,
+  below: boolean,
+): { dx: number; y: number }[] {
   if (!dots) return [];
-  const width = glyphAdvanceWidth('augmentationDot');
+  const width = fonts.advanceWidth('augmentationDot');
   const onLine = Math.abs(y - Math.round(y)) < 1e-9;
   const dotY = onLine ? (below ? y + 0.5 : y - 0.5) : y;
   const out: { dx: number; y: number }[] = [];
@@ -739,13 +762,13 @@ function dotPositions(dots: 0 | 1 | 2, fromX: number, y: number, below: boolean)
   return out;
 }
 
-function dotsWidth(dots: 0 | 1 | 2): number {
+function dotsWidth(fonts: FontContext, dots: 0 | 1 | 2): number {
   if (!dots) return 0;
-  const width = glyphAdvanceWidth('augmentationDot');
+  const width = fonts.advanceWidth('augmentationDot');
   return DOT_GAP + dots * width + (dots - 1) * DOT_SPACING;
 }
 
-function packAccidentals(noteheads: readonly NoteheadLayout[]): number {
+function packAccidentals(fonts: FontContext, noteheads: readonly NoteheadLayout[]): number {
   const withAccidental = noteheads
     .filter((n) => n.accidental)
     .sort((a, b) => a.staffPosition - b.staffPosition || b.dx - a.dx);
@@ -753,20 +776,20 @@ function packAccidentals(noteheads: readonly NoteheadLayout[]): number {
   if (withAccidental.length === 0) return -headsLeft;
 
   const parensRight = (acc: AccidentalLayout): number =>
-    acc.parenthesized ? glyphAdvanceWidth('accidentalParensRight') : 0;
+    acc.parenthesized ? fonts.advanceWidth('accidentalParensRight') : 0;
   const unitWidth = (acc: AccidentalLayout): number =>
-    acc.width + (acc.parenthesized ? glyphAdvanceWidth('accidentalParensLeft') + parensRight(acc) : 0);
+    acc.width + (acc.parenthesized ? fonts.advanceWidth('accidentalParensLeft') + parensRight(acc) : 0);
 
   const columns: { top: number; bottom: number }[][] = [];
   const assigned: { head: NoteheadLayout; column: number }[] = [];
 
   for (const head of withAccidental) {
     const acc = head.accidental!;
-    const bbox = glyphBBox(acc.glyph);
+    const bbox = fonts.bbox(acc.glyph);
     let top = acc.y - bbox.bBoxNE[1];
     let bottom = acc.y - bbox.bBoxSW[1];
     if (acc.parenthesized) {
-      const parens = glyphBBox('accidentalParensLeft');
+      const parens = fonts.bbox('accidentalParensLeft');
       top = Math.min(top, acc.y - parens.bBoxNE[1]);
       bottom = Math.max(bottom, acc.y - parens.bBoxSW[1]);
     }

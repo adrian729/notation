@@ -1,5 +1,5 @@
 import type { Diagnostic } from '@polyhymnia/mnx';
-import { engravingDefaults, glyphAdvanceWidth, glyphBBox } from '../font/metadata.js';
+import type { FontContext } from '../font/context.js';
 import { DEFAULT_OPTIONS, type NotationOptions } from '../options.js';
 import type { BeamPolygon, BeamsResult } from './beams.js';
 import type { TupletSpan } from './grouping.js';
@@ -44,11 +44,12 @@ export function tuplets(
   spans: readonly TupletSpan[],
   beamGroups: readonly NormalizedBeam[],
   beamsResult: BeamsResult,
+  fonts: FontContext,
   options?: NotationOptions,
 ): TupletsResult {
   const placedById = buildPlacedMap(justified);
   const showRatioDefault = options?.tuplets?.showRatio ?? DEFAULT_OPTIONS.tuplets.showRatio;
-  const thickness = engravingDefaults.tupletBracketThickness;
+  const thickness = fonts.engravingDefaults.tupletBracketThickness;
 
   const brackets: TupletRect[] = [];
   const numerals: TupletNumeralGlyph[] = [];
@@ -68,7 +69,7 @@ export function tuplets(
     let lineY: number;
     let numeralMidX: number;
     if (span.showBracket) {
-      const extreme = extremeY(placed, side, beamsResult.stemOverrides);
+      const extreme = extremeY(fonts, placed, side, beamsResult.stemOverrides);
       lineY = side === 'above' ? extreme - 1.0 : extreme + 1.0;
       numeralMidX = (x0 + x1) / 2;
 
@@ -91,14 +92,14 @@ export function tuplets(
       const beamId = coveringBeamId(span, beamGroups);
       const polygon = beamId ? beamsResult.polygons.find((p) => p.el === beamId) : undefined;
       numeralMidX = centerX;
-      lineY = polygon ? beamOuterYAt(polygon, numeralMidX) : extremeY(placed, side, beamsResult.stemOverrides);
+      lineY = polygon ? beamOuterYAt(polygon, numeralMidX) : extremeY(fonts, placed, side, beamsResult.stemOverrides);
     }
 
     const names = numeralGlyphs(span, showRatioDefault);
     if (names.length === 0) continue;
 
-    const width = names.reduce((sum, name) => sum + glyphAdvanceWidth(name), 0);
-    const bbox = glyphBBox(names[0]!);
+    const width = names.reduce((sum, name) => sum + fonts.advanceWidth(name), 0);
+    const bbox = fonts.bbox(names[0]!);
     const topOffset = bbox.bBoxNE[1];
     const bottomOffset = -bbox.bBoxSW[1];
     const edgeThickness = span.showBracket ? thickness / 2 : 0;
@@ -108,7 +109,7 @@ export function tuplets(
     let x = numeralMidX - width / 2;
     for (const name of names) {
       numerals.push({ el: span.id, systemIndex, x, y: anchorY, name });
-      x += glyphAdvanceWidth(name);
+      x += fonts.advanceWidth(name);
     }
   }
 
@@ -143,6 +144,7 @@ function resolveSide(display: TupletDisplay, placed: readonly Placed[]): 'above'
 }
 
 function extremeY(
+  fonts: FontContext,
   placed: readonly Placed[],
   side: 'above' | 'below',
   stemOverrides: ReadonlyMap<NoteId, { yTop: number; yBottom: number }>,
@@ -162,7 +164,7 @@ function extremeY(
       take(yBottom);
     }
     if (el.stem?.flag) {
-      const bbox = glyphBBox(el.stem.flag.glyph);
+      const bbox = fonts.bbox(el.stem.flag.glyph);
       take(el.stem.flag.y - bbox.bBoxNE[1]);
       take(el.stem.flag.y - bbox.bBoxSW[1]);
     }

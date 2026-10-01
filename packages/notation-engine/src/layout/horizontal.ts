@@ -1,4 +1,4 @@
-import { engravingDefaults, glyphAdvanceWidth } from '../font/metadata.js';
+import type { FontContext } from '../font/context.js';
 import { DEFAULT_OPTIONS, type NotationOptions } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/mnx';
 import type { ClefSpec, KeySpec, NormalizedMeasure, NormalizedScore, TimeSpec } from './records.js';
@@ -69,6 +69,7 @@ export function horizontal(
   normalized: NormalizedScore,
   temporal: TemporalScore,
   laidOut: VerticalScore,
+  fonts: FontContext,
   options?: NotationOptions,
 ): HorizontalScore {
   const diagnostics: Diagnostic[] = [];
@@ -111,8 +112,8 @@ export function horizontal(
       capacityTicks: measure.capacityTicks,
       columns,
       contentWidth,
-      startChrome: chromeOf(measure, previous, true),
-      midChrome: chromeOf(measure, previous, false),
+      startChrome: chromeOf(fonts, measure, previous, true),
+      midChrome: chromeOf(fonts, measure, previous, false),
       systemBreak: measure.systemBreak,
     });
     previous = measure;
@@ -167,6 +168,7 @@ function buildColumns(elements: readonly VerticalElement[], ctx: ColumnContext):
 }
 
 function chromeOf(
+  fonts: FontContext,
   measure: NormalizedMeasure,
   previous: NormalizedMeasure | undefined,
   atSystemStart: boolean,
@@ -181,10 +183,10 @@ function chromeOf(
   const cancelKey = keyChanged && previous ? cancellation(previous.key, measure.key) : null;
 
   const widths = {
-    clefWidth: showClef ? glyphAdvanceWidth(clefGlyph(measure.clef)) + CHROME_GAP : 0,
-    keyWidth: showKey || cancelKey ? keyWidth(measure, cancelKey, showKey) : 0,
-    timeWidth: showTime ? timeWidthOf(measure.time) : 0,
-    startBarlineWidth: measure.barlineStart === 'repeat-start' ? repeatStartWidth() : 0,
+    clefWidth: showClef ? fonts.advanceWidth(clefGlyph(measure.clef)) + CHROME_GAP : 0,
+    keyWidth: showKey || cancelKey ? keyWidth(fonts, measure, cancelKey, showKey) : 0,
+    timeWidth: showTime ? timeWidthOf(fonts, measure.time) : 0,
+    startBarlineWidth: measure.barlineStart === 'repeat-start' ? repeatStartWidth(fonts) : 0,
   };
   const bare =
     widths.clefWidth === 0 && widths.keyWidth === 0 && widths.timeWidth === 0 && widths.startBarlineWidth === 0;
@@ -194,7 +196,7 @@ function chromeOf(
     showKey,
     showTime,
     ...widths,
-    endBarlineWidth: endBarlineWidth(measure.barlineEnd),
+    endBarlineWidth: endBarlineWidth(fonts, measure.barlineEnd),
     leadWidth: bare ? MEASURE_LEAD : 0,
     cancelKey,
   };
@@ -211,8 +213,8 @@ function cancellation(from: KeySpec, to: KeySpec): KeySpec | null {
   return { fifths: from.fifths };
 }
 
-function keyWidth(measure: NormalizedMeasure, cancelKey: KeySpec | null, showKey: boolean): number {
-  const { width } = layOutKeyGlyphs(measure.key, measure.clef, cancelKey, showKey, 0);
+function keyWidth(fonts: FontContext, measure: NormalizedMeasure, cancelKey: KeySpec | null, showKey: boolean): number {
+  const { width } = layOutKeyGlyphs(fonts, measure.key, measure.clef, cancelKey, showKey, 0);
   return width > 0 ? width + CHROME_GAP : 0;
 }
 
@@ -223,6 +225,7 @@ export interface KeyGlyph {
 }
 
 export function layOutKeyGlyphs(
+  fonts: FontContext,
   key: KeySpec,
   clef: ClefSpec,
   cancelKey: KeySpec | null,
@@ -235,7 +238,7 @@ export function layOutKeyGlyphs(
   let x = x0;
   for (const acc of [...naturals, ...accidentals]) {
     glyphs.push({ glyph: acc.glyph, x, y: acc.y });
-    x += glyphAdvanceWidth(acc.glyph) + KEY_GAP;
+    x += fonts.advanceWidth(acc.glyph) + KEY_GAP;
   }
   return { glyphs, width: x - x0 };
 }
@@ -251,19 +254,19 @@ function cancelledAccidentals(
     .map((a) => ({ step: a.step, y: a.y, glyph: 'accidentalNatural' }));
 }
 
-function timeWidthOf(time: TimeSpec): number {
+function timeWidthOf(fonts: FontContext, time: TimeSpec): number {
   if (time.symbol === 'common' || time.symbol === 'cut') {
-    return glyphAdvanceWidth(time.symbol === 'cut' ? 'timeSigCutCommon' : 'timeSigCommon') + CHROME_GAP;
+    return fonts.advanceWidth(time.symbol === 'cut' ? 'timeSigCutCommon' : 'timeSigCommon') + CHROME_GAP;
   }
-  return Math.max(digitsWidth(time.beats), digitsWidth(time.beatType)) + CHROME_GAP;
+  return Math.max(digitsWidth(fonts, time.beats), digitsWidth(fonts, time.beatType)) + CHROME_GAP;
 }
 
-export function digitsWidth(value: number): number {
-  return [...String(Math.max(0, Math.round(value)))].reduce((sum, d) => sum + glyphAdvanceWidth(`timeSig${d}`), 0);
+export function digitsWidth(fonts: FontContext, value: number): number {
+  return [...String(Math.max(0, Math.round(value)))].reduce((sum, d) => sum + fonts.advanceWidth(`timeSig${d}`), 0);
 }
 
-export function endBarlineWidth(kind: NormalizedMeasure['barlineEnd']): number {
-  const e = engravingDefaults;
+export function endBarlineWidth(fonts: FontContext, kind: NormalizedMeasure['barlineEnd']): number {
+  const e = fonts.engravingDefaults;
   switch (kind) {
     case 'none':
       return 0;
@@ -276,7 +279,7 @@ export function endBarlineWidth(kind: NormalizedMeasure['barlineEnd']): number {
     case 'repeat-end':
       return (
         BARLINE_PAD +
-        glyphAdvanceWidth('repeatDot') +
+        fonts.advanceWidth('repeatDot') +
         e.repeatBarlineDotSeparation +
         e.thinBarlineThickness +
         e.thinThickBarlineSeparation +
@@ -287,14 +290,14 @@ export function endBarlineWidth(kind: NormalizedMeasure['barlineEnd']): number {
   }
 }
 
-export function repeatStartWidth(): number {
-  const e = engravingDefaults;
+export function repeatStartWidth(fonts: FontContext): number {
+  const e = fonts.engravingDefaults;
   return (
     e.thickBarlineThickness +
     e.thinThickBarlineSeparation +
     e.thinBarlineThickness +
     e.repeatBarlineDotSeparation +
-    glyphAdvanceWidth('repeatDot') +
+    fonts.advanceWidth('repeatDot') +
     BARLINE_PAD
   );
 }

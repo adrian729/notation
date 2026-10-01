@@ -1,5 +1,5 @@
 import type { Diagnostic } from '@polyhymnia/mnx';
-import { engravingDefaults } from '../font/metadata.js';
+import type { FontContext } from '../font/context.js';
 import type { JustifiedScore } from './justify.js';
 import type { NormalizedBeam, NoteId } from './records.js';
 import { MIDDLE_LINE } from './staff.js';
@@ -29,7 +29,7 @@ interface Placed {
   systemIndex: number;
 }
 
-export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam[]): BeamsResult {
+export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam[], fonts: FontContext): BeamsResult {
   const placedById = new Map<NoteId, Placed>();
   for (const system of justified.systems) {
     for (const measure of system.measures) {
@@ -41,9 +41,10 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
     }
   }
 
-  const thickness = engravingDefaults.beamThickness;
-  const stack = engravingDefaults.beamThickness + engravingDefaults.beamSpacing;
-  const stemW = engravingDefaults.stemThickness;
+  const e = fonts.engravingDefaults;
+  const thickness = e.beamThickness;
+  const stack = e.beamThickness + e.beamSpacing;
+  const stemW = e.stemThickness;
   const twoVoiceMeasures = new Set<number>();
   for (const p of placedById.values()) {
     if (p.el.voice === 1) twoVoiceMeasures.add(p.el.measureIndex);
