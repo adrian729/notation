@@ -25,8 +25,8 @@ export function FontComparison() {
     <section className="font-compare">
       <h2>Font families</h2>
       <p className="note">
-        The engine engraves the same MNX in either family. Values map onto white mensural shapes: a breve is a brevis,
-        a whole note a semibrevis, a half note a minima, a quarter note a semiminima. Mensural is the default; modern is
+        The engine engraves the same MNX in either family. Values map onto white mensural shapes: a breve is a brevis, a
+        whole note a semibrevis, a half note a minima, a quarter note a semiminima. Mensural is the default; modern is
         kept shipped and reachable from here.
       </p>
 
@@ -38,10 +38,10 @@ export function FontComparison() {
 
       <div className="family-both">
         <Example title="Breves, modern" caption="opted in explicitly">
-          {() => <Notation score={BREVES} options={{ font: 'modern' }} />}
+          {() => <Notation score={BREVES} options={{ style: 'modern' }} />}
         </Example>
         <Example title="Breves, mensural" caption="same document, the default family">
-          {() => <Notation score={BREVES} options={{ font: 'mensural' }} />}
+          {() => <Notation score={BREVES} options={{ style: 'mensural' }} />}
         </Example>
       </div>
     </section>
