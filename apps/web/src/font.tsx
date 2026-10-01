@@ -2,7 +2,7 @@ import { createContext, use, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Notation } from '@polyhymnia/notation-react';
 import type { NotationProps } from '@polyhymnia/notation-react';
-import { DEFAULT_FONT, type NotationOptions } from '@polyhymnia/notation-engine';
+import { DEFAULT_STYLE, type NotationOptions } from '@polyhymnia/notation-engine';
 
 type GlyphStyleName = NonNullable<NotationOptions['style']>;
 
@@ -24,10 +24,10 @@ interface GlyphStyleState {
   setStyle: (style: GlyphStyleName) => void;
 }
 
-const GlyphStyleContext = createContext<GlyphStyleState>({ style: DEFAULT_FONT, setStyle: () => {} });
+const GlyphStyleContext = createContext<GlyphStyleState>({ style: DEFAULT_STYLE, setStyle: () => {} });
 
 export function GlyphStyleProvider({ children }: { children: ReactNode }) {
-  const [style, setStyle] = useState<GlyphStyleName>(DEFAULT_FONT);
+  const [style, setStyle] = useState<GlyphStyleName>(DEFAULT_STYLE);
   const value = useMemo(() => ({ style, setStyle }), [style]);
   return <GlyphStyleContext value={value}>{children}</GlyphStyleContext>;
 }

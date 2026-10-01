@@ -1,7 +1,6 @@
 import type { Pitch as MnxPitch } from '@polyhymnia/mnx';
 import { STEP_LETTERS, keyAlterOf, stepNumberOf } from '@polyhymnia/music-theory';
 import { fontContext, type FontContext } from '../font/context.js';
-import { DEFAULT_FONT, type FontFamily } from '../font/glyphs.js';
 import type { NotationOptions } from '../options.js';
 import { glyphRun, tagFonts } from '../layout/emit.js';
 import type { Alter, StaffPitch, StepNumber } from '../layout/records.js';
@@ -38,9 +37,9 @@ function ledgerRect(fonts: FontContext, x: number, y: number, width: number): Re
 export function previewShapes(
   layout: LayoutResult,
   preview: PreviewNote,
-  font: FontFamily | Pick<NotationOptions, 'font' | 'style'> = DEFAULT_FONT,
+  font: Pick<NotationOptions, 'font' | 'style'> = {},
 ): { glyphs: readonly GlyphRun[]; rects: readonly RectShape[]; fonts?: readonly string[] } {
-  const fonts = fontContext(typeof font === 'string' ? { style: font } : font);
+  const fonts = fontContext(font);
   const measureBox = layout.measures.find((m) => m.index === preview.measureIndex);
   if (!measureBox) return { glyphs: [], rects: [] };
   const system = layout.systems.find((s) => s.index === measureBox.systemIndex);

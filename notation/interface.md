@@ -71,6 +71,8 @@ interface NotationOptions {
   tuplets?: { showRatio?: boolean };         // engraving.md, default false — numeral shows actual only
   widthSp?: number;                          // system width, engraving.md
   maxLastSystemFill?: number;                // default 0.65, engraving.md
+  font?: NotationFont | readonly NotationFont[]; // font.md "Runtime" — SMuFL font data from @polyhymnia/notation-fonts, tried in order, then the style's default font
+  style?: 'modern' | 'mensural';             // font.md, default 'mensural' — glyph table + stem policy, independent of the font
 }
 ```
 
@@ -81,7 +83,7 @@ Every field defaults; `<Notation score={doc}>` alone is valid.
 `score: MnxDocument` is the only source of truth — no private extensions, no JSX-per-note composition (`<Note pitch="C4"/>` as a real content element). A note can't render standalone: layout needs the whole score for spacing/beaming, so a per-note component would just be a non-rendering data-collection shim — a second implicit data model reconciling into MNX anyway, for no benefit. There is no builder API; MNX content comes from one of three places:
 
 1. **Hand-written `.mnx.json`** — the natural form for fixed exercise content. `apps/web/src/scores/*.mnx.json` is both the demo gallery's content and the reference for what hand-authored MNX looks like; every file there is validated against the pinned schema by the same Ajv test `mnx.md` describes for fixture files.
-2. **Generated in code** — the app's presets (below) and any future content generator construct plain MNX object literals; `mnx`'s `parsePitch`/`Rational`/`noteValueLength` (`mnx.md`) are the only package helpers, and no package ships a `score()`/`measure()`/`note()` builder layer (an app-private helper that returns plain MNX, like `mnxBuild`, is fine).
+2. **Generated in code** — the app's presets (below) and any future content generator construct plain MNX object literals; `music-theory`'s `parsePitch` and `mnx`'s `Rational`/`noteValueLength` (`mnx.md`) are the only package helpers, and no package ships a `score()`/`measure()`/`note()` builder layer (an app-private helper that returns plain MNX, like `mnxBuild`, is fine).
 3. **MusicXML import, offline** — `tools/musicxml-to-mnx convert <in.musicxml> <out.mnx.json>` converts MusicXML exported from notation apps (MuseScore/Dorico/Sibelius) into committed `.mnx.json` files, the same way hand-written scores are committed: convert (`mnxconverter`, pinned) → Ajv against the pinned schema + headless `layoutScore` (`tools/musicxml-to-mnx/src/check.ts`) → deterministic ids assigned to events/notes that lack them (`src/ids.ts`) → write. See `tools/musicxml-to-mnx/SPIKE.md` for coverage of the supported subset. Not a runtime import path — no product flow needs a user uploading a file at this point, so none is built (`AGENTS.md`).
 
 Editing existing content (not authoring it fresh) goes through `applyIntent` (`interaction.md`), which is also a pure MNX→MNX function and preserves whatever content it doesn't touch.
@@ -97,7 +99,7 @@ interface ScaleRevealProps { root: PitchToken; scale: ScaleName; clef: ClefKind;
 ```
 
 - `NotesReveal` width is one rule for every use: the measure is laid out at its natural content width (`widthSp: 1` first pass) plus a fixed 12sp slot per drawn event (`maxLastSystemFill: 1`), rendered at the same staff scale as a 65sp-wide layout filling the container (capped at the container width) and centred. `labels` add no layout branch; each label is positioned from the resulting layout.
-- `PitchToken` — the same `'C4'` / `'F#5'` / `'Bb3'` string grammar `parsePitch` (`mnx.md`) accepts; the presets parse it internally to an MNX `pitch` object.
+- `PitchToken` — the same `'C4'` / `'F#5'` / `'Bb3'` string grammar `parsePitch` (`@polyhymnia/music-theory`) accepts; the presets parse it internally to an MNX `pitch` object.
 - `ClefKind` — `'treble' | 'bass' | 'alto' | 'tenor'`, the engine's resolved clef kinds (`engraving.md`); presets translate this to the MNX `{sign, staffPosition}` pair `mnx.md`'s clef mapping table expects.
 - `duration` — an MNX note value, `{ base: NoteValueBase; dots?: number }` (`mnx.md`), not a token string — same shape a hand-written `.mnx.json` event's `duration` would use.
 

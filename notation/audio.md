@@ -1,10 +1,10 @@
 # Audio
 
-`packages/audio` (`@polyhymnia/audio`) makes sound for ear-training exercises. It imports `mnx` (`Pitch`, `parsePitch`) and `notation-engine` (types only, `TimeMap`); it never reads MNX documents and never imports React. Rules live in `AGENTS.md` under "Audio".
+`packages/audio` (`@polyhymnia/audio`) makes sound for ear-training exercises. It imports `notation-engine` (types only, `TimeMap`) and nothing from `mnx` at runtime; it never reads MNX documents and never imports React. Rules live in `AGENTS.md` under "Audio".
 
 ## Entries
 
-- `@polyhymnia/audio` (pure, no DOM, no Web Audio): `NoteEvent`, `Clip`, `eventsFromTimeMap`, `midiOfPitch`, `midiToFrequency`, `melodic`, `harmonic`, `shift`, `concat`, `transpose`, `Instrument`, and types `EventsOptions`, `PitchLike`.
+- `@polyhymnia/audio` (pure, no DOM, no Web Audio): `NoteEvent`, `Clip`, `eventsFromTimeMap`, `midiToFrequency`, `melodic`, `harmonic`, `shift`, `concat`, `transpose`, `Instrument`, and type `EventsOptions`.
 - `@polyhymnia/audio/webaudio` (DOM lib): `synthInstrument`, `createPlayer`, `createAudioContext`, `unlockAudio`, `createSharedPlayer`, `defaultInstrument`, and types `Player`, `Playback`, `PlayResult`.
 - `@polyhymnia/audio/sampler` (DOM lib): `loadSampler(ctx, { out, samples: { midi, url }[] })` resolves to an `Instrument`, and type `Sample`.
 
@@ -16,7 +16,7 @@ interface Clip { events: readonly NoteEvent[]; durationSeconds: number; tickAtSe
 eventsFromTimeMap(timemap, { tempo?: TempoOverride }): Clip
 ```
 
-Times are seconds from clip start. `midi` may be fractional; `id` is an MNX note id (synthesized positional ids for id-less notes). Builders (`melodic`, `harmonic`) produce events without ids; they accept `number | Pitch | string` (`'F#4'`, `alter ?? 0`). Interval and scale naming belongs to the exercise layer. `concat` starts each list where the previous one's last note ends; a list's trailing gap is not included (add a rest-length `shift` if needed). `midiOfPitch` and `Player.play` throw `RangeError` on non-finite input.
+Times are seconds from clip start. `midi` may be fractional; `id` is an MNX note id (synthesized positional ids for id-less notes). Builders (`melodic`, `harmonic`) produce events without ids; they take MIDI numbers only: `melodic(midis, {noteDuration, gap})`, `harmonic(midis, {duration})`. Callers convert pitches with `@polyhymnia/music-theory` (`midiOf`); audio never parses pitch strings. Interval and scale naming belongs to the exercise layer. `concat` starts each list where the previous one's last note ends; a list's trailing gap is not included (add a rest-length `shift` if needed). `Player.play` throws `RangeError` on non-finite input.
 
 `eventsFromTimeMap` walks `timemap.playOrder()`: each segment is offset by the summed seconds of the earlier segments (same `tempo` override throughout), takes entries with `tick` in `[fromTick, toTick)`, clamps each duration to `toTick` (a tie-merged entry straddling a repeat barline is clipped, and re-attacks on the next pass), skips rests, and fans chords out through the parallel `ids[i]` / `midiNotes[i]`. `tickAtSeconds(s)` is `timemap.writtenTickAtSeconds(s, tempo)`, so the sound and the cursor share one clock mapping: feed it `playback.time()` and pass the result to `handle.setPlaybackTick`.
 

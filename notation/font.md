@@ -12,7 +12,7 @@ Rejected alternatives:
 | Petaluma | Handwritten/jazz style — wrong register for a legibility-first training app. |
 | Bravura Text | Built for inline text-flow advance widths; every glyph here is positioned manually, text-flow advance is never used. 1.4× the size for no benefit. |
 
-Font choice is a build-time swap, not lock-in: Leland/Petaluma are SMuFL-compliant at the same codepoints, same 1000 units/em. Swap = `font:add` the new font (`Adding a font` below) and point the consumer at its slug; the `engravingDefaults` values come from its metadata (`architecture.md`) — no layout code changes, nothing in the layout engine hardcodes a thickness or width.
+Font choice is data, not lock-in: Leland/Petaluma are SMuFL-compliant at the same codepoints, same 1000 units/em. Swap = `font:add` the new font (`Adding a font` below) and pass it as `NotationOptions.font` (`Runtime` below); the `engravingDefaults` values come from its metadata (`architecture.md`) — no layout code changes, nothing in the engine or renderer hardcodes a font name, thickness or width.
 
 ## License obligation
 
@@ -62,6 +62,25 @@ Metadata (advance widths, bboxes, anchors) filtered to the 64-glyph set: 7,452 B
 
 **Total wire cost, full scope (64 glyphs): ~12 KB** (10,136 B font + 1,945 B gz metadata). `vexflow-core` alone is 328.7 KB before fonts, for comparison.
 
+## Runtime
+
+A font is data: `NotationFont {name, metadata, src}` from `@polyhymnia/notation-fonts` (`metadata` is the SMuFL JSON, `src` the font file URL or data URI). The caller loads it and passes it in `NotationOptions`:
+
+- `font?: NotationFont | readonly NotationFont[]` — caller fonts, in priority order. The legacy `FontFamily` string option is gone.
+- `style?: 'modern' | 'mensural'` — default `'mensural'`. The style picks the glyph table (which SMuFL glyph draws each element) and the stem policy; the font only supplies shapes and metrics. Any font can be used with either style.
+
+The engine resolves every glyph through `fontContext` (`packages/notation-engine/src/font/context.ts`): `resolveGlyph(name)` returns `{font, codepoint, metadata}`, searching the caller fonts in order and then the style's default font (`DEFAULT_FONTS`: `PolyhymniaNotation` for `modern`, `PolyhymniaMensural` for `mensural`; their metadata is imported from `@polyhymnia/notation-fonts/fonts/*`). Advances, bboxes and anchors all come from the resolved font's metadata. `engravingDefaults` missing from a caller font are inherited from the default font. Contexts are cached per font object, so keep a stable `NotationFont` reference.
+
+Fallback output is opt-in by need: `LayoutResult.fonts` (font names) and `GlyphRun.font` (index into it) appear only when some glyph falls back to a later font. `previewShapes(layout, preview, {font, style})` returns `fonts?` the same way. With a single font, output is unchanged.
+
+`notation-react`:
+
+- The root `<svg>` carries `data-pn-style="modern|mensural"` (replaces `data-pn-font`); the CSS selectors in `styles/notation.css` key on it.
+- A glyph gets its own `font-family` only when its font differs from the primary one.
+- Caller fonts get `@font-face` from `fontFaceCss` in a hoisted `<style>`. The default fonts' `@font-face` stays in `styles/notation.css`, next to the woff2 files `font:sync` copies into `notation-react/styles/`.
+
+Proof fonts, added with `font:add`: `polyhymnia-muse` (Leland 0.80, OTF with metadata, renamed for the OFL Reserved Font Name) and `polyhymnia-rism` (Leipzig TTF, no metadata, metrics measured from the outlines). The Leland render is pinned by the golden `packages/notation-engine/test/__golden__/font-leland.json`.
+
 ## Build
 
 Fonts live in the `@polyhymnia/notation-fonts` workspace package (`packages/notation-fonts/`). Build-time only for the font tooling: fontTools/Python (`requirements.txt`, installed in `.venv` there) never appear in the runtime dependency tree. `vendor/` holds the Bravura sources (`Bravura.otf`, `Bravura.json`, `OFL.txt`).
@@ -70,7 +89,7 @@ Fonts live in the `@polyhymnia/notation-fonts` workspace package (`packages/nota
 - `fonts/<slug>/` holds the committed outputs: `<slug>.woff2`, `metadata.json`, `OFL.txt`, `NOTICE.txt`. Exported as `@polyhymnia/notation-fonts/fonts/*`. Never hand-edit.
 - `pnpm --filter @polyhymnia/notation-fonts font:build` regenerates the two default fonts (`polyhymnia-notation`, modern; `polyhymnia-mensural`, mensural) from the vendored Bravura through the same path as `font:add`, then runs `font:verify`.
 - `font:verify [slug]` checks, per style, glyph coverage, cmap against metadata, Reserved Font Name, and licence presence, and writes a test sheet to `packages/notation-fonts/out/<slug>.html`.
-- `font:sync` copies the default fonts into `notation-engine` (`assets/`, `src/font/`) and `notation-react` (`styles/`). Temporary: the engine and react still read their own copies until Phase C switches them to `@polyhymnia/notation-fonts`.
+- `font:sync` copies only the two default woff2 files into `notation-react/styles/`. The engine keeps no font copies and has no `assets/` folder; it imports default metadata from `@polyhymnia/notation-fonts/fonts/*`.
 
 The subset follows the recipe in the table above: `pyftsubset` with `--no-hinting --desubroutinize`, `GSUB,GPOS,BASE,JSTF,DSIG` dropped, name table rewritten to the new family.
 

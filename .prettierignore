@@ -9,5 +9,4 @@ packages/mnx/src/mnx/types.ts
 pnpm-lock.yaml
 apps/app/src/components/ui/
 **/*.mnx.json
-packages/notation-engine/src/font/metadata.*
 packages/notation-fonts/fonts/

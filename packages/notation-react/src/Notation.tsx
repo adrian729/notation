@@ -8,7 +8,7 @@ import type {
   ReactNode,
   Ref,
 } from 'react';
-import { DEFAULT_FONT, HIT_STAFF_MARGIN, hitTest, previewShapes } from '@polyhymnia/notation-engine';
+import { DEFAULT_FONTS, DEFAULT_STYLE, HIT_STAFF_MARGIN, hitTest, previewShapes } from '@polyhymnia/notation-engine';
 import { fontFaceCss } from '@polyhymnia/notation-fonts';
 import type { GlyphStyleName, NotationFont } from '@polyhymnia/notation-fonts';
 import type {
@@ -67,17 +67,11 @@ export interface NotationProps {
 const GLYPH_FONT_SIZE = 4;
 const CURSOR_WIDTH = 0.3;
 
-const FAMILY_CSS_NAME: Record<GlyphStyleName, string> = {
-  modern: 'PolyhymniaNotation',
-  mensural: 'PolyhymniaMensural',
-};
-
 export function Notation({ score, options, children, className, style, onLayout, ref }: NotationProps): JSX.Element {
   const layout = useMemo(() => memoLayout(score, options), [score, options]);
   const customFonts = customFontsOf(options?.font);
-  const glyphStyle: GlyphStyleName =
-    typeof options?.font === 'string' ? options.font : (options?.style ?? DEFAULT_FONT);
-  const fontFamily = customFonts?.[0]?.name ?? FAMILY_CSS_NAME[glyphStyle];
+  const glyphStyle: GlyphStyleName = options?.style ?? DEFAULT_STYLE;
+  const fontFamily = customFonts?.[0]?.name ?? DEFAULT_FONTS[glyphStyle].name;
   const fontCss = useMemo(() => (customFonts ? fontFaceCss(customFonts) : undefined), [options?.font]);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const elementRefs = useRef(new Map<string, SVGGElement>());
@@ -271,7 +265,7 @@ export function Notation({ score, options, children, className, style, onLayout,
           <CursorGroup groupRef={cursorRef} timemap={layout.timemap} position={playbackView.position} />
         )}
         {marks?.preview != null && (
-          <PreviewGroup layout={layout} preview={marks.preview} fontFamily={fontFamily} style={glyphStyle} />
+          <PreviewGroup layout={layout} preview={marks.preview} fontFamily={fontFamily} options={options} />
         )}
         {children}
       </svg>
@@ -338,14 +332,14 @@ function PreviewGroup({
   layout,
   preview,
   fontFamily,
-  style,
+  options,
 }: {
   layout: LayoutResult;
   preview: NonNullable<NotationMarksProps['preview']>;
   fontFamily: string;
-  style: GlyphStyleName;
+  options: NotationOptions | undefined;
 }): JSX.Element {
-  const { glyphs, rects } = previewShapes(layout, preview, style);
+  const { glyphs, rects } = previewShapes(layout, preview, { font: options?.font, style: options?.style });
   return (
     <g data-pn="preview" fontSize={GLYPH_FONT_SIZE} fontFamily={fontFamily}>
       {rects.map((r, i) => (
@@ -375,7 +369,7 @@ function Rect({ shape }: { shape: RectShape }): JSX.Element {
 }
 
 function customFontsOf(font: NotationOptions['font']): readonly NotationFont[] | undefined {
-  if (font === undefined || typeof font === 'string') return undefined;
+  if (font === undefined) return undefined;
   const list: readonly NotationFont[] = Array.isArray(font) ? font : [font as NotationFont];
   return list.length > 0 ? list : undefined;
 }

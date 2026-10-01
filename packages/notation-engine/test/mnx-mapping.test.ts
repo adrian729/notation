@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { MnxDocument } from '@polyhymnia/mnx';
-import { GLYPH_CODEPOINT } from '../src/font/glyphs.js';
+import { modernStyle } from '@polyhymnia/notation-fonts';
 import { layoutScore } from '../src/layout/index.js';
 import { normalize } from '../src/layout/normalize.js';
 import { temporal } from '../src/layout/temporal.js';
 import { TREBLE, chord, fixture, measure, mnx, note, rest, tuplet, voices, withGlobal, withPart } from './mnx.js';
 
-const cp = (name: string): number => GLYPH_CODEPOINT[name]!;
+const cp = (name: string): number => modernStyle.glyphs[name]!;
 
 function unsupported(doc: MnxDocument): string[] {
   return layoutScore(doc)

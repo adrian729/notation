@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { layoutScore } from '../src/layout/index.js';
-import { GLYPH_CODEPOINT } from '../src/font/glyphs.js';
+import { modernStyle } from '@polyhymnia/notation-fonts';
 import { ALTO, BASS, TENOR, TREBLE, measure, mnx, rest } from './mnx.js';
 
 type ClefName = 'treble' | 'bass' | 'alto' | 'tenor';
@@ -29,7 +29,7 @@ describe('key signatures across every major key and clef', () => {
       it.each(KEYS)('fifths %i places accidentals on the conventional staff positions', (fifths) => {
         const layout = layoutScore(mnx({ key: fifths, clef: CLEFS[clefName] }, measure(rest('w'))));
         const table = fifths > 0 ? SHARP_POSITIONS[clefName] : FLAT_POSITIONS[clefName];
-        const glyph = GLYPH_CODEPOINT[fifths > 0 ? 'accidentalSharp' : 'accidentalFlat']!;
+        const glyph = modernStyle.glyphs[fifths > 0 ? 'accidentalSharp' : 'accidentalFlat']!;
         const top = layout.systems[0]!.y;
         const drawn = layout.glyphs.filter((g) => g.cls === 'key-accidental').sort((a, b) => a.x - b.x);
 

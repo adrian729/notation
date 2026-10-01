@@ -23,7 +23,7 @@ type HitResult =
   | { kind:'point'; measureIndex:number; systemIndex:number; x:number; tick:number; staffPosition:number; pitch:Pitch };
 ```
 
-`NoteId` is a plain string — the MNX id when the document supplies one, else the engine's deterministic positional id (`mnx.md`'s ID rule). `Pitch` here is MNX's pitch shape, `{ step: 'A'..'G'; alter?: number; octave: number }` (`mnx`'s `types.ts`), the same shape `parsePitch('C#4')` produces — `hitTest` omits `alter` when it's 0.
+`NoteId` is a plain string — the MNX id when the document supplies one, else the engine's deterministic positional id (`mnx.md`'s ID rule). `Pitch` here is MNX's pitch shape, `{ step: 'A'..'G'; alter?: number; octave: number }` (`mnx`'s `types.ts`), the same shape `@polyhymnia/music-theory`'s `parsePitch('C#4')` produces — `hitTest` omits `alter` when it's 0.
 
 Resolution: a system is found first from `p.y` (staff band ±4 sp, a ledger-line allowance — a point further off-staff than that misses every kind and `hitTest` returns `null`); `element` is tried against every `ElementBox` in that system regardless of measure (its own padded `hitBox`, expanded by `opts.radius`); a chord's several member boxes resolve to the member whose `staffPosition` is nearest the click, and among members on the same position (a chromatic unison's side-by-side noteheads) to the one whose box centre is horizontally nearest. `slot`/`point` then need a `MeasureBox` found from `p.x` within that system — no matching measure means both miss. `element`'s `pitch` is `null` for a rest, otherwise the same key-relative derivation as `slot`/`point` (below) from the box's own `staffPosition`, not the note's true written accidental — `ElementBox` doesn't carry the written `Pitch`, only position.
 

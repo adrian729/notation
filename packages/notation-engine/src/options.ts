@@ -1,9 +1,8 @@
 import type { GlyphStyleName, NotationFont } from '@polyhymnia/notation-fonts';
-import type { FontFamily } from './font/glyphs.js';
 
 export interface NotationOptions {
   divisions?: number;
-  font?: FontFamily | NotationFont | readonly NotationFont[];
+  font?: NotationFont | readonly NotationFont[];
   style?: GlyphStyleName;
   spacing?: { k?: number; base?: number };
   beaming?: { mergeBeats?: boolean; beatGrouping?: Readonly<Record<string, readonly number[]>> };

@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { Clef, MnxDocument } from '@polyhymnia/mnx';
+import type { GlyphBBox } from '@polyhymnia/notation-fonts';
 import { layoutScore } from '../src/layout/index.js';
 import type { NotationOptions } from '../src/options.js';
 import type { NoteId } from '../src/layout/records.js';
-import { engravingDefaults, glyphAdvanceWidth, glyphBBox } from '../src/font/metadata.js';
-import { GLYPH_CODEPOINT } from '../src/font/glyphs.js';
+import { mensuralStyle, modernStyle } from '@polyhymnia/notation-fonts';
+import { fontContext } from '../src/font/context.js';
 import type { ElementBox, GlyphRun, LayoutResult } from '../src/layout/types.js';
 /**
  * These cases assert coordinates in modern-head geometry, so they ask for that
  * family explicitly rather than riding the house default.
  */
 const layoutModern = (doc: MnxDocument, options: NotationOptions = {}): LayoutResult =>
-  layoutScore(doc, { font: 'modern', ...options });
+  layoutScore(doc, { style: 'modern', ...options });
 
 import {
   ALTO,
@@ -30,7 +31,13 @@ import {
   withPart,
 } from './mnx.js';
 
-const cp = (name: string): number => GLYPH_CODEPOINT[name]!;
+const modernFonts = fontContext({ style: 'modern' });
+const mensuralFonts = fontContext({ style: 'mensural' });
+const { engravingDefaults } = modernFonts;
+const glyphAdvanceWidth = (name: string): number => modernFonts.advanceWidth(name);
+const glyphBBox = (name: string, fonts = modernFonts): GlyphBBox => fonts.bbox(name);
+
+const cp = (name: string): number => modernStyle.glyphs[name]!;
 
 function glyphsOf(layout: LayoutResult, cls: string): readonly GlyphRun[] {
   return layout.glyphs.filter((g) => g.cls === cls);
@@ -128,7 +135,9 @@ describe('accidentals', () => {
   });
 });
 
-const GLYPH_NAME_BY_CP = new Map<number, string>(Object.entries(GLYPH_CODEPOINT).map(([name, code]) => [code, name]));
+const GLYPH_NAME_BY_CP = new Map<number, string>(
+  Object.entries(modernStyle.glyphs).map(([name, code]) => [code, name]),
+);
 
 interface InkBox {
   l: number;
@@ -267,7 +276,9 @@ describe('ledger lines', () => {
 
 describe('rests', () => {
   it('draws one centred whole rest for a whole-bar rest in 9/8', () => {
-    const layout = layoutModern(mnx({ time: { count: 9, unit: 8 } }, { sequences: [{ content: [], fullMeasure: {} }] }));
+    const layout = layoutModern(
+      mnx({ time: { count: 9, unit: 8 } }, { sequences: [{ content: [], fullMeasure: {} }] }),
+    );
     const rests = glyphsOf(layout, 'rest');
     const box = boxes(layout)[0]!;
 
@@ -1319,19 +1330,17 @@ describe('font family', () => {
       .sort((a, b) => a - b);
 
   it('engraves values as white mensural shapes when asked', () => {
-    expect(noteheadCps(layoutScore(values, { font: 'mensural' }))).toEqual([
-      0xe93c, 0xe93d, 0xe93d, 0xe95e, 0xe962,
-    ]);
+    expect(noteheadCps(layoutScore(values, { style: 'mensural' }))).toEqual([0xe93c, 0xe93d, 0xe93d, 0xe95e, 0xe962]);
   });
 
   it('engraves mensural unless a family is asked for', () => {
     expect(noteheadCps(layoutScore(values))).toEqual([0xe93c, 0xe93d, 0xe93d, 0xe95e, 0xe962]);
-    expect(noteheadCps(layoutScore(values, { font: 'modern' }))).toEqual([0xe0a0, 0xe0a2, 0xe0a3, 0xe0a4, 0xe0a4]);
+    expect(noteheadCps(layoutScore(values, { style: 'modern' }))).toEqual([0xe0a0, 0xe0a2, 0xe0a3, 0xe0a4, 0xe0a4]);
   });
 
   it('centres a lozenge stem on the notehead, unlike a round one', () => {
     const offset = (font: 'modern' | 'mensural', pitch: string): number => {
-      const layout = layoutScore(mnx({}, measure(note(pitch, 'q'))), { font });
+      const layout = layoutScore(mnx({}, measure(note(pitch, 'q'))), { style: font });
       const head = Object.values(layout.elements).find((b) => b.kind === 'note')!;
       const stem = layout.rects.find((r) => r.cls === 'stem')!;
       return stem.x + stem.w / 2 - (head.x + head.w / 2);
@@ -1344,10 +1353,10 @@ describe('font family', () => {
 
   it('buries a lozenge stem just past its vertex, not on it and not deeper', () => {
     const burial = (pitch: string): { depth: number; limit: number } => {
-      const layout = layoutScore(mnx({}, measure(note(pitch, 'q'))), { font: 'mensural' });
+      const layout = layoutScore(mnx({}, measure(note(pitch, 'q'))), { style: 'mensural' });
       const head = Object.values(layout.elements).find((b) => b.kind === 'note')!;
       const stem = layout.rects.find((r) => r.cls === 'stem')!;
-      const { bBoxNE, bBoxSW } = glyphBBox('mensuralNoteheadSemiminimaWhite', 'mensural');
+      const { bBoxNE, bBoxSW } = glyphBBox('mensuralNoteheadSemiminimaWhite', mensuralFonts);
       const centre = head.y + head.h / 2;
       const end = Math.abs(stem.y - centre) < Math.abs(stem.y + stem.h - centre) ? stem.y : stem.y + stem.h;
       const up = end < centre;
@@ -1362,5 +1371,4 @@ describe('font family', () => {
       expect(depth).toBeLessThan(limit);
     }
   });
-
 });

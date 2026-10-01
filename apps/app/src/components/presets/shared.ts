@@ -1,11 +1,11 @@
 import { noteValueLength } from '@polyhymnia/mnx';
 import type { Key, NoteValue, Pitch, Time } from '@polyhymnia/mnx';
-import type { FontFamily, LayoutResult } from '@polyhymnia/notation-engine';
+import type { LayoutResult, NotationOptions } from '@polyhymnia/notation-engine';
 import type { CSSProperties } from 'react';
 import { scaleFifths, type ScaleName } from '@polyhymnia/music-theory';
 
 export interface RevealBaseProps {
-  font?: FontFamily;
+  glyphStyle?: NotationOptions['style'];
   className?: string;
   style?: CSSProperties;
   onLayout?: (layout: LayoutResult) => void;

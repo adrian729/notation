@@ -11,7 +11,7 @@ import {
 import modernMetadata from '@polyhymnia/notation-fonts/fonts/polyhymnia-notation/metadata.json' with { type: 'json' };
 import mensuralMetadata from '@polyhymnia/notation-fonts/fonts/polyhymnia-mensural/metadata.json' with { type: 'json' };
 import type { NotationOptions } from '../options.js';
-import { DEFAULT_FONT } from './glyphs.js';
+import { DEFAULT_STYLE } from './glyphs.js';
 
 export interface ResolvedGlyph {
   readonly font: number;
@@ -51,7 +51,7 @@ function hasGlyph(metadata: SmuflMetadata, name: string): boolean {
 
 function fontList(font: NotationOptions['font'], fallback: NotationFont): readonly NotationFont[] {
   const callerFonts: readonly NotationFont[] =
-    font === undefined || typeof font === 'string' ? [] : Array.isArray(font) ? font : [font as NotationFont];
+    font === undefined ? [] : Array.isArray(font) ? font : [font as NotationFont];
   const fonts: NotationFont[] = [];
   for (const candidate of [...callerFonts, fallback]) {
     if (!fonts.some((f) => f.name === candidate.name)) fonts.push(candidate);
@@ -102,5 +102,5 @@ export function fontContext(options: Pick<NotationOptions, 'font' | 'style'> = {
 }
 
 export function styleOf(options: Pick<NotationOptions, 'font' | 'style'> | undefined): GlyphStyleName {
-  return typeof options?.font === 'string' ? options.font : (options?.style ?? DEFAULT_FONT);
+  return options?.style ?? DEFAULT_STYLE;
 }

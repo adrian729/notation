@@ -26,7 +26,7 @@ export function ScaleReveal({
   clef,
   descending = false,
   duration = QUARTER,
-  font,
+  glyphStyle,
   className,
   style,
   onLayout,
@@ -42,7 +42,7 @@ export function ScaleReveal({
     );
   }, [root, scale, clef, descending, durationKey(duration)]);
 
-  const options = useMemo(() => ({ font }), [font]);
+  const options = useMemo(() => ({ style: glyphStyle }), [glyphStyle]);
 
   return <Notation score={doc} options={options} className={className} style={style} onLayout={onLayout} />;
 }

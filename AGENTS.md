@@ -1,5 +1,5 @@
 # Modules
-- Each package (`mnx`, `music-theory`, `mnx-score`, `notation-fonts`, `notation-engine`, `notation-react`, `audio`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-fonts` is the font workspace package (glyph tables, committed fonts, build/add/verify scripts); until Phase C its outputs are copied into engine/react assets by `font:sync`.
+- Each package (`mnx`, `music-theory`, `mnx-score`, `notation-fonts`, `notation-engine`, `notation-react`, `audio`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-fonts` is the font workspace package (glyph tables, committed fonts, build/add/verify scripts); `font:sync` copies only the two default woff2 into `notation-react/styles/`.
 - Dependency direction only: `mnx` and `music-theory` are leaves; `mnx-score` ← `mnx`, `music-theory`; `notation-engine` ← `mnx`, `mnx-score`, `music-theory`, `notation-fonts`; `notation-react` ← `notation-engine`, `mnx-score`, `notation-fonts`, `mnx`; `audio` ← `notation-engine` (types only) and `mnx`; tools use `mnx` (+ `notation-engine` until Phase D). Never import upward or sideways.
 - Cross-package imports go through the package name and entry points declared in its `package.json` `exports`, never relative paths or deep `src/` paths. Every cross-package import must be declared in that package's `package.json`.
 - `mnx` and `notation-engine`: no DOM, no React, no Node APIs (`lib` excludes DOM). Renderer-specific code lives only in a renderer package (`notation-react`, future others).
@@ -14,7 +14,8 @@
 - `apps/web` (`@polyhymnia/web`) is the notation demo/playground, not the product app.
 
 # Audio
-- `audio` imports `mnx` (runtime ok) and engine (types only), never react. Direction `mnx ← engine ← {react, audio}`.
+- `audio` imports engine (types only), never react, never `mnx` at runtime. Direction `mnx ← engine ← {react, audio}`.
+- Playback builders (`melodic`, `harmonic`) take MIDI numbers; audio never parses pitch strings.
 - `.` entry: no DOM, no Web Audio; only `./webaudio` touches `AudioContext`.
 - No rAF, `setTimeout` or `setInterval` in audio. The app owns the UI clock.
 - Sound derives only from `TimeMap` (`entries`, `tickToSeconds`, `playOrder`, `writtenTickAtSeconds`); audio never reads MNX documents.
@@ -41,13 +42,14 @@
 - Pinned in `packages/mnx/schema/` (`SOURCE` = commit, date, version). Upgrade only via `pnpm mnx:update <commit>`, deliberately. Never hand-edit the schema, examples, or generated `src/mnx/types.ts`.
 
 # mnx
-- Thin layer only: vendored schema + examples, generated types, `readMnx` version check, pitch/rational/duration math, `parsePitch`, `assignIds`, scoped addressing (`elementIds(doc, scope?)`, `ElementScope`). Add code only for a current consumer; no speculative helpers.
+- Thin layer only: vendored schema + examples, generated types, `readMnx` version check, rational/duration math, `assignIds`, scoped addressing (`elementIds(doc, scope?)`, `ElementScope`). Add code only for a current consumer; no speculative helpers.
 - Default id scope (part 0, staff 1, 2 voices) keeps its ids unchanged; ids outside it are prefixed `p{n}.`/`st{k}.`. Never change default-scope id shapes.
 - Edit operations (`applyIntent`) live at `@polyhymnia/mnx/edit`, not `.`; pure MNX → MNX functions that preserve untouched content.
 - Beat grouping (`beamGroups`, `beatGroupingFor`) lives in `notation-engine` `src/layout/beam-policy/`, engine-internal; never export it from `mnx`.
 
 # music-theory
-- Pure, no dependencies. Its `Pitch` stays structurally equal to MNX's; callers migrate in Phase C, not before.
+- Pure, no dependencies. Its `Pitch` stays structurally equal to MNX's.
+- Callers import pitch, interval, chord, scale and key logic only from `@polyhymnia/music-theory`; never re-implement it in apps or packages.
 
 # MusicXML
 - Import-only, offline: `tools/musicxml-to-mnx` → committed `.mnx.json`. No runtime import or export until a product flow needs it.
@@ -56,6 +58,7 @@
 
 # Fonts
 - Add fonts only via `pnpm --filter @polyhymnia/notation-fonts font:add`; verify with `font:verify`. Never hand-edit `packages/notation-fonts/fonts/**`.
+- Fonts reach layout only as `NotationFont` data via `NotationOptions.font`; never hard-code a font name or metric in engine or react.
 - Docs: `notation/font.md`.
 
 # Package split

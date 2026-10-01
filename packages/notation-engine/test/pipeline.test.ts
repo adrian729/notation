@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { MnxDocument } from '@polyhymnia/mnx';
 import { normalize } from '../src/layout/normalize.js';
 import { temporal } from '../src/layout/temporal.js';
-import { engravingDefaults, glyphAdvanceWidth, glyphAnchor } from '../src/font/metadata.js';
-import { GLYPH_CODEPOINT } from '../src/font/glyphs.js';
+import { modernStyle } from '@polyhymnia/notation-fonts';
+import { fontContext } from '../src/font/context.js';
 import { fixture, measure, mnx, note, withGlobal } from './mnx.js';
 
 describe('normalize — forward inheritance', () => {
@@ -121,14 +121,15 @@ describe('temporal', () => {
 
 describe('font metrics come from the metadata JSON', () => {
   it('maps the 61-glyph subset to codepoints, augmentationDot included', () => {
-    expect(Object.keys(GLYPH_CODEPOINT)).toHaveLength(61);
-    expect(GLYPH_CODEPOINT.augmentationDot).toBe(0xe1e7);
-    expect(GLYPH_CODEPOINT.restQuarter).toBe(0xe4e5);
-    expect(GLYPH_CODEPOINT.gClef).toBe(0xe050);
-    expect(GLYPH_CODEPOINT.repeatDot).toBe(0xe044);
-    expect(GLYPH_CODEPOINT.fClef8va).toBe(0xe065);
-    expect(GLYPH_CODEPOINT.breathMarkComma).toBe(0xe4ce);
-    expect(GLYPH_CODEPOINT.caesura).toBe(0xe4d1);
-    expect(Object.keys(GLYPH_CODEPOINT).every((name) => glyphAdvanceWidth(name) > 0)).toBe(true);
+    expect(Object.keys(modernStyle.core)).toHaveLength(61);
+    expect(modernStyle.core.augmentationDot).toBe(0xe1e7);
+    expect(modernStyle.core.restQuarter).toBe(0xe4e5);
+    expect(modernStyle.core.gClef).toBe(0xe050);
+    expect(modernStyle.core.repeatDot).toBe(0xe044);
+    expect(modernStyle.core.fClef8va).toBe(0xe065);
+    expect(modernStyle.core.breathMarkComma).toBe(0xe4ce);
+    expect(modernStyle.core.caesura).toBe(0xe4d1);
+    const fonts = fontContext({ style: 'modern' });
+    expect(Object.keys(modernStyle.core).every((name) => fonts.advanceWidth(name) > 0)).toBe(true);
   });
 });
