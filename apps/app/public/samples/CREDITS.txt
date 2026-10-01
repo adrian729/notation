@@ -1,0 +1,3 @@
+guitar/, cello/, clarinet/: Philharmonia Orchestra sound samples (https://philharmonia.co.uk/resources/sound-samples/).
+Edited for this app: leading silence trimmed, peak-normalised to -1 dBFS, 50 ms fade-out, re-encoded as mono 96 kbps MP3.
+Licence: free to use, including in commercial work; the samples must not be sold or made available as is (as samples or as a sampler instrument).
