@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { NotesReveal } from '@polyhymnia/notation-react/presets';
+import { parsePitch } from '@polyhymnia/mnx';
+import type { MnxDocument } from '@polyhymnia/mnx';
 import { melodic } from '@polyhymnia/audio';
 import { createSound } from '../sound.js';
-import { useFontFamily } from '../font.js';
+import { FontNotation } from '../font.js';
 
 interface Question {
   label: string;
@@ -17,11 +18,34 @@ const QUESTIONS: readonly Question[] = [
   { label: 'Perfect 5th', from: 'C4', to: 'G4' },
 ];
 
+function intervalScore(from: string, to: string): MnxDocument {
+  return {
+    mnx: { version: 1 },
+    global: { measures: [{ time: { count: 2, unit: 4 } }] },
+    parts: [
+      {
+        measures: [
+          {
+            clefs: [{ clef: { sign: 'G', staffPosition: -2 } }],
+            sequences: [
+              {
+                content: [from, to].map((pitch) => ({
+                  duration: { base: 'quarter' },
+                  notes: [{ pitch: parsePitch(pitch) }],
+                })),
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
 const PROMPT = 'Press "Play", then click the interval you heard.';
 
 export function IntervalId() {
   const [question, setQuestion] = useState<Question | null>(null);
-  const { family } = useFontFamily();
   const [checked, setChecked] = useState(false);
   const [message, setMessage] = useState(PROMPT);
 
@@ -60,9 +84,7 @@ export function IntervalId() {
           </button>
         ))}
       </div>
-      {checked && question !== null && (
-        <NotesReveal pitches={[question.from, question.to]} clef="treble" mode="melodic" font={family} />
-      )}
+      {checked && question !== null && <FontNotation score={intervalScore(question.from, question.to)} />}
       <p className="exercise-feedback" role="status">
         {message}
       </p>

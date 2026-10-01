@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PresetsRouteImport } from './routes/presets'
 import { Route as ExercisesChordIdentificationIndexRouteImport } from './routes/exercises/chord-identification/index'
 import { Route as ExercisesChordIdentificationCustomRouteImport } from './routes/exercises/chord-identification/custom'
 import { Route as ExercisesIntervalComparisonIndexRouteImport } from './routes/exercises/interval-comparison/index'
@@ -26,6 +27,11 @@ import { Route as ExercisesMultiIntervalIdentificationLessonLessonIdRouteImport 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PresetsRoute = PresetsRouteImport.update({
+  id: '/presets',
+  path: '/presets',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExercisesChordIdentificationIndexRoute =
@@ -103,6 +109,7 @@ const ExercisesMultiIntervalIdentificationLessonLessonIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/presets': typeof PresetsRoute
   '/exercises/chord-identification/custom': typeof ExercisesChordIdentificationCustomRoute
   '/exercises/interval-comparison/custom': typeof ExercisesIntervalComparisonCustomRoute
   '/exercises/interval-identification/custom': typeof ExercisesIntervalIdentificationCustomRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/presets': typeof PresetsRoute
   '/exercises/chord-identification/custom': typeof ExercisesChordIdentificationCustomRoute
   '/exercises/interval-comparison/custom': typeof ExercisesIntervalComparisonCustomRoute
   '/exercises/interval-identification/custom': typeof ExercisesIntervalIdentificationCustomRoute
@@ -134,6 +142,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/presets': typeof PresetsRoute
   '/exercises/chord-identification/custom': typeof ExercisesChordIdentificationCustomRoute
   '/exercises/interval-comparison/custom': typeof ExercisesIntervalComparisonCustomRoute
   '/exercises/interval-identification/custom': typeof ExercisesIntervalIdentificationCustomRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/presets'
     | '/exercises/chord-identification/custom'
     | '/exercises/interval-comparison/custom'
     | '/exercises/interval-identification/custom'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/presets'
     | '/exercises/chord-identification/custom'
     | '/exercises/interval-comparison/custom'
     | '/exercises/interval-identification/custom'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/presets'
     | '/exercises/chord-identification/custom'
     | '/exercises/interval-comparison/custom'
     | '/exercises/interval-identification/custom'
@@ -197,6 +209,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PresetsRoute: typeof PresetsRoute
   ExercisesChordIdentificationCustomRoute: typeof ExercisesChordIdentificationCustomRoute
   ExercisesIntervalComparisonCustomRoute: typeof ExercisesIntervalComparisonCustomRoute
   ExercisesIntervalIdentificationCustomRoute: typeof ExercisesIntervalIdentificationCustomRoute
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/presets': {
+      id: '/presets'
+      path: '/presets'
+      fullPath: '/presets'
+      preLoaderRoute: typeof PresetsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exercises/chord-identification/': {
@@ -309,6 +329,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PresetsRoute: PresetsRoute,
   ExercisesChordIdentificationCustomRoute:
     ExercisesChordIdentificationCustomRoute,
   ExercisesIntervalComparisonCustomRoute:

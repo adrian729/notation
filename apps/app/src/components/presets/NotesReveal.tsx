@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import type { JSX } from 'react';
 import type { NoteValue } from '@polyhymnia/mnx';
+import { layoutScore } from '@polyhymnia/notation-engine';
 import type { ClefSpec, LayoutResult, NotationOptions } from '@polyhymnia/notation-engine';
-import { Notation } from '../Notation.js';
-import { memoLayout } from '../layoutMemo.js';
-import { durationKey, fittingMeter } from './shared.js';
-import type { RevealBaseProps } from './shared.js';
-import { buildMeasureScore, chordEvent, noteEvent } from './mnxBuild.js';
+import { Notation } from '@polyhymnia/notation-react';
+import { durationKey, fittingMeter } from '@/components/presets/shared';
+import type { RevealBaseProps } from '@/components/presets/shared';
+import { buildMeasureScore, chordEvent, noteEvent } from '@/components/presets/mnxBuild';
 
 const QUARTER: NoteValue = { base: 'quarter' };
 const NATURAL_WIDTH: NotationOptions = { widthSp: 1 };
@@ -39,13 +39,13 @@ export function NotesReveal({
   }, [pitches.join(' '), mode, clef, durationKey(duration)]);
 
   const { options, layout } = useMemo(() => {
-    const natural = memoLayout(doc, NATURAL_WIDTH).viewBox.w;
+    const natural = layoutScore(doc, NATURAL_WIDTH).viewBox.w;
     const fitted: NotationOptions = {
       widthSp: natural + SLOT_SP * eventCount,
       maxLastSystemFill: 1,
       font,
     };
-    return { options: fitted, layout: memoLayout(doc, fitted) };
+    return { options: fitted, layout: layoutScore(doc, fitted) };
   }, [doc, eventCount, font]);
   const centred = { width: `${(layout.viewBox.w / FULL_WIDTH_SP) * 100}%`, marginInline: 'auto', ...style };
 

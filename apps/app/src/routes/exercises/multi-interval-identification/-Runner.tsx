@@ -1,4 +1,4 @@
-import { NotesReveal } from '@polyhymnia/notation-react/presets';
+import { NotesReveal } from '@/components/presets/NotesReveal';
 import { RevealStaff } from '@/components/lesson/RevealStaff';
 import { LessonRunner } from '@/components/lesson/LessonRunner';
 import { writtenIntervalName, type AnsweredQuestion, type IntervalId } from '@/exercises/shared';
