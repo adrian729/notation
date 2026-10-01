@@ -4,7 +4,6 @@ import type { FontFamily, LayoutResult } from '@polyhymnia/notation-engine';
 import type { CSSProperties } from 'react';
 
 export interface RevealBaseProps {
-  /** Music font family; omit for the house default. */
   font?: FontFamily;
   className?: string;
   style?: CSSProperties;

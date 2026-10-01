@@ -3,12 +3,12 @@ import type { JSX } from 'react';
 import { parsePitch } from '@polyhymnia/mnx';
 import type { NoteValue } from '@polyhymnia/mnx';
 import type { ClefSpec } from '@polyhymnia/notation-engine';
-import { Notation } from '../Notation.js';
-import { durationKey, fittingMeter, scaleKey, scalePitches } from './shared.js';
-import type { RevealBaseProps, ScaleName } from './shared.js';
-import { buildMeasureScore, noteEventFromPitch } from './mnxBuild.js';
+import { Notation } from '@polyhymnia/notation-react';
+import { durationKey, fittingMeter, scaleKey, scalePitches } from '@/components/presets/shared';
+import type { RevealBaseProps, ScaleName } from '@/components/presets/shared';
+import { buildMeasureScore, noteEventFromPitch } from '@/components/presets/mnxBuild';
 
-export type { ScaleName } from './shared.js';
+export type { ScaleName } from '@/components/presets/shared';
 
 const QUARTER: NoteValue = { base: 'quarter' };
 
