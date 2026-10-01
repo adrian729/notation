@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { applyIntent } from '../src/edit/apply.js';
 import { elementIds } from '../src/mnx/element-ids.js';
-import { parsePitch } from '../src/mnx/pitch.js';
 import type { MnxDocument } from '../src/mnx/types.js';
-import { measure, mnx, note } from './support.js';
+import { A4, C4, D4, E4, F4, G4, measure, mnx, note } from './support.js';
 
 function documentWithUnaddressable(): MnxDocument {
-  const base = mnx(measure(note('C4', 'w', { id: 'addressable' })));
+  const base = mnx(measure(note(C4, 'w', { id: 'addressable' })));
   const firstPart = base.parts[0]!;
   const firstMeasure = firstPart.measures[0]!;
   return {
@@ -18,15 +17,15 @@ function documentWithUnaddressable(): MnxDocument {
           {
             ...firstMeasure,
             sequences: [
-              { content: [note('C4', 'w', { id: 'voice-a' })] },
-              { content: [note('D4', 'w', { id: 'voice-b' })] },
-              { content: [note('E4', 'w', { id: 'voice-c' })] },
-              { staff: 2, content: [note('F4', 'w', { id: 'staff-two' })] },
+              { content: [note(C4, 'w', { id: 'voice-a' })] },
+              { content: [note(D4, 'w', { id: 'voice-b' })] },
+              { content: [note(E4, 'w', { id: 'voice-c' })] },
+              { staff: 2, content: [note(F4, 'w', { id: 'staff-two' })] },
             ],
           },
         ],
       },
-      { measures: [{ sequences: [{ content: [note('G4', 'w', { id: 'part-two' })] }] }] },
+      { measures: [{ sequences: [{ content: [note(G4, 'w', { id: 'part-two' })] }] }] },
     ],
   };
 }
@@ -49,7 +48,7 @@ describe('unaddressable events', () => {
   it.each(['voice-c', 'staff-two', 'part-two'])(
     'applyIntent reports intent-target-missing and leaves the document untouched for %s',
     (id) => {
-      const result = applyIntent(doc, { type: 'setPitches', event: id, pitches: [parsePitch('A4')] });
+      const result = applyIntent(doc, { type: 'setPitches', event: id, pitches: [A4] });
 
       expect(result.doc).toBe(doc);
       expect(result.changed).toEqual([]);

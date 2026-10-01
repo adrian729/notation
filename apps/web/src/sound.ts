@@ -1,7 +1,7 @@
 import { createAudioContext, createSharedPlayer, unlockAudio } from '@polyhymnia/audio/webaudio';
 import type { Playback, Player } from '@polyhymnia/audio/webaudio';
-import { midiOfPitch } from '@polyhymnia/audio';
-import type { NoteEvent, PitchLike } from '@polyhymnia/audio';
+import type { NoteEvent } from '@polyhymnia/audio';
+import { midiOf, type PitchLike } from '@polyhymnia/music-theory';
 import type { NoteId } from '@polyhymnia/mnx';
 import type { TimeMap } from '@polyhymnia/notation-engine';
 
@@ -31,5 +31,5 @@ export function midiOfId(timeMap: TimeMap | undefined, id: NoteId, pitch?: Pitch
   const entry = timeMap?.byId(id);
   const midi = entry?.midiNotes?.[entry.ids.indexOf(id)] ?? entry?.midi;
   if (midi !== undefined) return midi;
-  return pitch ? midiOfPitch(pitch) : undefined;
+  return pitch ? midiOf(pitch) : undefined;
 }

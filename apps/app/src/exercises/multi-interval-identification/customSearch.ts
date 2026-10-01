@@ -1,7 +1,7 @@
 import { enumParam, listParam, NAME_STYLES, type NameStyle } from '../shared/customSearch.js';
 import { parseRangeSearch, type RangeSearch } from '../shared/range.js';
 import { parseSessionSearch, sessionFromSearch, type SessionSearch } from '../shared/session.js';
-import { INTERVAL_SIZES, type IntervalId } from '../shared/intervals.js';
+import { INTERVAL_SIZES, type IntervalId } from '@polyhymnia/music-theory';
 import {
   DEFAULT_OPTIONS,
   NOTE_COUNTS,

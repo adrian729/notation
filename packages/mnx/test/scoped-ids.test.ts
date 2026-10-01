@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyIntent } from '../src/edit/index.js';
-import { elementIds, parsePitch } from '../src/index.js';
+import { elementIds } from '../src/index.js';
 import type { ElementPosition, MnxDocument } from '../src/index.js';
-import { chord, mnx, note, rest } from './support.js';
+import { A3, A4, C4, chord, E4, F3, G4, mnx, note, rest } from './support.js';
 
 function multiPartDocument(): MnxDocument {
   const base = mnx({ sequences: [] });
@@ -13,16 +13,16 @@ function multiPartDocument(): MnxDocument {
         measures: [
           {
             sequences: [
-              { content: [chord(['C4', 'E4'], 'q')] },
+              { content: [chord([C4, E4], 'q')] },
               { content: [rest('q')] },
-              { content: [note('E4', 'q')] },
-              { staff: 2, content: [note('F3', 'q')] },
+              { content: [note(E4, 'q')] },
+              { staff: 2, content: [note(F3, 'q')] },
             ],
           },
         ],
       },
       {
-        measures: [{ sequences: [{ content: [note('G4', 'q')] }, { staff: 2, content: [note('A3', 'q')] }] }],
+        measures: [{ sequences: [{ content: [note(G4, 'q')] }, { staff: 2, content: [note(A3, 'q')] }] }],
       },
     ],
   };
@@ -95,15 +95,13 @@ describe('ElementIds minting authority', () => {
 describe('applyIntent part index', () => {
   it('edits an event of part 1 and leaves part 0 untouched', () => {
     const doc = multiPartDocument();
-    const intent = { type: 'setPitches', event: 'p1.m0.s0.e0', pitches: [parsePitch('A4')] } as const;
+    const intent = { type: 'setPitches', event: 'p1.m0.s0.e0', pitches: [A4] } as const;
 
     const result = applyIntent(doc, intent, 1);
 
     expect(result.changed).toEqual(['p1.m0.s0.e0']);
     expect(result.doc.parts[0]).toBe(doc.parts[0]);
-    expect((result.doc.parts[1]!.measures[0]!.sequences[0]!.content[0] as any).notes[0].pitch).toEqual(
-      parsePitch('A4'),
-    );
+    expect((result.doc.parts[1]!.measures[0]!.sequences[0]!.content[0] as any).notes[0].pitch).toEqual(A4);
     expect(applyIntent(doc, intent).diagnostics.map((d) => d.code)).toEqual(['intent-target-missing']);
   });
 });

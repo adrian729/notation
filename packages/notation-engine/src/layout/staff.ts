@@ -1,3 +1,10 @@
+import {
+  FLAT_ORDER,
+  keyAlterOf as keyAlterOfLetter,
+  SHARP_ORDER,
+  STEP_LETTERS,
+  stepNumberOf,
+} from '@polyhymnia/music-theory';
 import { stepIndex, type ClefSpec, type KeySpec, type StaffPitch } from './records.js';
 
 export const STAFF_LINES = 5;
@@ -50,22 +57,12 @@ export function clefEquals(a: ClefSpec, b: ClefSpec): boolean {
   return a.kind === b.kind && (a.octaveShift ?? 0) === (b.octaveShift ?? 0);
 }
 
-const SHARP_ORDER: readonly number[] = [3, 0, 4, 1, 5, 2, 6];
-const FLAT_ORDER: readonly number[] = [...SHARP_ORDER].reverse();
-
 const TREBLE_SHARP_Y: readonly number[] = [0, 1.5, -0.5, 1, 2.5, 0.5, 2];
 const TREBLE_FLAT_Y: readonly number[] = [2, 0.5, 2.5, 1, 3, 1.5, 3.5];
 
-export function keyAlterations(key: KeySpec): ReadonlyMap<number, -1 | 1> {
-  const map = new Map<number, -1 | 1>();
-  const count = Math.min(7, Math.abs(key.fifths));
-  const order = key.fifths >= 0 ? SHARP_ORDER : FLAT_ORDER;
-  for (let i = 0; i < count; i += 1) map.set(order[i]!, key.fifths >= 0 ? 1 : -1);
-  return map;
-}
-
 export function keyAlterOf(key: KeySpec, step: number): -1 | 0 | 1 {
-  return keyAlterations(key).get(step) ?? 0;
+  const letter = STEP_LETTERS[step];
+  return letter === undefined ? 0 : keyAlterOfLetter(key.fifths, letter);
 }
 
 function keyShift(clef: ClefSpec): number {
@@ -94,7 +91,7 @@ export function keySignature(key: KeySpec, clef: ClefSpec): readonly KeyAccident
   const shift = keyShift(clef);
   const out: KeyAccidental[] = [];
   for (let i = 0; i < count; i += 1) {
-    const step = order[i]!;
+    const step = stepNumberOf(order[i]!);
     let y = pattern[i]! + shift;
     if (clef.kind === 'tenor' && sharps && y < 0) y += 3.5;
     out.push({ step, alter: sharps ? 1 : -1, glyph: sharps ? 'accidentalSharp' : 'accidentalFlat', y });

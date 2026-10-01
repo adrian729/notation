@@ -1,6 +1,6 @@
-import { parsePitch } from '@polyhymnia/mnx';
 import type { Clef, Event, MnxDocument, NoteValue, Pitch, Time } from '@polyhymnia/mnx';
 import type { ClefSpec } from '@polyhymnia/notation-engine';
+import { parsePitch } from '@polyhymnia/music-theory';
 
 const CLEFS: Record<ClefSpec['kind'], Clef> = {
   treble: { sign: 'G', staffPosition: -2 },

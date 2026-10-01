@@ -3,8 +3,7 @@ import type { JSX } from 'react';
 import { render, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { layoutScore } from '@polyhymnia/notation-engine';
-import { parsePitch } from '@polyhymnia/mnx';
-import type { Event, MnxDocument, NoteValue } from '@polyhymnia/mnx';
+import type { Event, MnxDocument, NoteValue, Pitch } from '@polyhymnia/mnx';
 import { Notation } from '../src/Notation.js';
 import type { NotationHandle } from '../src/Notation.js';
 import type { PlaybackView } from '../src/Notation.js';
@@ -17,8 +16,8 @@ const NOTEHEAD_QUARTER = 0xe93d;
 const QUARTER: NoteValue = { base: 'quarter' };
 const HALF: NoteValue = { base: 'half' };
 
-function noteEvent(pitch: string, duration: NoteValue): Event {
-  return { duration, notes: [{ pitch: parsePitch(pitch) }] };
+function noteEvent(pitch: Pitch, duration: NoteValue): Event {
+  return { duration, notes: [{ pitch }] };
 }
 
 function restEvent(duration: NoteValue): Event {
@@ -36,10 +35,26 @@ function simpleScore(): MnxDocument {
         measures: [
           {
             clefs: [{ clef: { sign: 'G', staffPosition: -2 } }],
-            sequences: [{ content: [noteEvent('C4', QUARTER), noteEvent('E4', QUARTER), noteEvent('G4', HALF)] }],
+            sequences: [
+              {
+                content: [
+                  noteEvent({ step: 'C', octave: 4 }, QUARTER),
+                  noteEvent({ step: 'E', octave: 4 }, QUARTER),
+                  noteEvent({ step: 'G', octave: 4 }, HALF),
+                ],
+              },
+            ],
           },
           {
-            sequences: [{ content: [noteEvent('A5', QUARTER), restEvent(QUARTER), noteEvent('C3', HALF)] }],
+            sequences: [
+              {
+                content: [
+                  noteEvent({ step: 'A', octave: 5 }, QUARTER),
+                  restEvent(QUARTER),
+                  noteEvent({ step: 'C', octave: 3 }, HALF),
+                ],
+              },
+            ],
           },
         ],
       },
@@ -99,9 +114,9 @@ describe('<Notation>', () => {
   });
 
   it("keeps an element's DOM node stable when an earlier event shifts its position", () => {
-    const noteA: Event = { id: 'note-a', duration: QUARTER, notes: [{ pitch: parsePitch('C4') }] };
-    const noteB: Event = { id: 'note-b', duration: QUARTER, notes: [{ pitch: parsePitch('E4') }] };
-    const noteC: Event = { id: 'note-c', duration: QUARTER, notes: [{ pitch: parsePitch('G4') }] };
+    const noteA: Event = { id: 'note-a', duration: QUARTER, notes: [{ pitch: { step: 'C', octave: 4 } }] };
+    const noteB: Event = { id: 'note-b', duration: QUARTER, notes: [{ pitch: { step: 'E', octave: 4 } }] };
+    const noteC: Event = { id: 'note-c', duration: QUARTER, notes: [{ pitch: { step: 'G', octave: 4 } }] };
     const restFill = restEvent(HALF);
     const measureShell = { clefs: [{ clef: { sign: 'G' as const, staffPosition: -2 } }] };
     const before: MnxDocument = {
@@ -153,13 +168,13 @@ function beamAndTieScore(): MnxDocument {
             sequences: [
               {
                 content: [
-                  { duration: { base: 'eighth' }, notes: [{ pitch: parsePitch('C4'), id: 'bn1' }] },
-                  { duration: { base: 'eighth' }, notes: [{ pitch: parsePitch('D4'), id: 'bn2' }] },
+                  { duration: { base: 'eighth' }, notes: [{ pitch: { step: 'C', octave: 4 }, id: 'bn1' }] },
+                  { duration: { base: 'eighth' }, notes: [{ pitch: { step: 'D', octave: 4 }, id: 'bn2' }] },
                   {
                     duration: { base: 'quarter' },
-                    notes: [{ pitch: parsePitch('E4'), id: 'bn3', ties: [{ target: 'bn4' }] }],
+                    notes: [{ pitch: { step: 'E', octave: 4 }, id: 'bn3', ties: [{ target: 'bn4' }] }],
                   },
-                  { duration: { base: 'quarter' }, notes: [{ pitch: parsePitch('E4'), id: 'bn4' }] },
+                  { duration: { base: 'quarter' }, notes: [{ pitch: { step: 'E', octave: 4 }, id: 'bn4' }] },
                   restEvent(QUARTER),
                 ],
               },
@@ -232,7 +247,7 @@ describe('playback highlighting', () => {
             {
               clefs: [{ clef: { sign: 'G', staffPosition: -2 } }],
               sequences: [
-                { content: [{ duration: { base: 'quarter' }, notes: [{ pitch: parsePitch('C4'), id: 'x' }] }] },
+                { content: [{ duration: { base: 'quarter' }, notes: [{ pitch: { step: 'C', octave: 4 }, id: 'x' }] }] },
               ],
             },
           ],
@@ -249,8 +264,8 @@ describe('playback highlighting', () => {
               sequences: [
                 {
                   content: [
-                    { duration: { base: 'quarter' }, notes: [{ pitch: parsePitch('D4'), id: 'y' }] },
-                    { duration: { base: 'quarter' }, notes: [{ pitch: parsePitch('C4'), id: 'x' }] },
+                    { duration: { base: 'quarter' }, notes: [{ pitch: { step: 'D', octave: 4 }, id: 'y' }] },
+                    { duration: { base: 'quarter' }, notes: [{ pitch: { step: 'C', octave: 4 }, id: 'x' }] },
                   ],
                 },
               ],

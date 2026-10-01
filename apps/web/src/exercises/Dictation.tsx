@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NotationIntent } from '@polyhymnia/notation-react';
-import { parsePitch } from '@polyhymnia/mnx';
 import { applyIntent } from '@polyhymnia/mnx/edit';
 import type { MnxDocument, NoteId, Pitch } from '@polyhymnia/mnx';
 import type { PreviewNote } from '@polyhymnia/notation-engine';
 import { melodic } from '@polyhymnia/audio';
+import { midiOf, parsePitch } from '@polyhymnia/music-theory';
 import { createSound } from '../sound.js';
 import score from '../scores/exercise-dictation.mnx.json';
 import { FontNotation } from '../font.js';
@@ -52,7 +52,7 @@ export function Dictation() {
   }, [checked, entered]);
 
   const play = useCallback(() => {
-    sound.playEvents(melodic(MELODY, { noteDuration: 0.45, gap: 0.05 }));
+    sound.playEvents(melodic(MELODY.map(midiOf), { noteDuration: 0.45, gap: 0.05 }));
   }, [sound]);
 
   const reset = useCallback(() => {

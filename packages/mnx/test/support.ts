@@ -1,4 +1,3 @@
-import { parsePitch } from '../src/mnx/pitch.js';
 import type {
   Event,
   MeasureGlobal,
@@ -7,10 +6,20 @@ import type {
   NoteValue,
   NoteValueBase,
   PartMeasure,
+  Pitch,
   Sequence,
   SequenceContent,
   Tuplet,
 } from '../src/mnx/types.js';
+
+export const F3: Pitch = { step: 'F', octave: 3 };
+export const A3: Pitch = { step: 'A', octave: 3 };
+export const C4: Pitch = { step: 'C', octave: 4 };
+export const D4: Pitch = { step: 'D', octave: 4 };
+export const E4: Pitch = { step: 'E', octave: 4 };
+export const F4: Pitch = { step: 'F', octave: 4 };
+export const G4: Pitch = { step: 'G', octave: 4 };
+export const A4: Pitch = { step: 'A', octave: 4 };
 
 const BASES: Record<string, NoteValueBase> = { w: 'whole', h: 'half', q: 'quarter', '8': 'eighth', '16': '16th' };
 
@@ -20,17 +29,12 @@ export function value(token: string): NoteValue {
   return { base };
 }
 
-export function note(
-  pitch: string,
-  duration: string,
-  extra: Partial<Event> = {},
-  noteExtra: Partial<Note> = {},
-): Event {
-  return { duration: value(duration), notes: [{ pitch: parsePitch(pitch), ...noteExtra }], ...extra };
+export function note(pitch: Pitch, duration: string, extra: Partial<Event> = {}, noteExtra: Partial<Note> = {}): Event {
+  return { duration: value(duration), notes: [{ pitch, ...noteExtra }], ...extra };
 }
 
-export function chord(pitches: readonly string[], duration: string, extra: Partial<Event> = {}): Event {
-  return { duration: value(duration), notes: pitches.map((p) => ({ pitch: parsePitch(p) })), ...extra };
+export function chord(pitches: readonly Pitch[], duration: string, extra: Partial<Event> = {}): Event {
+  return { duration: value(duration), notes: pitches.map((pitch) => ({ pitch })), ...extra };
 }
 
 export function rest(duration: string, extra: Partial<Event> = {}): Event {

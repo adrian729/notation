@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateQuestion, type IdentificationOptions } from '@/exercises/interval-identification';
-import { intervalById, tokenMidi } from '@/exercises/shared';
-import { pitchToMidi } from '@polyhymnia/mnx';
+import { intervalById, pitchToMidi, tryMidiOf } from '@polyhymnia/music-theory';
 
 function mulberry32(seed: number) {
   let a = seed;
@@ -68,15 +67,15 @@ const CASES: Case[] = [
 
 describe('interval identification generateQuestion', () => {
   it.each(CASES)('$label', ({ options }) => {
-    const low = tokenMidi(options.range.low)!;
-    const high = tokenMidi(options.range.high)!;
+    const low = tryMidiOf(options.range.low)!;
+    const high = tryMidiOf(options.range.high)!;
     const rng = mulberry32(options.range.low.length * 1000 + options.range.high.charCodeAt(0));
     let last;
     for (let i = 0; i < 20; i++) {
       const question = generateQuestion(options, rng, last);
       const spec = intervalById(question.size);
-      const fromMidi = tokenMidi(question.tones.from)!;
-      const toMidi = tokenMidi(question.tones.to)!;
+      const fromMidi = tryMidiOf(question.tones.from)!;
+      const toMidi = tryMidiOf(question.tones.to)!;
 
       expect(Math.abs(toMidi - fromMidi)).toBe(spec.semitones);
       expect(pitchToMidi(question.tones.root)).toBeGreaterThanOrEqual(low);

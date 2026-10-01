@@ -1,14 +1,16 @@
-import { pitchToMidi } from '@polyhymnia/mnx';
-import { intervalById, type IntervalId } from './intervals.js';
 import {
-  pickPreferredRoot,
-  pitchToToken,
+  formatPitch,
+  intervalBetween,
+  intervalById,
+  intervalDisplayName,
+  midiToPitch,
+  pitchClass,
+  pitchToMidi,
   spellRelative,
-  tokenMidi,
-  writtenIntervalName,
-  type IntervalSpec,
+  type IntervalId,
   type SpelledPitch,
-} from './spelling.js';
+} from '@polyhymnia/music-theory';
+import { pickPreferredRoot } from './spelling.js';
 import type { PlayingMode } from './playing.js';
 
 export type Rng = () => number;
@@ -27,7 +29,8 @@ export function direction(mode: PlayingMode): 1 | -1 {
 }
 
 function toneName(mode: PlayingMode, lower: SpelledPitch, upper: SpelledPitch): string {
-  return `${writtenIntervalName(pitchToToken(lower), pitchToToken(upper))}, ${mode === 'harmonic' ? 'harmonic' : mode === 'asc' ? 'ascending' : 'descending'}`;
+  const { degree, quality } = intervalBetween(lower, upper);
+  return `${intervalDisplayName(degree, quality)}, ${mode === 'harmonic' ? 'harmonic' : mode === 'asc' ? 'ascending' : 'descending'}`;
 }
 
 export function toTones(
@@ -41,8 +44,8 @@ export function toTones(
   const upper = dir === 1 ? other : root;
   return {
     size,
-    from: pitchToToken(mode === 'desc' ? root : lower),
-    to: pitchToToken(mode === 'desc' ? other : upper),
+    from: formatPitch(mode === 'desc' ? root : lower),
+    to: formatPitch(mode === 'desc' ? other : upper),
     root,
     other,
     name: toneName(mode, lower, upper),
@@ -55,12 +58,6 @@ export function buildTones(size: IntervalId, root: SpelledPitch, mode: PlayingMo
   const spelled = spellRelative(root, [spec], dir, 2);
   if (!spelled) throw new RangeError('could not spell interval without a double accidental');
   return toTones(size, mode, dir, spelled.pinned, spelled.members[0]!.pitch);
-}
-
-export function midiOfToken(token: string): number {
-  const midi = tokenMidi(token);
-  if (midi === undefined) throw new SyntaxError(`Invalid pitch token: ${JSON.stringify(token)}`);
-  return midi;
 }
 
 export function clefForMidis(midis: readonly number[]): 'treble' | 'bass' {
@@ -81,20 +78,13 @@ export function pickOne<T>(items: readonly T[], rng: Rng): T {
   return items[Math.floor(rng() * items.length)]!;
 }
 
-export function midiToPitch(midi: number, rng: Rng): SpelledPitch {
-  const pitchClass = ((midi % 12) + 12) % 12;
-  const octave = Math.floor(midi / 12) - 1;
-  return pickPreferredRoot(pitchClass, octave, rng);
-}
-
-export function pitchAbove(root: SpelledPitch, spec: IntervalSpec, dir: 1 | -1 = 1): SpelledPitch {
-  const spelled = spellRelative(root, [spec], dir, 2);
-  return spelled?.members[0]?.pitch ?? midiToPitch(pitchToMidi(root) + dir * spec.semitones, () => 0);
+export function midiToPitchRng(midi: number, rng: Rng): SpelledPitch {
+  return pickPreferredRoot(pitchClass(midi), midiToPitch(midi).octave, rng);
 }
 
 export function randomRootInRange(rng: Rng, low: number, high: number): SpelledPitch {
   const midi = randomInt(rng, low, Math.max(low, high));
-  return midiToPitch(midi, rng);
+  return midiToPitchRng(midi, rng);
 }
 
 export function deterministicRng(seed: number): Rng {

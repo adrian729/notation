@@ -7,7 +7,7 @@ import {
   validationResult,
   type SessionOptions,
 } from '../shared/session.js';
-import { chordById, chordSpan, isChordId, type ChordId } from './chords.js';
+import { chordById, chordSpan, isChordId, type ChordId } from '@polyhymnia/music-theory';
 import {
   DIRECTIONS,
   EXECUTIONS,

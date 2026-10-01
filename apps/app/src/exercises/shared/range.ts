@@ -1,12 +1,12 @@
 import type { RangeOption } from './playing.js';
-import { chromaticTokens, tokenMidi } from './spelling.js';
+import { chromaticRange, formatPitch, tryMidiOf } from '@polyhymnia/music-theory';
 
 export interface RangeSearch {
   low: string;
   high: string;
 }
 
-export const RANGE_TOKENS = chromaticTokens(tokenMidi('E2')!, tokenMidi('C7')!);
+export const RANGE_TOKENS = chromaticRange(tryMidiOf('E2')!, tryMidiOf('C7')!).map(formatPitch);
 
 export function parseRangeSearch(search: Record<string, unknown>, fallback: RangeOption): RangeSearch {
   return {
@@ -21,8 +21,8 @@ export function validateRange(range: Partial<RangeOption> | undefined, widest?: 
     errors.push('Select a range.');
     return errors;
   }
-  const lowMidi = tokenMidi(range.low);
-  const highMidi = tokenMidi(range.high);
+  const lowMidi = tryMidiOf(range.low);
+  const highMidi = tryMidiOf(range.high);
   if (lowMidi === undefined || highMidi === undefined) {
     errors.push('Enter a valid range.');
   } else if (lowMidi >= highMidi) {

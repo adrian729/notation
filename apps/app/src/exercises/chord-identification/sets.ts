@@ -1,4 +1,4 @@
-import type { ChordId } from './chords.js';
+import type { ChordId } from '@polyhymnia/music-theory';
 
 export type ChordSetId =
   | 'major-minor'

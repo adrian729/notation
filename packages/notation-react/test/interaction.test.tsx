@@ -4,8 +4,7 @@ import { render, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { layoutScore, previewShapes } from '@polyhymnia/notation-engine';
 import type { HitResult } from '@polyhymnia/notation-engine';
-import { parsePitch } from '@polyhymnia/mnx';
-import type { Event, MnxDocument, NoteValue } from '@polyhymnia/mnx';
+import type { Event, MnxDocument, NoteValue, Pitch } from '@polyhymnia/mnx';
 import { Notation } from '../src/Notation.js';
 import type { NotationHandle } from '../src/Notation.js';
 import type { NotationIntent } from '../src/Interaction.js';
@@ -19,8 +18,8 @@ if (typeof (globalThis as { PointerEvent?: unknown }).PointerEvent === 'undefine
 const QUARTER: NoteValue = { base: 'quarter' };
 const HALF: NoteValue = { base: 'half' };
 
-function noteEvent(pitch: string, duration: NoteValue): Event {
-  return { duration: { ...duration }, notes: [{ pitch: parsePitch(pitch) }] };
+function noteEvent(pitch: Pitch, duration: NoteValue): Event {
+  return { duration: { ...duration }, notes: [{ pitch }] };
 }
 
 function simpleScore(): MnxDocument {
@@ -32,7 +31,15 @@ function simpleScore(): MnxDocument {
         measures: [
           {
             clefs: [{ clef: { sign: 'G', staffPosition: -2 } }],
-            sequences: [{ content: [noteEvent('C4', QUARTER), noteEvent('E4', QUARTER), noteEvent('G4', HALF)] }],
+            sequences: [
+              {
+                content: [
+                  noteEvent({ step: 'C', octave: 4 }, QUARTER),
+                  noteEvent({ step: 'E', octave: 4 }, QUARTER),
+                  noteEvent({ step: 'G', octave: 4 }, HALF),
+                ],
+              },
+            ],
           },
         ],
       },
@@ -67,8 +74,8 @@ function twoVoiceScore(): MnxDocument {
           {
             clefs: [{ clef: { sign: 'G', staffPosition: -2 } }],
             sequences: [
-              { content: [noteEvent('E4', HALF), noteEvent('G4', HALF)] },
-              { content: [noteEvent('C4', HALF), noteEvent('C4', HALF)] },
+              { content: [noteEvent({ step: 'E', octave: 4 }, HALF), noteEvent({ step: 'G', octave: 4 }, HALF)] },
+              { content: [noteEvent({ step: 'C', octave: 4 }, HALF), noteEvent({ step: 'C', octave: 4 }, HALF)] },
             ],
           },
         ],
@@ -242,7 +249,7 @@ describe('<Notation.Interaction>', () => {
     expect(intents[0]!.target).not.toBeNull();
 
     const otherDoc = simpleScore();
-    otherDoc.parts[0]!.measures[0]!.sequences[0]!.content.push(noteEvent('A4', QUARTER));
+    otherDoc.parts[0]!.measures[0]!.sequences[0]!.content.push(noteEvent({ step: 'A', octave: 4 }, QUARTER));
     rerender(
       <Notation score={otherDoc}>
         <Notation.Interaction targets={['element']} onIntent={(i) => intents.push(i)} />
@@ -270,7 +277,7 @@ describe('<Notation.Interaction>', () => {
     expect(intents).toHaveLength(1);
 
     const otherDoc = simpleScore();
-    otherDoc.parts[0]!.measures[0]!.sequences[0]!.content.push(noteEvent('A4', QUARTER));
+    otherDoc.parts[0]!.measures[0]!.sequences[0]!.content.push(noteEvent({ step: 'A', octave: 4 }, QUARTER));
     rerender(
       <Notation score={otherDoc}>
         <Notation.Interaction targets={[]} onIntent={(i) => intents.push(i)} />

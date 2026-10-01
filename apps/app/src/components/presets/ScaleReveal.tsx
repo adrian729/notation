@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
 import type { JSX } from 'react';
-import { parsePitch } from '@polyhymnia/mnx';
 import type { NoteValue } from '@polyhymnia/mnx';
+import { parsePitch, scalePitches, type ScaleName } from '@polyhymnia/music-theory';
 import type { ClefSpec } from '@polyhymnia/notation-engine';
 import { Notation } from '@polyhymnia/notation-react';
-import { durationKey, fittingMeter, scaleKey, scalePitches } from '@/components/presets/shared';
-import type { RevealBaseProps, ScaleName } from '@/components/presets/shared';
+import { durationKey, fittingMeter, scaleKey } from '@/components/presets/shared';
+import type { RevealBaseProps } from '@/components/presets/shared';
 import { buildMeasureScore, noteEventFromPitch } from '@/components/presets/mnxBuild';
 
-export type { ScaleName } from '@/components/presets/shared';
+export type { ScaleName } from '@polyhymnia/music-theory';
 
 const QUARTER: NoteValue = { base: 'quarter' };
 

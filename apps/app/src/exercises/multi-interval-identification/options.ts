@@ -7,7 +7,8 @@ import {
   type SessionOptions,
   type ValidationResult,
 } from '../shared/session.js';
-import { INTERVAL_SIZES, rangeForIntervals, widestSemitones, type IntervalId } from '../shared/intervals.js';
+import { INTERVAL_SIZES, widestSemitones, type IntervalId } from '@polyhymnia/music-theory';
+import { rangeForIntervals } from '../shared/intervals.js';
 import { validateRange } from '../shared/range.js';
 import { setById } from './sets.js';
 

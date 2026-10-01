@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generateQuestion, validateExerciseOptions } from '@/exercises/interval-comparison/generator';
-import { intervalById } from '@/exercises/shared/intervals';
 import { normalizeOptions } from '@/exercises/interval-comparison/options';
-import { parsePitch, pitchToMidi } from '@polyhymnia/mnx';
+import { intervalById, midiOf, pitchToMidi } from '@polyhymnia/music-theory';
 
 function mulberry32(seed: number) {
   let a = seed;
@@ -13,11 +12,6 @@ function mulberry32(seed: number) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-}
-
-function midiOfToken(token: string): number {
-  const p = parsePitch(token);
-  return 12 * (p.octave + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[p.step] + (p.alter ?? 0);
 }
 
 const RELATIONSHIPS = ['common-first', 'common-either', 'nearby', 'random'] as const;
@@ -34,8 +28,8 @@ describe('generateQuestion invariants', () => {
         questionCount: 10,
         autoNext: false,
       });
-      const low = midiOfToken(options.range.low);
-      const high = midiOfToken(options.range.high);
+      const low = midiOf(options.range.low);
+      const high = midiOf(options.range.high);
       const rng = mulberry32(toneRelationship.length * 1000 + 7);
       const answers = new Set<string>();
 

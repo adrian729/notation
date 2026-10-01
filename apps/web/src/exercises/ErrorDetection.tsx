@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NotationHandle, NotationIntent } from '@polyhymnia/notation-react';
 import type { MnxDocument, NoteId } from '@polyhymnia/mnx';
 import { melodic } from '@polyhymnia/audio';
+import { midiOf } from '@polyhymnia/music-theory';
 import { createSound, midiOfId } from '../sound.js';
 import score from '../scores/exercise-error-detection.mnx.json';
 import { FontNotation } from '../font.js';
@@ -55,7 +56,7 @@ export function ErrorDetection() {
   }, [checked, selection]);
 
   const play = useCallback(() => {
-    sound.playEvents(melodic(VARIANT, { noteDuration: 0.45, gap: 0.05 }));
+    sound.playEvents(melodic(VARIANT.map(midiOf), { noteDuration: 0.45, gap: 0.05 }));
   }, [sound]);
 
   const onIntent = useCallback(

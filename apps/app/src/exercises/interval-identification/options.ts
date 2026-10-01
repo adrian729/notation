@@ -1,10 +1,5 @@
-import {
-  INTERVAL_FAMILIES,
-  INTERVAL_SIZES,
-  rangeForIntervals,
-  widestSemitones,
-  type IntervalId,
-} from '../shared/intervals.js';
+import { INTERVAL_SIZES, widestSemitones, type IntervalId } from '@polyhymnia/music-theory';
+import { INTERVAL_FAMILIES, rangeForIntervals } from '../shared/intervals.js';
 import type { PlayingMode, RangeOption } from '../shared/playing.js';
 import {
   DEFAULT_SESSION,

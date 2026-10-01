@@ -1,12 +1,17 @@
-import { intervalById, type IntervalId } from '../shared/intervals.js';
-import { pitchToMidi } from '@polyhymnia/mnx';
-import { spellRelative, type SpelledMember, type SpelledPitch } from '../shared/spelling.js';
+import {
+  intervalById,
+  midiOf,
+  pitchToMidi,
+  spellRelative,
+  type IntervalId,
+  type SpelledMember,
+  type SpelledPitch,
+} from '@polyhymnia/music-theory';
 import {
   buildTones,
   clefForMidis,
   direction,
-  midiOfToken,
-  midiToPitch,
+  midiToPitchRng,
   randomInt,
   randomRootInRange,
   toTones,
@@ -80,8 +85,8 @@ export function generateQuestion(
   rng: Rng = Math.random,
   last?: LastQuestionSignature,
 ): Question {
-  const low = midiOfToken(options.range.low);
-  const high = midiOfToken(options.range.high);
+  const low = midiOf(options.range.low);
+  const high = midiOf(options.range.high);
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const mode = options.playingModes[Math.floor(rng() * options.playingModes.length)]!;
@@ -115,7 +120,7 @@ export function generateQuestion(
       const rootA = randomRootInRange(rng, low, safeHigh);
       const offset = randomInt(rng, -4, 4);
       const rootBMidi = pitchToMidi(rootA) + offset;
-      const rootB = midiToPitch(rootBMidi, rng);
+      const rootB = midiToPitchRng(rootBMidi, rng);
       const tonesA = buildTones(sizeA, rootA, mode);
       const tonesB = buildTones(sizeB, rootB, mode);
       if (withinRange(tonesA, low, high) && withinRange(tonesB, low, high)) {
@@ -167,7 +172,7 @@ export function validateExerciseOptions(raw: Partial<ExerciseOptions>): Validati
   if (!base.valid) return base;
   const options = normalizeOptions(raw);
   const widest = Math.max(...options.intervals.map((id) => intervalById(id).semitones));
-  const span = midiOfToken(options.range.high) - midiOfToken(options.range.low);
+  const span = midiOf(options.range.high) - midiOf(options.range.low);
   if (widest > span || !canGenerateQuestion(options)) {
     return { valid: false, errors: [...base.errors, 'Range too narrow for the selected intervals.'] };
   }

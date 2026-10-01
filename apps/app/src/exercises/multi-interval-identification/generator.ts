@@ -1,7 +1,14 @@
-import { pitchToMidi } from '@polyhymnia/mnx';
-import { clefForMidis, midiOfToken, midiToPitch, pickOne, pitchAbove, randomInt, type Rng } from '../shared/tones.js';
-import { intervalById, type IntervalId } from '../shared/intervals.js';
-import { pitchToToken, spellRelative, tokenPitch } from '../shared/spelling.js';
+import {
+  formatPitch,
+  intervalById,
+  midiOf,
+  parseSpelledPitch,
+  pitchToMidi,
+  spellRelative,
+  transpose,
+  type IntervalId,
+} from '@polyhymnia/music-theory';
+import { clefForMidis, midiToPitchRng, pickOne, randomInt, type Rng } from '../shared/tones.js';
 import type { MultiIntervalOptions, MultiPlayingMode } from './options.js';
 
 export interface StackRow {
@@ -23,7 +30,7 @@ export function questionSignature(q: Question): string {
 
 export function withAnswer(question: Question, rowIndex: number, size: IntervalId): Question {
   const replaced = question.rows[rowIndex]!.pitch;
-  const pitch = pitchToToken(pitchAbove(tokenPitch(question.reference), intervalById(size)));
+  const pitch = formatPitch(transpose(parseSpelledPitch(question.reference), intervalById(size)));
   return {
     ...question,
     rows: question.rows.map((row, i) => (i === rowIndex ? { size, pitch } : row)),
@@ -51,8 +58,8 @@ function sampleDistinct<T>(items: readonly T[], count: number, rng: Rng): T[] {
 }
 
 export function generateQuestion(options: MultiIntervalOptions, rng: Rng = Math.random, last?: string): Question {
-  const low = midiOfToken(options.range.low);
-  const high = midiOfToken(options.range.high);
+  const low = midiOf(options.range.low);
+  const high = midiOf(options.range.high);
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const mode = pickOne(options.playingModes, rng);
@@ -65,11 +72,11 @@ export function generateQuestion(options: MultiIntervalOptions, rng: Rng = Math.
     if (low > rootHigh) continue;
 
     const referenceMidi = randomInt(rng, low, rootHigh);
-    const spelled = spellRelative(midiToPitch(referenceMidi, rng), specs, 1, 2);
+    const spelled = spellRelative(midiToPitchRng(referenceMidi, rng), specs, 1, 2);
     if (!spelled) continue;
 
-    const reference = pitchToToken(spelled.pinned);
-    const rows = specs.map((spec, i) => ({ size: spec.size, pitch: pitchToToken(spelled.members[i]!.pitch) }));
+    const reference = formatPitch(spelled.pinned);
+    const rows = specs.map((spec, i) => ({ size: spec.size, pitch: formatPitch(spelled.members[i]!.pitch) }));
     const ascending = [reference, ...rows.map((row) => row.pitch)];
     const clef = clefForMidis([pitchToMidi(spelled.pinned), ...spelled.members.map((m) => pitchToMidi(m.pitch))]);
     const question: Question = {
