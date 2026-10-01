@@ -1,3 +1,4 @@
+import { styleOf } from '../font/context.js';
 import { engravingDefaults, glyphAdvanceWidth, glyphBBox } from '../font/metadata.js';
 import { DEFAULT_FONT, glyphCodepoint, type FontFamily } from '../font/glyphs.js';
 import type { Diagnostic } from '@polyhymnia/mnx';
@@ -54,7 +55,7 @@ export interface EmitInput {
 }
 
 export function emit(input: EmitInput, options?: NotationOptions): LayoutResult {
-  const family: FontFamily = options?.font ?? DEFAULT_FONT;
+  const family: FontFamily = styleOf(options);
   const glyphs: GlyphRun[] = [];
   const rects: RectShape[] = [];
   const paths: PathShape[] = [];
@@ -234,7 +235,13 @@ function emitDigits(
   }
 }
 
-function emitBarlines(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], rects: RectShape[], family: FontFamily): void {
+function emitBarlines(
+  measure: PositionedMeasure,
+  staffTop: number,
+  glyphs: GlyphRun[],
+  rects: RectShape[],
+  family: FontFamily,
+): void {
   const e = engravingDefaults;
   const bottom = staffTop + STAFF_HEIGHT;
   const line = (x: number, thickness: number): RectShape => ({
@@ -336,9 +343,18 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
       const accY = staffTop + head.accidental.y;
       if (head.accidental.parenthesized) {
         ctx.glyphs.push(
-          glyph('accidentalParensLeft', accX - glyphAdvanceWidth('accidentalParensLeft'), accY, 'accidental', ctx.family, head.id),
+          glyph(
+            'accidentalParensLeft',
+            accX - glyphAdvanceWidth('accidentalParensLeft'),
+            accY,
+            'accidental',
+            ctx.family,
+            head.id,
+          ),
         );
-        ctx.glyphs.push(glyph('accidentalParensRight', accX + head.accidental.width, accY, 'accidental', ctx.family, head.id));
+        ctx.glyphs.push(
+          glyph('accidentalParensRight', accX + head.accidental.width, accY, 'accidental', ctx.family, head.id),
+        );
       }
       ctx.glyphs.push(glyph(head.accidental.glyph, accX, accY, 'accidental', ctx.family, head.id));
     }

@@ -73,7 +73,7 @@ const FAMILY_CSS_NAME: Record<FontFamily, string> = {
 
 export function Notation({ score, options, children, className, style, onLayout, ref }: NotationProps): JSX.Element {
   const layout = useMemo(() => memoLayout(score, options), [score, options]);
-  const family: FontFamily = options?.font ?? DEFAULT_FONT;
+  const family: FontFamily = typeof options?.font === 'string' ? options.font : (options?.style ?? DEFAULT_FONT);
   const fontFamily = FAMILY_CSS_NAME[family];
   const svgRef = useRef<SVGSVGElement | null>(null);
   const elementRefs = useRef(new Map<string, SVGGElement>());

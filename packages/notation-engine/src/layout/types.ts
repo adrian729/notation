@@ -23,6 +23,7 @@ export interface GlyphRun {
   cp: number;
   cls: string;
   el?: NoteId;
+  font?: number;
 }
 
 export interface RectShape {
@@ -104,4 +105,5 @@ export interface LayoutResult {
   measures: readonly MeasureBox[];
   timemap: TimeMap;
   diagnostics: readonly Diagnostic[];
+  fonts?: readonly string[];
 }

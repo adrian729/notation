@@ -1,3 +1,4 @@
+import { styleOf } from '../font/context.js';
 import { engravingDefaults, glyphAdvanceWidth, glyphAnchor, glyphBBox } from '../font/metadata.js';
 import { DEFAULT_FONT, type FontFamily } from '../font/glyphs.js';
 import type { NotationOptions } from '../options.js';
@@ -167,7 +168,7 @@ export function vertical(
 ): VerticalScore {
   const diagnostics: Diagnostic[] = [];
   const elements: VerticalElement[] = [];
-  const family = options?.font ?? DEFAULT_FONT;
+  const family = styleOf(options);
   const twoVoice = twoVoiceMeasures(score);
   const upVoice = computeUpVoice(normalized, score, twoVoice);
   const elementBeam = beamDirectionsByElement(normalized, score, twoVoice, upVoice, diagnostics);
