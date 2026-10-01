@@ -32,6 +32,9 @@ importers:
       '@polyhymnia/mnx':
         specifier: workspace:*
         version: link:../../packages/mnx
+      '@polyhymnia/notation-engine':
+        specifier: workspace:*
+        version: link:../../packages/notation-engine
       '@polyhymnia/notation-react':
         specifier: workspace:*
         version: link:../../packages/notation-react
