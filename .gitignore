@@ -13,9 +13,9 @@ packages/notation-engine/dist/
 packages/audio/dist/
 tools/*/dist/
 
-# notation-font/dist/ is a committed asset (woff2 + metadata), not build junk.
-packages/notation-font/.venv/
-packages/notation-font/vendor/
+packages/notation-fonts/.venv
+packages/notation-fonts/vendor
+packages/notation-fonts/out
 
 .claude/scheduled_tasks.lock
 

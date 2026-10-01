@@ -35,11 +35,14 @@ Each has lesson and custom modes, and the app is entirely client-side.
 
 ## How it is built
 
-The interesting part is the notation stack: it renders MNX to glyphs in the browser, with no server and no general-purpose score model. Packages follow one dependency direction — `model ← engine ← {react, audio}` — and cross-package imports go only through the entry points declared in each `package.json`.
+The interesting part is the notation stack: it renders MNX to glyphs in the browser, with no server and no general-purpose score model. Packages follow one dependency direction — `mnx ← engine ← {react, audio}` — and cross-package imports go only through the entry points declared in each `package.json`.
 
 | Package | Role |
 |---|---|
-| `@polyhymnia/mnx` | Pinned MNX schema with generated types, plus pitch, rational and duration maths. The only package that reads score documents. |
+| `@polyhymnia/mnx` | Pinned MNX schema with generated types, plus pitch, rational and duration maths. |
+| `@polyhymnia/music-theory` | Pitch, interval, chord, scale and key theory. Pure, no dependencies. |
+| `@polyhymnia/mnx-score` | Placeholder for the future timeline over MNX. |
+| `@polyhymnia/notation-fonts` | Glyph tables, committed notation fonts and their build, add and verify scripts. |
 | `@polyhymnia/notation-engine` | Renderer-agnostic layout: MNX → flat records → positioned glyphs, plus hit-testing and a `TimeMap` for playback. No DOM. |
 | `@polyhymnia/notation-react` | React components that draw an engine `LayoutResult`, with playback highlight and answer entry. |
 | `@polyhymnia/audio` | Derives sound from a `TimeMap`. Only its `./webaudio` and `./sampler` entries touch Web Audio. |

@@ -44,7 +44,7 @@ Tools: `cwebp` and Python Pillow are installed; `potrace`, `svgo` and ImageMagic
 ### D. Ornament font
 
 1. Download the font; check its bundled licence file.
-2. Subset to the glyphs used and convert to WOFF2 (`pyftsubset` from fonttools, same as `packages/notation-font`).
+2. Subset to the glyphs used and convert to WOFF2 (`pyftsubset` from fonttools, same tooling as `packages/notation-fonts`).
 3. Add an `@font-face` + token in `apps/app/src/styles/theme.css`; render the glyphs as text (they then follow `color` and dark mode automatically).
 
 ## Sources

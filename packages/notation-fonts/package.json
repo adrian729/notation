@@ -7,15 +7,21 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./fonts/*": "./fonts/*"
   },
   "files": [
-    "dist"
+    "dist",
+    "fonts"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "font:build": "node scripts/build.mjs",
+    "font:add": "node scripts/add.mjs",
+    "font:verify": "node scripts/verify.mjs",
+    "font:sync": "node scripts/sync.mjs"
   },
   "devDependencies": {
     "typescript": "^5.7.0",

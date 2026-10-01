@@ -10,7 +10,7 @@
  * EB Garamond       georgd/EB-Garamond-Initials nightly EBGaramond.zip
  * Initials          sha256 4628c053d3b2b97724db1f2ed98f550372ec1de4ec4ef10800e5a335b5a42e2e
  *                   Subset to U+0041-005A and converted OTF -> WOFF2 with pyftsubset
- *                   (fontTools, as used by packages/notation-font). The two layers are
+ *                   (fontTools, as used by packages/notation-fonts). The two layers are
  *                   shipped, not the combined face: Fill1 is the ornament, Fill2 the
  *                   letter, and both share an em box so they register exactly.
  *

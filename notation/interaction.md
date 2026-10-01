@@ -1,6 +1,6 @@
 # Interaction
 
-Hit-testing, slots, `MeasureBox`, `<Notation.Interaction>`/`<Notation.Marks>`, and `applyIntent`'s one intent (`setPitches`) are all implemented (`query/hitTest.ts`, `query/slots.ts`, `query/preview.ts` in `notation-engine`; `Interaction.tsx`, `Marks.tsx` in `notation-react`; `edit/apply.ts` in `mnx`). Everything under "Deferred editor features" below is design-only and out of scope until an exercise actually needs it. Written against MNX throughout, since that's the only score format there is to design against (`AGENTS.md`).
+Hit-testing, slots, `MeasureBox`, `<Notation.Interaction>`/`<Notation.Marks>`, and `applyIntent`'s one intent (`setPitches`) are all implemented (`query/hitTest.ts`, `query/slots.ts`, `query/preview.ts` in `notation-engine`; `Interaction.tsx`, `Marks.tsx` in `notation-react`; `edit/apply.ts` in `mnx`, exported at `@polyhymnia/mnx/edit`). Everything under "Deferred editor features" below is design-only and out of scope until an exercise actually needs it. Written against MNX throughout, since that's the only score format there is to design against (`AGENTS.md`).
 
 ## Hit-testing
 
@@ -111,12 +111,12 @@ Exercise state itself — which ids are given, which is currently being asked, w
 
 ## Applying intents
 
-`applyIntent` ships from `mnx` (`@polyhymnia/mnx`), not `notation-engine` — edits are document surgery, not layout, and the model already owns id synthesis (`mnx.md` "ID rule") that an edit has to stay consistent with. It's not wired into `<Notation>`: the quiz layer can reject an edit (wrong answer, locked measure) without fighting the renderer. It is a pure **MNX → MNX** function: everything in the document it doesn't touch passes through `===` unchanged (`AGENTS.md`).
+`applyIntent` ships from the `./edit` entry of `mnx` (`@polyhymnia/mnx/edit`; the `.` entry no longer re-exports it), not `notation-engine` — edits are document surgery, not layout, and the model already owns id synthesis (`mnx.md` "ID rule") that an edit has to stay consistent with. Ids come from scoped addressing, `elementIds(doc, scope?)`: the default scope (part 0, staff 1, 2 voices) keeps the plain `m{n}.s{n}.e{k}` ids; ids outside it are prefixed `p{n}.`/`st{k}.`. It's not wired into `<Notation>`: the quiz layer can reject an edit (wrong answer, locked measure) without fighting the renderer. It is a pure **MNX → MNX** function: everything in the document it doesn't touch passes through `===` unchanged (`AGENTS.md`).
 
 ```ts
 type EditIntent = { type: 'setPitches'; event: NoteId; pitches: readonly Pitch[] };
 interface ApplyResult { doc: MnxDocument; changed: readonly NoteId[]; diagnostics: Diagnostic[] };   // Diagnostic — mnx.md
-function applyIntent(doc: MnxDocument, intent: EditIntent): ApplyResult;
+function applyIntent(doc: MnxDocument, intent: EditIntent, part = 0): ApplyResult;   // `part` = index into `parts[]`; ids are the scoped ids of that part (mnx.md "ID rule")
 ```
 
 `setPitches` is the only intent so far — the smallest general method that covers dictation set, re-pitch, clear, and chord answers, because rhythm never changes: the event keeps its `duration`, tuplet membership, and every other field, so no positional id anywhere else in the document shifts (`mnx.md`).

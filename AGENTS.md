@@ -1,6 +1,6 @@
 # Modules
-- Each package (`mnx`, `notation-engine`, `notation-react`, `audio`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-font` is a font build pipeline (not yet a pnpm workspace package) whose outputs are synced into engine/react assets.
-- Dependency direction only: model ← engine ← {react, audio}; tools may use model + engine. Never import upward or sideways.
+- Each package (`mnx`, `music-theory`, `mnx-score`, `notation-fonts`, `notation-engine`, `notation-react`, `audio`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-fonts` is the font workspace package (glyph tables, committed fonts, build/add/verify scripts); until Phase C its outputs are copied into engine/react assets by `font:sync`.
+- Dependency direction only: `mnx` and `music-theory` are leaves; `mnx-score` ← `mnx`, `music-theory`; `notation-engine` ← `mnx`, `mnx-score`, `music-theory`, `notation-fonts`; `notation-react` ← `notation-engine`, `mnx-score`, `notation-fonts`, `mnx`; `audio` ← `notation-engine` (types only) and `mnx`; tools use `mnx` (+ `notation-engine` until Phase D). Never import upward or sideways.
 - Cross-package imports go through the package name and entry points declared in its `package.json` `exports`, never relative paths or deep `src/` paths. Every cross-package import must be declared in that package's `package.json`.
 - `mnx` and `notation-engine`: no DOM, no React, no Node APIs (`lib` excludes DOM). Renderer-specific code lives only in a renderer package (`notation-react`, future others).
 - New concern that doesn't fit an existing package's role → new package, not a folder inside another.
@@ -14,7 +14,7 @@
 - `apps/web` (`@polyhymnia/web`) is the notation demo/playground, not the product app.
 
 # Audio
-- `audio` imports model (runtime ok) and engine (types only), never react. Direction `model ← engine ← {react, audio}`.
+- `audio` imports `mnx` (runtime ok) and engine (types only), never react. Direction `mnx ← engine ← {react, audio}`.
 - `.` entry: no DOM, no Web Audio; only `./webaudio` touches `AudioContext`.
 - No rAF, `setTimeout` or `setInterval` in audio. The app owns the UI clock.
 - Sound derives only from `TimeMap` (`entries`, `tickToSeconds`, `playOrder`, `writtenTickAtSeconds`); audio never reads MNX documents.
@@ -31,7 +31,7 @@
 
 # Score format
 - MNX (w3c-cg/mnx) is the only score format. Public APIs take and return plain MNX. Never add private fields or `_x` extensions to documents.
-- No custom score model, builder API, or internal "MNX + additions" representation. Layout structures derived from MNX stay inside `notation-engine`.
+- No custom score model, builder API, or internal "MNX + additions" representation in packages; app-private helpers that return plain MNX (`mnxBuild`) are allowed. Layout structures derived from MNX stay inside `notation-engine`.
 - Only `layout/normalize*.ts` in `notation-engine` reads MNX documents; later stages consume its flat records.
 - Unsupported MNX → render what's possible + `mnx-unsupported` diagnostic; never throw.
 - Elements apps reference (playback highlight, quiz lookups, clicks) must carry MNX `id`s; the engine synthesizes positional ids otherwise.
@@ -41,13 +41,29 @@
 - Pinned in `packages/mnx/schema/` (`SOURCE` = commit, date, version). Upgrade only via `pnpm mnx:update <commit>`, deliberately. Never hand-edit the schema, examples, or generated `src/mnx/types.ts`.
 
 # mnx
-- Thin layer only: vendored schema + examples, generated types, `readMnx` version check, pitch/rational/duration math, `parsePitch`. Add code only for a current consumer; no speculative helpers.
-- Beat grouping (`beamGroups`) lives here; the engine auto-beams with it. Edit operations (`applyIntent`) = pure MNX → MNX functions that preserve untouched content.
+- Thin layer only: vendored schema + examples, generated types, `readMnx` version check, pitch/rational/duration math, `parsePitch`, `assignIds`, scoped addressing (`elementIds(doc, scope?)`, `ElementScope`). Add code only for a current consumer; no speculative helpers.
+- Default id scope (part 0, staff 1, 2 voices) keeps its ids unchanged; ids outside it are prefixed `p{n}.`/`st{k}.`. Never change default-scope id shapes.
+- Edit operations (`applyIntent`) live at `@polyhymnia/mnx/edit`, not `.`; pure MNX → MNX functions that preserve untouched content.
+- Beat grouping (`beamGroups`, `beatGroupingFor`) lives in `notation-engine` `src/layout/beam-policy/`, engine-internal; never export it from `mnx`.
+
+# music-theory
+- Pure, no dependencies. Its `Pitch` stays structurally equal to MNX's; callers migrate in Phase C, not before.
 
 # MusicXML
 - Import-only, offline: `tools/musicxml-to-mnx` → committed `.mnx.json`. No runtime import or export until a product flow needs it.
 - Conversion uses npm `mnxconverter`, pinned, behind one `convert()` wrapper. Output must pass Ajv against the pinned schema and headless `layoutScore` with no errors and no `mnx-unsupported` outside `UNSUPPORTED_ALLOWLIST` (`tools/musicxml-to-mnx/src/check.ts`, currently empty). Grow the allowlist only for constructs the engine will support but doesn't draw yet.
 - Keep `patches/mnxconverter@1.2.0.patch` (fixes broken published entry points) until the package verifiably works unpatched.
+
+# Fonts
+- Add fonts only via `pnpm --filter @polyhymnia/notation-fonts font:add`; verify with `font:verify`. Never hand-edit `packages/notation-fonts/fonts/**`.
+- Docs: `notation/font.md`.
+
+# Package split
+- Plan: `docs/plans/package-split.md`. Phase work runs in streams on branches `split/<phase>-<stream>` in worktrees `.worktrees/<stream>`.
+- Streams modify only files in their ownership list, stage with explicit paths (never `git add -A`), run prettier only on owned files.
+- Never run `git checkout`/`restore`/`reset`/`stash` on non-owned paths. Never rebase or force-push. Never regenerate goldens.
+- Need a change outside the ownership list → stop and report.
+- Coordinator owns manifests, lockfile, tsconfig, barrels, `AGENTS.md`, docs, goldens. Merge with `git merge --no-ff`, one stream at a time, then `pnpm -r typecheck` and tests.
 
 # Dependencies
 - Simple work → write it ourselves even if a library exists. Complex work → dependency, pinned, wrapped for replacement, maintained and tracking the MNX schema.

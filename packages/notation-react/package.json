@@ -8,7 +8,6 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
-    "./presets": "./dist/presets/index.js",
     "./styles.css": "./styles/notation.css"
   },
   "scripts": {

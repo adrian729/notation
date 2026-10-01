@@ -12,7 +12,7 @@ Rejected alternatives:
 | Petaluma | Handwritten/jazz style — wrong register for a legibility-first training app. |
 | Bravura Text | Built for inline text-flow advance widths; every glyph here is positioned manually, text-flow advance is never used. 1.4× the size for no benefit. |
 
-Font choice is a build-time swap, not lock-in: Leland/Petaluma are SMuFL-compliant at the same codepoints, same 1000 units/em. Swap = change the subset manifest's input file + the `engravingDefaults` values (`architecture.md`) — no layout code changes, nothing in the layout engine hardcodes a thickness or width.
+Font choice is a build-time swap, not lock-in: Leland/Petaluma are SMuFL-compliant at the same codepoints, same 1000 units/em. Swap = `font:add` the new font (`Adding a font` below) and point the consumer at its slug; the `engravingDefaults` values come from its metadata (`architecture.md`) — no layout code changes, nothing in the layout engine hardcodes a thickness or width.
 
 ## License obligation
 
@@ -64,19 +64,30 @@ Metadata (advance widths, bboxes, anchors) filtered to the 64-glyph set: 7,452 B
 
 ## Build
 
+Fonts live in the `@polyhymnia/notation-fonts` workspace package (`packages/notation-fonts/`). Build-time only for the font tooling: fontTools/Python (`requirements.txt`, installed in `.venv` there) never appear in the runtime dependency tree. `vendor/` holds the Bravura sources (`Bravura.otf`, `Bravura.json`, `OFL.txt`).
+
+- `src/` is the runtime surface: glyph tables per style (`modernStyle`, `mensuralStyle`, core and optional glyphs; `src/styles.ts` is the single list that drives both the subset and the filtered metadata, so they cannot drift apart), the `NotationFont {name, metadata, src}` types, and `fontFaceCss()`.
+- `fonts/<slug>/` holds the committed outputs: `<slug>.woff2`, `metadata.json`, `OFL.txt`, `NOTICE.txt`. Exported as `@polyhymnia/notation-fonts/fonts/*`. Never hand-edit.
+- `pnpm --filter @polyhymnia/notation-fonts font:build` regenerates the two default fonts (`polyhymnia-notation`, modern; `polyhymnia-mensural`, mensural) from the vendored Bravura through the same path as `font:add`, then runs `font:verify`.
+- `font:verify [slug]` checks, per style, glyph coverage, cmap against metadata, Reserved Font Name, and licence presence, and writes a test sheet to `packages/notation-fonts/out/<slug>.html`.
+- `font:sync` copies the default fonts into `notation-engine` (`assets/`, `src/font/`) and `notation-react` (`styles/`). Temporary: the engine and react still read their own copies until Phase C switches them to `@polyhymnia/notation-fonts`.
+
+The subset follows the recipe in the table above: `pyftsubset` with `--no-hinting --desubroutinize`, `GSUB,GPOS,BASE,JSTF,DSIG` dropped, name table rewritten to the new family.
+
+## Adding a font
+
 ```sh
-pyftsubset Bravura.otf \
-  --unicodes="U+E044,U+E050,U+E052,U+E053,U+E05C,U+E062,U+E064,U+E065,U+E07A-E07C,U+E080-E08B,U+E0A0,U+E0A2-E0A4,\
-U+E1E7,U+E240-E247,U+E260-E264,U+E26A,U+E26B,U+E4CE,U+E4D1,U+E4E2-E4E9,U+E880-E88A" \
-  --output-file=polyhymnia-notation.woff2 --flavor=woff2 \
-  --no-hinting --desubroutinize \
-  --drop-tables+=GSUB,GPOS,BASE,JSTF,DSIG --name-IDs='' --notdef-outline
-# then: rename CFF FontName/FullName/FamilyName + name IDs 1/4/6/16 -> "PolyhymniaNotation"
+pnpm --filter @polyhymnia/notation-fonts font:add <font> [--family Name] [--name slug] [--metadata smufl.json] [--mapping mapping.json] [--licence file] [--style modern,mensural] [--source-url url]
+pnpm --filter @polyhymnia/notation-fonts font:verify <slug>
 ```
 
-Shown above: the 64-glyph unicode list the manifest (`notation-font/manifest.ts`) produces.
-
-Same manifest drives both the WOFF2 and the filtered metadata JSON — they can't drift apart.
+- Input: OTF, TTF, WOFF or WOFF2, with or without SMuFL metadata. Metadata is found next to the font or passed with `--metadata`.
+- Without metadata, metrics are measured from the outlines (units ÷ unitsPerEm × 4 staff spaces).
+- A legacy font that does not use SMuFL codepoints needs `--mapping mapping.json` (glyph name to source glyph); it is re-encoded to SMuFL codepoints and calibrated on `noteheadBlack`.
+- Licence: taken from `--licence`, a licence file next to the font, or the font's embedded name record 13. A per-font `NOTICE.txt` is written.
+- If the licence reserves the font name (OFL Reserved Font Name, from the licence text or name records), `--family <NewName>` is required and must not contain the reserved name.
+- `--style` picks which glyph tables the font is checked against; default `modern`.
+- Then run `font:verify <slug>`, open `out/<slug>.html`, and review the coverage report before committing `fonts/<slug>/`.
 
 ## Rejected alternative: build-time SVG path extraction
 

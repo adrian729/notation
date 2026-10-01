@@ -78,7 +78,7 @@ A 2nd voice (`sequences[1]`) is parsed, carried through `temporal`, and laid out
 `mnx.support.useBeams` decides whether the engine invents beams (`w3c-cg/mnx` support object docs; `phase3-rhythm.md` "DECISIONS FROM RESEARCH"):
 
 - **`useBeams: true`**: only what's explicitly in a measure's `beams[]` gets beamed. A measure with no `beams` entry is left entirely unbeamed (flags).
-- **`useBeams` false or absent** (the default): a measure with an explicit `beams[]` uses exactly that; a measure with none is auto-beamed by the engine, using `mnx/src/mnx/beam.ts`'s `beamGroups` (driven by `options.beaming` — see `interface.md`). Auto-beaming never goes through MNX: it calls the model's grouping core directly with the engine's own element ids, so it never mints an id or mutates anything.
+- **`useBeams` false or absent** (the default): a measure with an explicit `beams[]` uses exactly that; a measure with none is auto-beamed by the engine, using `beamGroups` from the engine's own `layout/beam-policy/` (driven by `options.beaming` — see `interface.md`). Auto-beaming never goes through MNX: it calls the grouping core directly with the engine's own element ids, so it never mints an id or mutates anything.
 
 Either way, the result is one `NormalizedBeam` per beamed run:
 
@@ -103,7 +103,9 @@ Beam id = the MNX `beams[].id` when given, otherwise `{firstElementId}.beam` via
 
 Every element the engine lays out gets an id: the MNX `id` when the document supplies one, otherwise a deterministic positional id. Content an app references — playback highlight, quiz lookups, click targets — **must** carry a real MNX `id`; a positional id is stable only until the document is edited.
 
-Id synthesis is a single shared implementation, `elementIds(doc)` in `mnx` (`@polyhymnia/mnx`'s `elementIds`/`ElementIds`/`NoteId`). It walks `parts[0]`'s staff-1 sequences once, in the same order and with the same rules the engine used to apply inline, and hands back a position-keyed lookup (`idAt(pos)`/`nodeOf(id)`/`mint(candidate)`/`diagnostics`, where a position is `{ measureIndex, sequenceIndex, path }` plus a `note` index for chord members or a `fullMeasureRest` marker, and `nodeOf` returns the entry — `{ measureIndex, sequenceIndex, path, note?, element }` — with `element: { kind, node }` typed per kind from the generated MNX types, kind being `event`, `chordNote`, `tuplet` or `fullMeasureRest`). `mint(candidate)` is for ids assigned outside that walk (beams). Collision suffixes are `~n` everywhere: `assignIds` (the MusicXML tool) mints through the same `mintId`. `notation-engine`'s `normalize.ts` no longer synthesizes ids itself; it only looks up what `elementIds` already computed.
+Id synthesis is a single shared implementation, `elementIds(doc, scope?)` in `mnx` (`@polyhymnia/mnx`'s `elementIds`/`ElementIds`/`NoteId`/`ElementScope`). It walks the scoped sequences once (default scope: part 0, staff 1, 2 voices), in the same order and with the same rules the engine used to apply inline, and hands back a position-keyed lookup (`idAt(pos)`/`nodeOf(id)`/`mint(candidate, ctx?)`/`registerExplicit`/`freeze()`/`fork()`/`diagnostics`, where a position is `{ measureIndex, sequenceIndex, path }` plus a `note` index for chord members or a `fullMeasureRest` marker, and `nodeOf` returns the entry — `{ measureIndex, sequenceIndex, path, note?, element }` — with `element: { kind, node }` typed per kind from the generated MNX types, kind being `event`, `chordNote`, `tuplet` or `fullMeasureRest`). `mint(candidate, ctx?)` is for ids assigned outside that walk (beams); `freeze()` ends minting and `fork()` returns an independent copy.
+
+**Scoped addressing.** `ElementScope { parts?, staves?, maxVoices? }` selects what the walk covers; the default (part 0, staff 1, 2 voices) yields exactly the ids below. Outside the default scope ids are prefixed: `p{n}.` for part `n` and `st{k}.` for staff `k`, so default-scope ids never change when a wider scope is requested. Collision suffixes are `~n` everywhere: `assignIds` (the MusicXML tool) mints through the same `mintId`. `notation-engine`'s `normalize.ts` no longer synthesizes ids itself; it only looks up what `elementIds` already computed.
 
 Positional id shapes (measure `m`, sequence `s`, event index `k` within its voice):
 
@@ -148,7 +150,7 @@ interface Diagnostic {
   code: string;
   message: string;
   measureIndex?: number;
-  voice?: 0 | 1;
+  voice?: number;
   tick?: number;
 }
 ```

@@ -10,4 +10,4 @@ pnpm-lock.yaml
 apps/app/src/components/ui/
 **/*.mnx.json
 packages/notation-engine/src/font/metadata.*
-packages/notation-font/dist/
+packages/notation-fonts/fonts/

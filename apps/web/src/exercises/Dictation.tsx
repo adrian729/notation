@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NotationIntent } from '@polyhymnia/notation-react';
-import { applyIntent, parsePitch } from '@polyhymnia/mnx';
+import { parsePitch } from '@polyhymnia/mnx';
+import { applyIntent } from '@polyhymnia/mnx/edit';
 import type { MnxDocument, NoteId, Pitch } from '@polyhymnia/mnx';
 import type { PreviewNote } from '@polyhymnia/notation-engine';
 import { melodic } from '@polyhymnia/audio';

@@ -6,8 +6,6 @@ const of = R.of;
 
 const BEAMABLE_BASES = new Set<NoteValueBase>(['eighth', '16th', '32nd', '64th']);
 
-export interface BeamOptions extends GroupingOptions {}
-
 export interface BeamableEvent {
   readonly id: string;
   readonly kind: 'note' | 'chord' | 'rest' | 'space';

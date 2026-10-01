@@ -242,7 +242,16 @@ Phases run in sequence. Streams within a phase run in parallel.
 | B3 theory core | `packages/music-theory/src/**`, `packages/music-theory/test/**` | Implement the Theory API by porting code. Callers stay untouched in this phase |
 | B4 fonts pipeline | `packages/notation-fonts/**` (minus manifest/barrel), `packages/notation-font/**` (delete after port) | Pipeline (any format, renaming, reserved font name, per-font NOTICE, mapping), `requirements.txt` (coordinator commits it), glyph tables per style, `font:verify` |
 
-Integration B: run the barrels, docs and the seeded-sequence baseline capture (before C3).
+Ownership adjustments (as launched):
+- B1 may add to the `mnx` barrels but never removes an export; it also owns `packages/notation-engine/test/beam-policy.test.ts` (moved from `mnx-beam.test.ts`). The mnx `meter.ts`/`beam.ts` copies and their exports stay until integration.
+- B2 also owns the preset tests in `packages/notation-react/test/notation.test.tsx`, new app preset tests, and the app demo page (plus `routeTree.gen.ts` if it adds a route). `mnxBuild` stays an app-private helper returning plain MNX; the "no builder API" rule is scoped to packages.
+- B3 and B4 own their package barrels (no other stream touches them).
+- Contract commit before B: the app depends on `notation-engine` (the presets use `layoutScore` instead of react's internal `memoLayout`).
+
+Integration B:
+- Remove `beamGroups`, `beatGroupingFor`, `BeamableEvent` and the edit re-export from `mnx` `.`; delete mnx `meter.ts`/`beam.ts`; switch `applyIntent` callers to `@polyhymnia/mnx/edit`.
+- Remove the `./presets` export from `notation-react`.
+- Apply the streams' manifest, `.gitignore` and script requests; docs; the seeded-sequence baseline capture (before C3).
 
 **Phase C: parallel.** The coordinator first commits the contracts: `NotationOptions.font`/`style`, `GlyphRun.font`, `LayoutResult.fonts`, the `resolveGlyph` signature.
 
@@ -250,7 +259,7 @@ Integration B: run the barrels, docs and the seeded-sequence baseline capture (b
 |---|---|---|
 | C1 engine fonts | `packages/notation-engine/src/font/**`, `layout/{vertical,horizontal,tuplets,beams,curves,emit,justify,break}.ts`, `query/preview.ts` (including its theory import), `options.ts` | Resolver, font context threading, styles, fallback, synthetic-font test |
 | C2 react fonts | `packages/notation-react/src/**`, `packages/notation-react/styles/**`, new `packages/notation-react/test/fonts*.test.tsx` (existing react tests belong to C3), `apps/web/src/{font.tsx,FontComparison.tsx}` | Per-glyph family, `data-pn-style`, `fontFaceCss` usage, migrate the `FontFamily` users |
-| C3 theory callers | `packages/notation-engine/src/layout/{staff,accidentals,records,normalize*,temporal,grouping}.ts`, `query/{hitTest,timemap,slots}.ts`; `packages/mnx/src/mnx/pitch.ts` (delete) + `mnx-pitch.test.ts` (move); mnx and react tests that use `parsePitch` (literals); `packages/audio/src/**` (`melodic`/`harmonic` take MIDI, drop `PitchLike`); app `exercises/**`, `lib/**`; web `sound.ts`, `exercises/**` | Switch callers to `music-theory`, add `midiToPitchRng`, keep seeded sequences identical |
+| C3 theory callers | `packages/notation-engine/src/layout/{staff,accidentals,records,normalize*,temporal,grouping}.ts`, `query/{hitTest,timemap,slots}.ts`; `packages/mnx/src/mnx/pitch.ts` (delete) + `mnx-pitch.test.ts` (move); mnx and react tests that use `parsePitch` (literals); `packages/audio/src/**` (`melodic`/`harmonic` take MIDI, drop `PitchLike`); app `exercises/**`, `lib/**`, `components/presets/**`; web `sound.ts`, `exercises/**` | Switch callers to `music-theory`, add `midiToPitchRng`, keep seeded sequences identical |
 
 Integration C:
 - The seeded-sequence comparison must show no difference.

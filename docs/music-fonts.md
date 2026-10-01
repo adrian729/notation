@@ -6,7 +6,7 @@ Research date 2026-09-30. Nothing bought, downloaded or installed.
 
 | Role | Font | Licence | Status |
 | --- | --- | --- | --- |
-| Modern notation | [Bravura](https://github.com/steinbergmedia/bravura) (SMuFL) | OFL, free | In use: `packages/notation-font` subsets Bravura 1.482 into `PolyhymniaNotation` |
+| Modern notation | [Bravura](https://github.com/steinbergmedia/bravura) (SMuFL) | OFL, free | In use: `packages/notation-fonts` subsets Bravura 1.482 into `PolyhymniaNotation` |
 | Mensural (c.1400–1550) | Bravura mensural glyphs (SMuFL) | OFL, free | In progress: `manifest.mensural.ts` → `PolyhymniaMensural` |
 | Favourite early look | [Nivelle](https://casfaculty.case.edu/ross-duffin/homepage/fonts-for-early-music/) (Ross Duffin) | Paid, $50 | Candidate only; not SMuFL, web use needs permission (see notes) |
 
@@ -54,9 +54,9 @@ Research date 2026-09-30. Nothing bought, downloaded or installed.
 
 ### What fits our engine
 
-- The engine draws SMuFL codepoints and reads Bravura's metadata JSON (bounding boxes, anchors, engraving defaults) via `packages/notation-font` (`manifest.ts`, `build.mjs`).
-- **SMuFL fonts with metadata** (Leipzig, Leland, Sebastian, Eugene, Finale *, November 2): cheapest swap; same codepoints, new metadata; mostly a build/manifest change plus visual check.
-- **Non-SMuFL fonts** (Duffin, LilyPond fonts, chant fonts): need a codepoint mapping to SMuFL names and hand-measured metrics/anchors per glyph; much bigger job.
+- The engine draws SMuFL codepoints and reads Bravura's metadata JSON (bounding boxes, anchors, engraving defaults) via `packages/notation-fonts` (`src/styles.ts`, `scripts/`).
+- **SMuFL fonts with metadata** (Leipzig, Leland, Sebastian, Eugene, Finale *, November 2): cheapest swap; same codepoints, new metadata; mostly a `font:add` run plus a `font:verify` visual check (`notation/font.md`).
+- **Non-SMuFL fonts** (Duffin, LilyPond fonts, chant fonts): need a codepoint mapping to SMuFL names (`font:add --mapping`); metrics are measured from the outlines, anchors are not available; still a bigger job.
 
 ### Nivelle / Duffin fonts
 
