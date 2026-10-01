@@ -1,7 +1,6 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { NotationFont } from '@polyhymnia/notation-fonts';
-import { parsePitch } from '@polyhymnia/mnx';
 import type { MnxDocument } from '@polyhymnia/mnx';
 import { Notation } from '../src/Notation.js';
 
@@ -15,7 +14,7 @@ const score: MnxDocument = {
       measures: [
         {
           clefs: [{ clef: { sign: 'G', staffPosition: -2 } }],
-          sequences: [{ content: [{ duration: { base: 'whole' }, notes: [{ pitch: parsePitch('C4') }] }] }],
+          sequences: [{ content: [{ duration: { base: 'whole' }, notes: [{ pitch: { step: 'C', octave: 4 } }] }] }],
         },
       ],
     },
