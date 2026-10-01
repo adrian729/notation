@@ -1,7 +1,6 @@
-import { styleOf } from '../font/context.js';
-import { engravingDefaults, glyphAdvanceWidth, glyphBBox } from '../font/metadata.js';
-import { DEFAULT_FONT, glyphCodepoint, type FontFamily } from '../font/glyphs.js';
 import type { Diagnostic } from '@polyhymnia/mnx';
+import type { EngravingDefaults } from '@polyhymnia/notation-fonts';
+import type { FontContext } from '../font/context.js';
 import {
   describePitch,
   type Duration,
@@ -11,7 +10,6 @@ import {
   type TempoMap,
   type TimeSpec,
 } from './records.js';
-import type { NotationOptions } from '../options.js';
 import type { BeamsResult } from './beams.js';
 import type { CurvesResult } from './curves.js';
 import type { TupletsResult } from './tuplets.js';
@@ -54,8 +52,7 @@ export interface EmitInput {
   curves: CurvesResult;
 }
 
-export function emit(input: EmitInput, options?: NotationOptions): LayoutResult {
-  const family: FontFamily = styleOf(options);
+export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
   const glyphs: GlyphRun[] = [];
   const rects: RectShape[] = [];
   const paths: PathShape[] = [];
@@ -67,7 +64,7 @@ export function emit(input: EmitInput, options?: NotationOptions): LayoutResult 
   const placement = new Map<NoteId, Placement>();
 
   const width = Math.max(input.justified.width, 1);
-  const { above, below } = contentMargins(input.justified, input.beams, input.tuplets, input.curves);
+  const { above, below } = contentMargins(fonts, input.justified, input.beams, input.tuplets, input.curves);
   const topMargin = Math.max(TOP_MARGIN, above);
   const bottomMargin = Math.max(BOTTOM_MARGIN, below);
   const systemGap = Math.max(SYSTEM_GAP, above + below);
@@ -77,12 +74,14 @@ export function emit(input: EmitInput, options?: NotationOptions): LayoutResult 
     systems.push({ index: system.index, x: 0, y: staffTop, w: system.width, h: STAFF_HEIGHT });
 
     for (let line = 0; line < STAFF_LINES; line += 1) {
-      rects.push(centeredRect(0, staffTop + line, system.width, engravingDefaults.staffLineThickness, 'staff-line'));
+      rects.push(
+        centeredRect(0, staffTop + line, system.width, fonts.engravingDefaults.staffLineThickness, 'staff-line'),
+      );
     }
 
     for (const measure of system.measures) {
-      emitChrome(measure, staffTop, glyphs, family);
-      emitBarlines(measure, staffTop, glyphs, rects, family);
+      emitChrome(measure, staffTop, glyphs, fonts);
+      emitBarlines(measure, staffTop, glyphs, rects, fonts);
       measureTimes.push({
         index: measure.index,
         startTick: measure.startTick,
@@ -112,7 +111,7 @@ export function emit(input: EmitInput, options?: NotationOptions): LayoutResult 
             elements,
             placement,
             stemOverrides: input.beams.stemOverrides,
-            family,
+            fonts,
           });
         }
       });
@@ -142,7 +141,7 @@ export function emit(input: EmitInput, options?: NotationOptions): LayoutResult 
   }
   for (const numeral of input.tuplets.numerals) {
     const staffTop = staffTopOf.get(numeral.systemIndex) ?? 0;
-    glyphs.push(glyph(numeral.name, numeral.x, staffTop + numeral.y, 'tuplet-number', family, numeral.el));
+    glyphs.push(glyphRun(fonts, numeral.name, numeral.x, staffTop + numeral.y, 'tuplet-number', numeral.el));
   }
   for (const curve of input.curves.shapes) {
     const staffTop = staffTopOf.get(curve.systemIndex) ?? 0;
@@ -163,6 +162,8 @@ export function emit(input: EmitInput, options?: NotationOptions): LayoutResult 
     playOrder: playOrder.segments,
   });
 
+  const fontNames = tagFonts(glyphs, fonts);
+
   return {
     version: 1,
     viewBox: { x: -SIDE_MARGIN, y: 0, w: width + 2 * SIDE_MARGIN, h: height },
@@ -175,47 +176,48 @@ export function emit(input: EmitInput, options?: NotationOptions): LayoutResult 
     measures,
     timemap,
     diagnostics: [...input.diagnostics, ...playOrder.diagnostics],
+    ...(fontNames ? { fonts: fontNames } : {}),
   };
 }
 
-function emitChrome(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], family: FontFamily): void {
+function emitChrome(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], fonts: FontContext): void {
   let x = measure.x + measure.chrome.startBarlineWidth;
 
   if (measure.chrome.showClef) {
-    glyphs.push(glyph(clefGlyph(measure.clef), x, staffTop + clefGlyphY(measure.clef), 'clef', family));
+    glyphs.push(glyphRun(fonts, clefGlyph(measure.clef), x, staffTop + clefGlyphY(measure.clef), 'clef'));
     x += measure.chrome.clefWidth;
   }
 
   if (measure.chrome.keyWidth > 0) {
-    const key = layOutKeyGlyphs(measure.key, measure.clef, measure.chrome.cancelKey, measure.chrome.showKey, x);
+    const key = layOutKeyGlyphs(fonts, measure.key, measure.clef, measure.chrome.cancelKey, measure.chrome.showKey, x);
     for (const acc of key.glyphs) {
-      glyphs.push(glyph(acc.glyph, acc.x, staffTop + acc.y, 'key-accidental', family));
+      glyphs.push(glyphRun(fonts, acc.glyph, acc.x, staffTop + acc.y, 'key-accidental'));
     }
     x = measure.x + measure.chrome.startBarlineWidth + measure.chrome.clefWidth + measure.chrome.keyWidth;
   }
 
-  if (measure.chrome.showTime) emitTimeSignature(measure.time, x, staffTop, glyphs, family);
+  if (measure.chrome.showTime) emitTimeSignature(measure.time, x, staffTop, glyphs, fonts);
 }
 
-function emitTimeSignature(time: TimeSpec, x: number, staffTop: number, glyphs: GlyphRun[], family: FontFamily): void {
+function emitTimeSignature(time: TimeSpec, x: number, staffTop: number, glyphs: GlyphRun[], fonts: FontContext): void {
   // Mensural C and O prolation is not drawable yet, and cannot be fixed here: the
   // pinned MNX schema types time.symbol as 'common' | 'cut' only, so no document
   // can carry a prolation sign. The outlines exist in the mensural subset — this
   // needs a schema decision before an engine change, not an engine change now.
   if (time.symbol === 'common' || time.symbol === 'cut') {
     const name = time.symbol === 'cut' ? 'timeSigCutCommon' : 'timeSigCommon';
-    glyphs.push(glyph(name, x, staffTop + 2, 'time-signature', family));
+    glyphs.push(glyphRun(fonts, name, x, staffTop + 2, 'time-signature'));
     return;
   }
   const numerator = String(Math.max(0, Math.round(time.beats)));
   const denominator = String(Math.max(0, Math.round(time.beatType)));
-  const blockWidth = Math.max(digitsWidth(time.beats), digitsWidth(time.beatType));
+  const blockWidth = Math.max(digitsWidth(fonts, time.beats), digitsWidth(fonts, time.beatType));
   const centre = x + blockWidth / 2;
 
   // Numerator and denominator get separate classes so they can be coloured apart:
   // two hues of similar lightness are hard to tell apart at this size.
-  emitDigits(numerator, centre, staffTop + 1, 'time-signature-numerator', glyphs, family);
-  emitDigits(denominator, centre, staffTop + 3, 'time-signature-denominator', glyphs, family);
+  emitDigits(numerator, centre, staffTop + 1, 'time-signature-numerator', glyphs, fonts);
+  emitDigits(denominator, centre, staffTop + 3, 'time-signature-denominator', glyphs, fonts);
 }
 
 function emitDigits(
@@ -224,14 +226,14 @@ function emitDigits(
   y: number,
   cls: string,
   glyphs: GlyphRun[],
-  family: FontFamily,
+  fonts: FontContext,
 ): void {
-  const total = [...digits].reduce((sum, d) => sum + glyphAdvanceWidth(`timeSig${d}`), 0);
+  const total = [...digits].reduce((sum, d) => sum + fonts.advanceWidth(`timeSig${d}`), 0);
   let x = centre - total / 2;
   for (const digit of digits) {
     const name = `timeSig${digit}`;
-    glyphs.push(glyph(name, x, y, cls, family));
-    x += glyphAdvanceWidth(name);
+    glyphs.push(glyphRun(fonts, name, x, y, cls));
+    x += fonts.advanceWidth(name);
   }
 }
 
@@ -240,9 +242,9 @@ function emitBarlines(
   staffTop: number,
   glyphs: GlyphRun[],
   rects: RectShape[],
-  family: FontFamily,
+  fonts: FontContext,
 ): void {
-  const e = engravingDefaults;
+  const e = fonts.engravingDefaults;
   const bottom = staffTop + STAFF_HEIGHT;
   const line = (x: number, thickness: number): RectShape => ({
     x,
@@ -258,8 +260,8 @@ function emitBarlines(
     x += e.thickBarlineThickness + e.thinThickBarlineSeparation;
     rects.push(line(x, e.thinBarlineThickness));
     x += e.thinBarlineThickness + e.repeatBarlineDotSeparation;
-    glyphs.push(glyph('repeatDot', x, staffTop + 1.5, 'repeat-dot', family));
-    glyphs.push(glyph('repeatDot', x, staffTop + 2.5, 'repeat-dot', family));
+    glyphs.push(glyphRun(fonts, 'repeatDot', x, staffTop + 1.5, 'repeat-dot'));
+    glyphs.push(glyphRun(fonts, 'repeatDot', x, staffTop + 2.5, 'repeat-dot'));
   }
 
   const right = measure.x + measure.width;
@@ -267,7 +269,7 @@ function emitBarlines(
     case 'none':
       break;
     case 'dashed':
-      rects.push(...dashes(right - e.dashedBarlineThickness, staffTop, bottom));
+      rects.push(...dashes(e, right - e.dashedBarlineThickness, staffTop, bottom));
       break;
     case 'double':
       rects.push(line(right - e.thinBarlineThickness, e.thinBarlineThickness));
@@ -286,9 +288,9 @@ function emitBarlines(
       rects.push(line(right - e.thickBarlineThickness, e.thickBarlineThickness));
       const thinX = right - e.thickBarlineThickness - e.thinThickBarlineSeparation - e.thinBarlineThickness;
       rects.push(line(thinX, e.thinBarlineThickness));
-      const dotX = thinX - e.repeatBarlineDotSeparation - glyphAdvanceWidth('repeatDot');
-      glyphs.push(glyph('repeatDot', dotX, staffTop + 1.5, 'repeat-dot', family));
-      glyphs.push(glyph('repeatDot', dotX, staffTop + 2.5, 'repeat-dot', family));
+      const dotX = thinX - e.repeatBarlineDotSeparation - fonts.advanceWidth('repeatDot');
+      glyphs.push(glyphRun(fonts, 'repeatDot', dotX, staffTop + 1.5, 'repeat-dot'));
+      glyphs.push(glyphRun(fonts, 'repeatDot', dotX, staffTop + 2.5, 'repeat-dot'));
       break;
     }
     default:
@@ -296,8 +298,8 @@ function emitBarlines(
   }
 }
 
-function dashes(x: number, staffTop: number, bottom: number): RectShape[] {
-  const { dashedBarlineThickness, dashedBarlineDashLength, dashedBarlineGapLength } = engravingDefaults;
+function dashes(e: EngravingDefaults, x: number, staffTop: number, bottom: number): RectShape[] {
+  const { dashedBarlineThickness, dashedBarlineDashLength, dashedBarlineGapLength } = e;
   const height = bottom - staffTop;
   const period = dashedBarlineDashLength + dashedBarlineGapLength;
   const count = Math.max(2, Math.round((height + dashedBarlineGapLength) / period));
@@ -325,7 +327,7 @@ interface ElementContext {
   elements: Record<string, ElementBox>;
   placement: Map<NoteId, Placement>;
   stemOverrides?: ReadonlyMap<NoteId, { yTop: number; yBottom: number }>;
-  family: FontFamily;
+  fonts: FontContext;
 }
 
 function emitElement(element: VerticalElement, ctx: ElementContext): void {
@@ -343,39 +345,40 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
       const accY = staffTop + head.accidental.y;
       if (head.accidental.parenthesized) {
         ctx.glyphs.push(
-          glyph(
+          glyphRun(
+            ctx.fonts,
             'accidentalParensLeft',
-            accX - glyphAdvanceWidth('accidentalParensLeft'),
+            accX - ctx.fonts.advanceWidth('accidentalParensLeft'),
             accY,
             'accidental',
-            ctx.family,
             head.id,
           ),
         );
         ctx.glyphs.push(
-          glyph('accidentalParensRight', accX + head.accidental.width, accY, 'accidental', ctx.family, head.id),
+          glyphRun(ctx.fonts, 'accidentalParensRight', accX + head.accidental.width, accY, 'accidental', head.id),
         );
       }
-      ctx.glyphs.push(glyph(head.accidental.glyph, accX, accY, 'accidental', ctx.family, head.id));
+      ctx.glyphs.push(glyphRun(ctx.fonts, head.accidental.glyph, accX, accY, 'accidental', head.id));
     }
 
+    const { legerLineExtension, legerLineThickness } = ctx.fonts.engravingDefaults;
     for (const y of head.ledgerLines) {
       ctx.rects.push(
         centeredRect(
-          headX - engravingDefaults.legerLineExtension,
+          headX - legerLineExtension,
           staffTop + y,
-          head.width + 2 * engravingDefaults.legerLineExtension,
-          engravingDefaults.legerLineThickness,
+          head.width + 2 * legerLineExtension,
+          legerLineThickness,
           'ledger-line',
           head.id,
         ),
       );
     }
 
-    ctx.glyphs.push(glyph(head.glyph, headX, staffTop + head.staffPosition, 'notehead', ctx.family, head.id));
+    ctx.glyphs.push(glyphRun(ctx.fonts, head.glyph, headX, staffTop + head.staffPosition, 'notehead', head.id));
 
     for (const dot of head.dots) {
-      ctx.glyphs.push(glyph('augmentationDot', ctx.x + dot.dx, staffTop + dot.y, 'dot', ctx.family, head.id));
+      ctx.glyphs.push(glyphRun(ctx.fonts, 'augmentationDot', ctx.x + dot.dx, staffTop + dot.y, 'dot', head.id));
     }
 
     ctx.elements[head.id] = noteBox(element, head, headX, ctx);
@@ -396,13 +399,13 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
       ...(owner ? { el: owner } : {}),
     });
     if (stem.flag) {
-      ctx.glyphs.push(glyph(stem.flag.glyph, stemX(ctx.x, stem), staffTop + stem.flag.y, 'flag', ctx.family, owner));
+      ctx.glyphs.push(glyphRun(ctx.fonts, stem.flag.glyph, stemX(ctx.x, stem), staffTop + stem.flag.y, 'flag', owner));
     }
   }
 
   const breath = element.breath;
   if (breath) {
-    ctx.glyphs.push(glyph(breath.glyph, ctx.x + breath.dx, staffTop + breath.y, 'breath', ctx.family, element.id));
+    ctx.glyphs.push(glyphRun(ctx.fonts, breath.glyph, ctx.x + breath.dx, staffTop + breath.y, 'breath', element.id));
   }
 
   const first = element.noteheads[0];
@@ -419,12 +422,12 @@ function emitRest(element: VerticalElement, ctx: ElementContext): void {
   const rest = element.rest!;
   const x = rest.wholeBar ? (ctx.columnLeft + ctx.columnRight) / 2 - rest.width / 2 : ctx.x;
   const y = ctx.staffTop + rest.y;
-  ctx.glyphs.push(glyph(rest.glyph, x, y, 'rest', ctx.family, element.id));
+  ctx.glyphs.push(glyphRun(ctx.fonts, rest.glyph, x, y, 'rest', element.id));
   for (const dot of rest.dots) {
-    ctx.glyphs.push(glyph('augmentationDot', x + dot.dx, ctx.staffTop + dot.y, 'dot', ctx.family, element.id));
+    ctx.glyphs.push(glyphRun(ctx.fonts, 'augmentationDot', x + dot.dx, ctx.staffTop + dot.y, 'dot', element.id));
   }
 
-  const bbox = glyphBBox(rest.glyph);
+  const bbox = ctx.fonts.bbox(rest.glyph);
   const box: Box = {
     x,
     y: y - bbox.bBoxNE[1],
@@ -498,6 +501,7 @@ function restLabel(element: VerticalElement, wholeBar: boolean): string {
 }
 
 function contentMargins(
+  fonts: FontContext,
   justified: JustifiedScore,
   beamsResult: BeamsResult,
   tupletsResult: TupletsResult,
@@ -542,7 +546,7 @@ function contentMargins(
     maxY = Math.max(maxY, rect.y + rect.h);
   }
   for (const numeral of tupletsResult.numerals) {
-    const bbox = glyphBBox(numeral.name);
+    const bbox = fonts.bbox(numeral.name);
     minY = Math.min(minY, numeral.y - bbox.bBoxNE[1]);
     maxY = Math.max(maxY, numeral.y - bbox.bBoxSW[1]);
   }
@@ -588,8 +592,22 @@ function pathFrom(points: readonly (readonly [number, number])[], staffTop: numb
   return points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${(staffTop + y).toFixed(3)}`).join(' ') + ' Z';
 }
 
-function glyph(name: string, x: number, y: number, cls: string, family: FontFamily, el?: NoteId): GlyphRun {
-  return { x, y, cp: glyphCodepoint(name, family) ?? 0, cls, ...(el ? { el } : {}) };
+export function glyphRun(fonts: FontContext, name: string, x: number, y: number, cls: string, el?: NoteId): GlyphRun {
+  const resolved = fonts.resolveGlyph(name);
+  return {
+    x,
+    y,
+    cp: resolved?.codepoint ?? 0,
+    cls,
+    ...(el ? { el } : {}),
+    ...(resolved && resolved.font > 0 ? { font: resolved.font } : {}),
+  };
+}
+
+export function tagFonts(glyphs: readonly GlyphRun[], fonts: FontContext): readonly string[] | undefined {
+  if (!glyphs.some((g) => g.font !== undefined)) return undefined;
+  for (const g of glyphs) g.font ??= 0;
+  return fonts.fonts.map((font) => font.name);
 }
 
 function centeredRect(x: number, y: number, w: number, thickness: number, cls: string, el?: NoteId): RectShape {

@@ -1,6 +1,6 @@
 import type { Diagnostic } from '@polyhymnia/mnx';
-import { engravingDefaults } from '../font/metadata.js';
-import type { NotationOptions } from '../options.js';
+import type { EngravingDefaults } from '@polyhymnia/notation-fonts';
+import type { FontContext } from '../font/context.js';
 import type { BeamsResult } from './beams.js';
 import type { JustifiedScore, JustifiedSystem } from './justify.js';
 import type { NormalizedSlur, NoteId, NormalizedTie } from './records.js';
@@ -53,8 +53,9 @@ export function curves(
   beamsResult: BeamsResult,
   ties: readonly NormalizedTie[],
   slurs: readonly NormalizedSlur[],
-  _options?: NotationOptions,
+  fonts: FontContext,
 ): CurvesResult {
+  const e = fonts.engravingDefaults;
   const noteMap = buildNoteMap(justified);
   const elementsBySystem = buildElementsBySystem(justified);
   const twoVoiceMeasures = new Set(placedScore.elements.filter((e) => e.voice === 1).map((e) => e.measureIndex));
@@ -92,7 +93,7 @@ export function curves(
           ? -1
           : directionFor(from, siblings, twoVoiceMeasures.has(tie.measureIndex));
 
-    for (const span of spansBetween(from, to, justified)) shapes.push(tieShape(tie.id, span, dir));
+    for (const span of spansBetween(from, to, justified)) shapes.push(tieShape(e, tie.id, span, dir));
   }
 
   for (const slur of slurs) {
@@ -104,7 +105,7 @@ export function curves(
     const to = (dir === -1 && slur.toBottom ? noteMap.get(slur.toBottom) : undefined) ?? to0;
 
     for (const span of spansBetween(from, to, justified)) {
-      shapes.push(slurShape(slur.id, span, dir, beamsResult, elementsBySystem));
+      shapes.push(slurShape(e, slur.id, span, dir, beamsResult, elementsBySystem));
     }
   }
 
@@ -287,8 +288,14 @@ function curveSpan(span: CurveSpan, endpointYOf: (note: PlacedNote) => number): 
   }
 }
 
-function curveShape(id: string, cls: CurveShape['cls'], g: CurveGeometry, dir: 1 | -1, arch: number): CurveShape {
-  const e = engravingDefaults;
+function curveShape(
+  e: EngravingDefaults,
+  id: string,
+  cls: CurveShape['cls'],
+  g: CurveGeometry,
+  dir: 1 | -1,
+  arch: number,
+): CurveShape {
   const [endT, midT] =
     cls === 'tie'
       ? [e.tieEndpointThickness, e.tieMidpointThickness]
@@ -301,10 +308,10 @@ function curveShape(id: string, cls: CurveShape['cls'], g: CurveGeometry, dir: 1
   };
 }
 
-function tieShape(id: string, span: CurveSpan, dir: 1 | -1): CurveShape {
+function tieShape(e: EngravingDefaults, id: string, span: CurveSpan, dir: 1 | -1): CurveShape {
   const g = curveSpan(span, (note) => endpointY(note, dir));
   const arch = clearApex(g.y0, g.y3, dir, archFor(g.x3 - g.x0));
-  return curveShape(id, 'tie', g, dir, arch);
+  return curveShape(e, id, 'tie', g, dir, arch);
 }
 
 function slurDirection(
@@ -361,6 +368,7 @@ function slurEndpointY(note: PlacedNote, dir: 1 | -1, stemOverrides: BeamsResult
 }
 
 function slurShape(
+  e: EngravingDefaults,
   id: string,
   span: CurveSpan,
   dir: 1 | -1,
@@ -375,7 +383,7 @@ function slurShape(
     dir,
     slurObstacles(g.systemIndex, g.lo, g.hi, beamsResult, elementsBySystem),
   );
-  return curveShape(id, 'slur', g, dir, arch);
+  return curveShape(e, id, 'slur', g, dir, arch);
 }
 
 function clearSlur(

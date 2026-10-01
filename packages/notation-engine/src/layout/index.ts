@@ -1,3 +1,4 @@
+import { fontContext } from '../font/context.js';
 import type { NotationOptions } from '../options.js';
 import type { Diagnostic, MnxDocument } from '@polyhymnia/mnx';
 import { accidentals } from './accidentals.js';
@@ -15,17 +16,18 @@ import type { LayoutResult } from './types.js';
 import { vertical } from './vertical.js';
 
 export function layoutScore(doc: MnxDocument, options?: NotationOptions): LayoutResult {
+  const fonts = fontContext(options);
   const normalized = normalize(doc, options);
   const timed = temporal(normalized, options);
   const resolvedAccidentals = accidentals(normalized, timed, options);
   const groups = grouping(normalized, timed, options);
-  const placed = vertical(normalized, timed, resolvedAccidentals, options);
-  const spaced = horizontal(normalized, timed, placed, options);
+  const placed = vertical(normalized, timed, resolvedAccidentals, fonts);
+  const spaced = horizontal(normalized, timed, placed, fonts, options);
   const broken = breakSystems(spaced, options);
   const justified = justify(broken, options);
-  const beamed = beams(justified, normalized.beams);
-  const tupletShapes = tuplets(justified, groups.tuplets, normalized.beams, beamed, options);
-  const curveShapes = curves(justified, placed, beamed, normalized.ties, normalized.slurs, options);
+  const beamed = beams(justified, normalized.beams, fonts);
+  const tupletShapes = tuplets(justified, groups.tuplets, normalized.beams, beamed, fonts, options);
+  const curveShapes = curves(justified, placed, beamed, normalized.ties, normalized.slurs, fonts);
 
   const diagnostics: Diagnostic[] = [
     ...normalized.diagnostics,
@@ -53,6 +55,6 @@ export function layoutScore(doc: MnxDocument, options?: NotationOptions): Layout
       tuplets: tupletShapes,
       curves: curveShapes,
     },
-    options,
+    fonts,
   );
 }

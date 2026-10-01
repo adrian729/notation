@@ -1,9 +1,11 @@
 import type { Pitch as MnxPitch } from '@polyhymnia/mnx';
-import { engravingDefaults, glyphAdvanceWidth } from '../font/metadata.js';
-import { glyphCodepoint } from '../font/glyphs.js';
+import { STEP_LETTERS, keyAlterOf, stepNumberOf } from '@polyhymnia/music-theory';
+import { fontContext, type FontContext } from '../font/context.js';
 import { DEFAULT_FONT, type FontFamily } from '../font/glyphs.js';
-import { stepNumber, type Alter, type StaffPitch } from '../layout/records.js';
-import { STAFF_HEIGHT, accidentalGlyph, keyAlterOf, staffPositionOf } from '../layout/staff.js';
+import type { NotationOptions } from '../options.js';
+import { glyphRun, tagFonts } from '../layout/emit.js';
+import type { Alter, StaffPitch, StepNumber } from '../layout/records.js';
+import { STAFF_HEIGHT, accidentalGlyph, staffPositionOf } from '../layout/staff.js';
 import type { GlyphRun, LayoutResult, RectShape } from '../layout/types.js';
 
 export interface PreviewNote {
@@ -15,15 +17,15 @@ export interface PreviewNote {
 
 function toStaffPitch(pitch: MnxPitch): StaffPitch {
   return {
-    step: stepNumber(pitch.step) ?? 0,
+    step: Math.max(0, stepNumberOf(pitch.step)) as StepNumber,
     alter: (pitch.alter ?? 0) as Alter,
     octave: pitch.octave,
   };
 }
 
-function ledgerRect(x: number, y: number, width: number): RectShape {
-  const extension = engravingDefaults.legerLineExtension;
-  const thickness = engravingDefaults.legerLineThickness;
+function ledgerRect(fonts: FontContext, x: number, y: number, width: number): RectShape {
+  const extension = fonts.engravingDefaults.legerLineExtension;
+  const thickness = fonts.engravingDefaults.legerLineThickness;
   return {
     x: x - extension,
     y: y - thickness / 2,
@@ -36,8 +38,9 @@ function ledgerRect(x: number, y: number, width: number): RectShape {
 export function previewShapes(
   layout: LayoutResult,
   preview: PreviewNote,
-  family: FontFamily = DEFAULT_FONT,
-): { glyphs: readonly GlyphRun[]; rects: readonly RectShape[] } {
+  font: FontFamily | Pick<NotationOptions, 'font' | 'style'> = DEFAULT_FONT,
+): { glyphs: readonly GlyphRun[]; rects: readonly RectShape[]; fonts?: readonly string[] } {
+  const fonts = fontContext(typeof font === 'string' ? { style: font } : font);
   const measureBox = layout.measures.find((m) => m.index === preview.measureIndex);
   if (!measureBox) return { glyphs: [], rects: [] };
   const system = layout.systems.find((s) => s.index === measureBox.systemIndex);
@@ -51,30 +54,26 @@ export function previewShapes(
   const rects: RectShape[] = [];
 
   const noteheadName = 'noteheadBlack';
-  glyphs.push({ x: preview.x, y, cp: glyphCodepoint(noteheadName, family) ?? 0, cls: 'preview-notehead' });
+  glyphs.push(glyphRun(fonts, noteheadName, preview.x, y, 'preview-notehead'));
 
-  const width = glyphAdvanceWidth(noteheadName);
+  const width = fonts.advanceWidth(noteheadName);
   if (staffPosition < 0) {
     for (let pos = -1; pos >= staffPosition - 1e-9; pos -= 1) {
-      rects.push(ledgerRect(preview.x, system.y + pos, width));
+      rects.push(ledgerRect(fonts, preview.x, system.y + pos, width));
     }
   } else if (staffPosition > STAFF_HEIGHT) {
     for (let pos = STAFF_HEIGHT + 1; pos <= staffPosition + 1e-9; pos += 1) {
-      rects.push(ledgerRect(preview.x, system.y + pos, width));
+      rects.push(ledgerRect(fonts, preview.x, system.y + pos, width));
     }
   }
 
-  const keyAlter = keyAlterOf(measureBox.key, staffPitch.step);
+  const keyAlter = keyAlterOf(measureBox.key.fifths, STEP_LETTERS[staffPitch.step]);
   if (staffPitch.alter !== keyAlter) {
     const glyphName = accidentalGlyph(staffPitch.alter);
-    const accWidth = glyphAdvanceWidth(glyphName);
-    glyphs.push({
-      x: preview.x - accWidth - 0.2,
-      y,
-      cp: glyphCodepoint(glyphName, family) ?? 0,
-      cls: 'preview-accidental',
-    });
+    const accWidth = fonts.advanceWidth(glyphName);
+    glyphs.push(glyphRun(fonts, glyphName, preview.x - accWidth - 0.2, y, 'preview-accidental'));
   }
 
-  return { glyphs, rects };
+  const fontNames = tagFonts(glyphs, fonts);
+  return { glyphs, rects, ...(fontNames ? { fonts: fontNames } : {}) };
 }
