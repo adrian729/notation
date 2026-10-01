@@ -26,7 +26,7 @@ import triplets from './scores/triplets.mnx.json';
 import twoVoices from './scores/two-voices.mnx.json';
 import ties from './scores/ties.mnx.json';
 import slurs from './scores/slurs.mnx.json';
-import { FontNotation, useFontFamily } from './font.js';
+import { FontNotation } from './font.js';
 
 const MELODY = melody as MnxDocument;
 const WHOLE_BAR_REST = wholeBarRest as MnxDocument;
@@ -57,7 +57,6 @@ const CLEF_EXAMPLES: readonly { label: string; doc: MnxDocument }[] = [
 
 export function App() {
   useEffect(() => unlockSound(), []);
-  const { family } = useFontFamily();
 
   return (
     <main>

@@ -9,9 +9,10 @@ import type {
   Ref,
 } from 'react';
 import { DEFAULT_FONT, HIT_STAFF_MARGIN, hitTest, previewShapes } from '@polyhymnia/notation-engine';
+import { fontFaceCss } from '@polyhymnia/notation-fonts';
+import type { GlyphStyleName, NotationFont } from '@polyhymnia/notation-fonts';
 import type {
   ElementBox,
-  FontFamily,
   GlyphRun,
   HitResult,
   LayoutResult,
@@ -66,15 +67,18 @@ export interface NotationProps {
 const GLYPH_FONT_SIZE = 4;
 const CURSOR_WIDTH = 0.3;
 
-const FAMILY_CSS_NAME: Record<FontFamily, string> = {
+const FAMILY_CSS_NAME: Record<GlyphStyleName, string> = {
   modern: 'PolyhymniaNotation',
   mensural: 'PolyhymniaMensural',
 };
 
 export function Notation({ score, options, children, className, style, onLayout, ref }: NotationProps): JSX.Element {
   const layout = useMemo(() => memoLayout(score, options), [score, options]);
-  const family: FontFamily = typeof options?.font === 'string' ? options.font : (options?.style ?? DEFAULT_FONT);
-  const fontFamily = FAMILY_CSS_NAME[family];
+  const customFonts = customFontsOf(options?.font);
+  const glyphStyle: GlyphStyleName =
+    typeof options?.font === 'string' ? options.font : (options?.style ?? DEFAULT_FONT);
+  const fontFamily = customFonts?.[0]?.name ?? FAMILY_CSS_NAME[glyphStyle];
+  const fontCss = useMemo(() => (customFonts ? fontFaceCss(customFonts) : undefined), [options?.font]);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const elementRefs = useRef(new Map<string, SVGGElement>());
   const cursorRef = useRef<SVGGElement | null>(null);
@@ -194,75 +198,84 @@ export function Notation({ score, options, children, className, style, onLayout,
     };
 
   return (
-    <svg
-      ref={svgRef}
-      className={classNames('pn-notation', className)}
-      data-pn-font={family}
-      style={style}
-      viewBox={viewBoxAttr(layout.viewBox)}
-      role="img"
-      aria-label={describeScore(layout)}
-      data-pn-interactive={targets.length > 0 ? '' : undefined}
-      onClick={handleClick}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
-    >
-      <g data-pn="rules">
-        {layout.rects.map((r, i) => (
-          <Rect key={`r${i}`} shape={r} />
-        ))}
-      </g>
-      {targets.length > 0 && (
-        <g data-pn="hit-overlays">
-          {layout.systems.map((s) => (
-            <rect
-              key={`hit-${s.index}`}
-              data-pn="hit-overlay"
-              x={s.x}
-              y={s.y - HIT_STAFF_MARGIN}
-              width={s.w}
-              height={s.h + HIT_STAFF_MARGIN * 2}
-              fill="transparent"
-              pointerEvents="all"
-            />
+    <>
+      {fontCss !== undefined && (
+        <style href={`pn-fonts:${fontCss}`} precedence="pn-fonts">
+          {fontCss}
+        </style>
+      )}
+      <svg
+        ref={svgRef}
+        className={classNames('pn-notation', className)}
+        data-pn-style={glyphStyle}
+        style={style}
+        viewBox={viewBoxAttr(layout.viewBox)}
+        role="img"
+        aria-label={describeScore(layout)}
+        data-pn-interactive={targets.length > 0 ? '' : undefined}
+        onClick={handleClick}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+      >
+        <g data-pn="rules">
+          {layout.rects.map((r, i) => (
+            <Rect key={`r${i}`} shape={r} />
           ))}
         </g>
-      )}
-      <g data-pn="curves">
-        {layout.paths.map((p, i) => (
-          <path key={`p${i}`} d={p.d} data-pn={p.cls} data-pn-el={p.el} fill="currentColor" stroke="none" />
-        ))}
-      </g>
-      <g data-pn="glyphs" fontSize={GLYPH_FONT_SIZE} fontFamily={fontFamily}>
-        {groupGlyphs(layout.glyphs).map((group, i) =>
-          group.el === undefined ? (
-            group.glyphs.map((g, j) => <Glyph key={`g${i}-${j}`} glyph={g} />)
-          ) : (
-            <g
-              key={group.el}
-              ref={elementRef(elementRefs.current, group.el)}
-              role={isElementKeyboardTarget(group.el) ? 'button' : 'img'}
-              tabIndex={isElementKeyboardTarget(group.el) ? 0 : undefined}
-              aria-label={layout.elements[group.el]?.label ?? group.el}
-              data-pn="element"
-              data-pn-el={group.el}
-              onKeyDown={isElementKeyboardTarget(group.el) ? handleElementKeyDown(group.el) : undefined}
-            >
-              {group.glyphs.map((g, j) => (
-                <Glyph key={`g${i}-${j}`} glyph={g} />
-              ))}
-            </g>
-          ),
+        {targets.length > 0 && (
+          <g data-pn="hit-overlays">
+            {layout.systems.map((s) => (
+              <rect
+                key={`hit-${s.index}`}
+                data-pn="hit-overlay"
+                x={s.x}
+                y={s.y - HIT_STAFF_MARGIN}
+                width={s.w}
+                height={s.h + HIT_STAFF_MARGIN * 2}
+                fill="transparent"
+                pointerEvents="all"
+              />
+            ))}
+          </g>
         )}
-      </g>
-      {playbackView?.mode === 'cursor' && (
-        <CursorGroup groupRef={cursorRef} timemap={layout.timemap} position={playbackView.position} />
-      )}
-      {marks?.preview != null && (
-        <PreviewGroup layout={layout} preview={marks.preview} fontFamily={fontFamily} family={family} />
-      )}
-      {children}
-    </svg>
+        <g data-pn="curves">
+          {layout.paths.map((p, i) => (
+            <path key={`p${i}`} d={p.d} data-pn={p.cls} data-pn-el={p.el} fill="currentColor" stroke="none" />
+          ))}
+        </g>
+        <g data-pn="glyphs" fontSize={GLYPH_FONT_SIZE} fontFamily={fontFamily}>
+          {groupGlyphs(layout.glyphs).map((group, i) =>
+            group.el === undefined ? (
+              group.glyphs.map((g, j) => (
+                <Glyph key={`g${i}-${j}`} glyph={g} fonts={layout.fonts} primary={fontFamily} />
+              ))
+            ) : (
+              <g
+                key={group.el}
+                ref={elementRef(elementRefs.current, group.el)}
+                role={isElementKeyboardTarget(group.el) ? 'button' : 'img'}
+                tabIndex={isElementKeyboardTarget(group.el) ? 0 : undefined}
+                aria-label={layout.elements[group.el]?.label ?? group.el}
+                data-pn="element"
+                data-pn-el={group.el}
+                onKeyDown={isElementKeyboardTarget(group.el) ? handleElementKeyDown(group.el) : undefined}
+              >
+                {group.glyphs.map((g, j) => (
+                  <Glyph key={`g${i}-${j}`} glyph={g} fonts={layout.fonts} primary={fontFamily} />
+                ))}
+              </g>
+            ),
+          )}
+        </g>
+        {playbackView?.mode === 'cursor' && (
+          <CursorGroup groupRef={cursorRef} timemap={layout.timemap} position={playbackView.position} />
+        )}
+        {marks?.preview != null && (
+          <PreviewGroup layout={layout} preview={marks.preview} fontFamily={fontFamily} style={glyphStyle} />
+        )}
+        {children}
+      </svg>
+    </>
   );
 }
 
@@ -325,21 +338,21 @@ function PreviewGroup({
   layout,
   preview,
   fontFamily,
-  family,
+  style,
 }: {
   layout: LayoutResult;
   preview: NonNullable<NotationMarksProps['preview']>;
   fontFamily: string;
-  family: FontFamily;
+  style: GlyphStyleName;
 }): JSX.Element {
-  const { glyphs, rects } = previewShapes(layout, preview, family);
+  const { glyphs, rects } = previewShapes(layout, preview, style);
   return (
     <g data-pn="preview" fontSize={GLYPH_FONT_SIZE} fontFamily={fontFamily}>
       {rects.map((r, i) => (
         <Rect key={`pr${i}`} shape={r} />
       ))}
       {glyphs.map((g, i) => (
-        <Glyph key={`pg${i}`} glyph={g} />
+        <Glyph key={`pg${i}`} glyph={g} fonts={layout.fonts} primary={fontFamily} />
       ))}
     </g>
   );
@@ -361,9 +374,32 @@ function Rect({ shape }: { shape: RectShape }): JSX.Element {
   );
 }
 
-function Glyph({ glyph }: { glyph: GlyphRun }): JSX.Element {
+function customFontsOf(font: NotationOptions['font']): readonly NotationFont[] | undefined {
+  if (font === undefined || typeof font === 'string') return undefined;
+  const list: readonly NotationFont[] = Array.isArray(font) ? font : [font as NotationFont];
+  return list.length > 0 ? list : undefined;
+}
+
+function Glyph({
+  glyph,
+  fonts,
+  primary,
+}: {
+  glyph: GlyphRun;
+  fonts: readonly string[] | undefined;
+  primary: string;
+}): JSX.Element {
+  const family = glyph.font === undefined ? undefined : fonts?.[glyph.font];
   return (
-    <text x={glyph.x} y={glyph.y} data-pn={glyph.cls} data-pn-el={glyph.el} fill="currentColor" stroke="none">
+    <text
+      x={glyph.x}
+      y={glyph.y}
+      fontFamily={family !== undefined && family !== primary ? family : undefined}
+      data-pn={glyph.cls}
+      data-pn-el={glyph.el}
+      fill="currentColor"
+      stroke="none"
+    >
       {String.fromCodePoint(glyph.cp)}
     </text>
   );
