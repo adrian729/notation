@@ -1,0 +1,11 @@
+PolyhymniaMuse is a modified version of the font Leland 0.80.
+
+Original font: Leland 0.80
+Copyright: Copyright (c) 2025, MuseScore BVBA (http://www.musescore.org/), with Reserved Font Name "Leland".
+Upstream: https://github.com/MuseScoreFonts/Leland/releases/tag/v0.80
+Licence: SIL Open Font License 1.1 (see OFL.txt in this directory).
+
+Modifications:
+- subsetted to 66 glyphs, the glyph tables of @polyhymnia/notation-fonts (src/styles.ts);
+- renamed to "PolyhymniaMuse": the licence reserves the font name "Leland", and a subset does not preserve Functional Equivalence, so per OFL-FAQ 2.6 the Reserved Font Name may not be kept on the modified font.
+- converted to WOFF2.
