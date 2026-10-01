@@ -109,7 +109,7 @@ function HomePage() {
           alt="Two heralds blowing long trumpets, from the Cantigas de Santa María"
           width={822}
           height={638}
-          className="mx-auto h-auto w-full max-w-sm -translate-x-[8.2%]"
+          className="mx-auto h-auto w-full max-w-sm"
         />
         <Ornament name="running-vine" className="mx-auto h-8 w-64 text-primary-strong" />
         <BarBorder>
