@@ -32,6 +32,9 @@ importers:
       '@polyhymnia/mnx':
         specifier: workspace:*
         version: link:../../packages/mnx
+      '@polyhymnia/music-theory':
+        specifier: workspace:*
+        version: link:../../packages/music-theory
       '@polyhymnia/notation-engine':
         specifier: workspace:*
         version: link:../../packages/notation-engine
@@ -102,6 +105,9 @@ importers:
       '@polyhymnia/mnx':
         specifier: workspace:*
         version: link:../../packages/mnx
+      '@polyhymnia/music-theory':
+        specifier: workspace:*
+        version: link:../../packages/music-theory
       '@polyhymnia/notation-engine':
         specifier: workspace:*
         version: link:../../packages/notation-engine

@@ -11,8 +11,9 @@
   },
   "dependencies": {
     "@polyhymnia/audio": "workspace:*",
-    "@polyhymnia/notation-engine": "workspace:*",
     "@polyhymnia/mnx": "workspace:*",
+    "@polyhymnia/music-theory": "workspace:*",
+    "@polyhymnia/notation-engine": "workspace:*",
     "@polyhymnia/notation-react": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
