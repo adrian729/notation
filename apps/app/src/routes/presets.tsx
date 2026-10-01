@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
+import type { ScaleName } from '@polyhymnia/music-theory';
 import { NotesReveal } from '@/components/presets/NotesReveal';
 import { ScaleReveal } from '@/components/presets/ScaleReveal';
-import type { ScaleName } from '@/components/presets/shared';
 
 export const Route = createFileRoute('/presets')({
   component: PresetsPage,

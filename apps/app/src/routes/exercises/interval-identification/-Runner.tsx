@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import type { NoteEvent } from '@polyhymnia/audio';
+import { intervalById, intervalIdDisplayName, type IntervalId } from '@polyhymnia/music-theory';
 import { NotesReveal } from '@/components/presets/NotesReveal';
 import { cn } from '@/lib/utils';
 import { RevealStaff } from '@/components/lesson/RevealStaff';
 import { LessonRunner, type AnswerRenderProps } from '@/components/lesson/LessonRunner';
 import { answerTileClass, answerTileState } from '@/components/lesson/answerTiles';
-import { intervalById, intervalIdDisplayName, type AnsweredQuestion, type IntervalId } from '@/exercises/shared';
+import { type AnsweredQuestion } from '@/exercises/shared';
 import {
   buildQuestionEvents,
   EXERCISE_TITLE,

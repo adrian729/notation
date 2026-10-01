@@ -1,4 +1,5 @@
 import type { NoteEvent } from '@polyhymnia/audio';
+import { chordById, type ChordId } from '@polyhymnia/music-theory';
 import { NotesReveal } from '@/components/presets/NotesReveal';
 import { cn } from '@/lib/utils';
 import { RevealStaff } from '@/components/lesson/RevealStaff';
@@ -7,13 +8,11 @@ import { answerTileClass, answerTileState } from '@/components/lesson/answerTile
 import type { AnsweredQuestion } from '@/exercises/shared';
 import {
   buildQuestionEvents,
-  chordById,
   EXERCISE_TITLE,
   generateQuestion,
   questionSignature,
   recordLessonResult,
   withAnswer,
-  type ChordId,
   type ChordOptions,
   type Question,
 } from '@/exercises/chord-identification';

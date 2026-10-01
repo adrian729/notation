@@ -15,8 +15,8 @@ import {
 import { CustomErrorFallback, CustomFrame } from '@/components/custom/CustomFrame';
 import { useStoredSearch } from '@/components/custom/useStoredSearch';
 import { describeQuestions, sessionFromSearch, toggleInOrder } from '@/exercises/shared';
+import { CHORDS, isChordId, type ChordId } from '@polyhymnia/music-theory';
 import {
-  CHORDS,
   CHORD_SETS,
   DIRECTIONS,
   DIRECTION_HELP,
@@ -25,12 +25,10 @@ import {
   EXECUTION_HELP,
   EXECUTION_TITLE,
   TASK_HELP,
-  isChordId,
   parseCustomSearch,
   toChordOptions,
   validateCustomOptions,
   type ArpeggioDirection,
-  type ChordId,
   type CustomOptions,
   type CustomSearch,
   type Execution,

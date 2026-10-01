@@ -1,7 +1,8 @@
+import { intervalBetween, intervalDisplayName, parsePitch, type IntervalId } from '@polyhymnia/music-theory';
 import { NotesReveal } from '@/components/presets/NotesReveal';
 import { RevealStaff } from '@/components/lesson/RevealStaff';
 import { LessonRunner } from '@/components/lesson/LessonRunner';
-import { writtenIntervalName, type AnsweredQuestion, type IntervalId } from '@/exercises/shared';
+import type { AnsweredQuestion } from '@/exercises/shared';
 import {
   buildQuestionEvents,
   EXERCISE_TITLE,
@@ -37,7 +38,12 @@ function verdict({ question, correct }: AnsweredQuestion<Question, Answer>): str
 }
 
 function captions(question: Question): string[] {
-  const nameOf = new Map(question.rows.map((row) => [row.pitch, writtenIntervalName(question.reference, row.pitch)]));
+  const nameOf = new Map(
+    question.rows.map((row) => {
+      const interval = intervalBetween(parsePitch(question.reference), parsePitch(row.pitch));
+      return [row.pitch, intervalDisplayName(interval.degree, interval.quality)];
+    }),
+  );
   return question.sounding.map((pitch) => nameOf.get(pitch) ?? 'Lowest note');
 }
 

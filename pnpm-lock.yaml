@@ -139,13 +139,13 @@ importers:
 
   packages/audio:
     dependencies:
-      '@polyhymnia/mnx':
-        specifier: workspace:*
-        version: link:../mnx
       '@polyhymnia/notation-engine':
         specifier: workspace:*
         version: link:../notation-engine
     devDependencies:
+      '@polyhymnia/mnx':
+        specifier: workspace:*
+        version: link:../mnx
       typescript:
         specifier: ^5.7.0
         version: 5.9.3

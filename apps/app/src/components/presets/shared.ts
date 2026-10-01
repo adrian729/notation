@@ -27,8 +27,6 @@ export function durationKey(duration: NoteValue): string {
   return `${duration.base}.${duration.dots ?? 0}`;
 }
 
-export type { ScaleName } from '@polyhymnia/music-theory';
-
 export function scaleKey(root: Pitch, scale: ScaleName): Key {
   return { fifths: scaleFifths(root, scale) };
 }

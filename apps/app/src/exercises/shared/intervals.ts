@@ -1,7 +1,7 @@
 import type { IntervalId } from '@polyhymnia/music-theory';
 import type { RangeOption } from './playing.js';
 
-export { intervalById, intervalBySemitones, intervalIdDisplayName, type IntervalId } from '@polyhymnia/music-theory';
+export type { IntervalId };
 
 export type IntervalFamilyId = 'perfect' | 'imperfect' | 'dissonant' | 'simple' | 'compound';
 

@@ -1,15 +1,8 @@
+import { intervalById, intervalBySemitones, intervalIdDisplayName, type IntervalId } from '@polyhymnia/music-theory';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { HelpItem, HelpPopover, Section, SetChip, SubHeading } from '@/components/custom/CustomParts';
-import {
-  FAMILY_HELP,
-  FAMILY_TITLE,
-  INTERVAL_FAMILIES,
-  intervalById,
-  intervalBySemitones,
-  intervalIdDisplayName,
-  type IntervalId,
-} from '@/exercises/shared';
+import { FAMILY_HELP, FAMILY_TITLE, INTERVAL_FAMILIES } from '@/exercises/shared';
 
 type SetId = 'perfect' | 'imperfect' | 'dissonant' | 'simple';
 const SET_ORDER: readonly SetId[] = ['perfect', 'imperfect', 'dissonant', 'simple'];

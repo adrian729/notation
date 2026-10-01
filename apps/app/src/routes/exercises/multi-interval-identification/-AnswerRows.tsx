@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { NoteEvent } from '@polyhymnia/audio';
+import { intervalById, intervalIdDisplayName, type IntervalId } from '@polyhymnia/music-theory';
 import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { answerTileClass, answerTileState } from '@/components/lesson/answerTiles';
-import { intervalById, intervalIdDisplayName, type IntervalId } from '@/exercises/shared';
 import { withAnswer, type Question } from '@/exercises/multi-interval-identification';
 import type { AnswerRenderProps } from '@/components/lesson/LessonRunner';
 
