@@ -1,6 +1,15 @@
 {
   "name": "@polyhymnia/notation-react",
   "version": "0.1.0",
+  "description": "React SVG renderer for MNX scores laid out by @polyhymnia/notation-engine, with interaction, marks and playback highlighting.",
+  "keywords": [
+    "mnx",
+    "music",
+    "notation",
+    "react",
+    "svg",
+    "sheet-music"
+  ],
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -46,5 +55,12 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "homepage": "https://github.com/adrian729/notation/tree/master/packages/notation-react#readme",
+  "bugs": {
+    "url": "https://github.com/adrian729/notation/issues"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

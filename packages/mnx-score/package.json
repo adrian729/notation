@@ -1,6 +1,14 @@
 {
   "name": "@polyhymnia/mnx-score",
   "version": "0.1.0",
+  "description": "Musical timeline over MNX documents: ticks, stable ids, pitch to MIDI, ties, tempo, play order and performance events.",
+  "keywords": [
+    "mnx",
+    "music",
+    "timeline",
+    "playback",
+    "midi"
+  ],
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -33,5 +41,12 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "homepage": "https://github.com/adrian729/notation/tree/master/packages/mnx-score#readme",
+  "bugs": {
+    "url": "https://github.com/adrian729/notation/issues"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

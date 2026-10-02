@@ -1,6 +1,14 @@
 {
   "name": "@polyhymnia/mnx",
   "version": "0.1.0",
+  "description": "MNX (W3C) score format: pinned schema, generated types, readMnx, rational time, scoped element ids and applyIntent edits.",
+  "keywords": [
+    "mnx",
+    "music",
+    "notation",
+    "score",
+    "w3c"
+  ],
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -39,5 +47,12 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "homepage": "https://github.com/adrian729/notation/tree/master/packages/mnx#readme",
+  "bugs": {
+    "url": "https://github.com/adrian729/notation/issues"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

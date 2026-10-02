@@ -1,6 +1,14 @@
 {
   "name": "@polyhymnia/musicxml-to-mnx",
   "version": "0.1.0",
+  "description": "Offline MusicXML to MNX converter (library and CLI) with schema validation and stable element ids.",
+  "keywords": [
+    "musicxml",
+    "mnx",
+    "music",
+    "converter",
+    "cli"
+  ],
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -34,5 +42,12 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "homepage": "https://github.com/adrian729/musicxml-to-mnx#readme",
+  "bugs": {
+    "url": "https://github.com/adrian729/musicxml-to-mnx/issues"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

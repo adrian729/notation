@@ -1,6 +1,15 @@
 {
   "name": "@polyhymnia/notation-engine",
   "version": "0.1.0",
+  "description": "Renderer-agnostic music engraving for MNX: layout, glyph positions, hit-testing and playback cursor positions. No DOM.",
+  "keywords": [
+    "mnx",
+    "music",
+    "notation",
+    "engraving",
+    "layout",
+    "smufl"
+  ],
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -37,5 +46,12 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "homepage": "https://github.com/adrian729/notation/tree/master/packages/notation-engine#readme",
+  "bugs": {
+    "url": "https://github.com/adrian729/notation/issues"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
