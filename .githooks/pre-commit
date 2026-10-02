@@ -1,2 +1,2 @@
 #!/bin/sh
-exec node "$(git rev-parse --show-toplevel)/.githooks/check-deps.mjs"
+exec node .githooks/check-deps.mjs

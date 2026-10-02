@@ -74,8 +74,8 @@
 - Coordinator owns manifests, lockfile, tsconfig, barrels, `AGENTS.md`, docs, goldens. Merge with `git merge --no-ff`, one stream at a time, then `pnpm -r typecheck` and tests.
 
 # Dependency guard
-- `.githooks/pre-commit` blocks staged changes to dependency fields or lifecycle scripts in any `package.json`, and to `pnpm-lock.yaml`, `pnpm-workspace.yaml` or `patches/**`.
-- Never set `ALLOW_DEPS`, pass `--no-verify`, or change `core.hooksPath`/hook files. Hook fails → stop and ask the user.
+- `.githooks/pre-commit` stops a commit when any package's `@polyhymnia/*` dependencies differ from `.githooks/deps.json`.
+- Never edit `.githooks/**`, pass `--no-verify`, or change `core.hooksPath`. Hook fails → stop and ask the user; only the user updates `deps.json`.
 
 # Publishing
 - Packages publish to public npm under `@polyhymnia` (`publishConfig.access: public`, `files` whitelist, own `LICENSE`); apps stay `private`.

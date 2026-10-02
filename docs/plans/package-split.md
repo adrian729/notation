@@ -10,7 +10,7 @@ The codebase is organized by history, not by feature, so its pieces can't be reu
 
 Goal:
 - Standalone packages organized by feature (a score viewer or editor, other renderers or engines, a generic converter), grouped into repos by what changes together, published on public npm.
-- A small dependency guard: a pre-commit warning, a user override, an AGENTS.md rule.
+- A small dependency guard: a pre-commit check of the package graph against an allowlist file the user edits, an AGENTS.md rule.
 - Music fonts that can be swapped, in any common format.
 
 The design went through five audit rounds × three auditors (Opus high, Sonnet high, Opus medium), each finding verified against the code. The execution section is written for parallel subagents with strict file ownership, so merging can't revert anyone's work.
@@ -20,7 +20,7 @@ User-settled decisions:
 - `music-theory` built by refactoring existing theory;
 - `mnx-score` owns the musical timeline;
 - the schema ships in `mnx` (examples excluded);
-- the guard is a small pre-commit warning with a user override, built last so it doesn't block the split;
+- the guard is a small pre-commit check of the package graph, bypassed by editing its allowlist, built last so it doesn't block the split;
 - swappable fonts.
 
 ---
@@ -171,11 +171,11 @@ User-settled decisions:
 - **Proof.** Add Leland and a TrueType font without metadata, using only `font:add`. One golden.
 
 ## Guards (last phase, small)
-- `.githooks/pre-commit` plus a small node check: staged changes to dependency fields or lifecycle scripts in any `package.json`, or to `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `patches/**` → fail with "Dependency chain change. Ask the user."
-- Override for the user: `ALLOW_DEPS=1 git commit …`.
-- Enabled by the root `prepare` script (`git config core.hooksPath .githooks`, top-level checkout only).
-- AGENTS.md rule: never use `ALLOW_DEPS`, `--no-verify` or change hook config; hook fails → stop and ask the user.
-- No CI verification, trailers, tty prompts or agent-side command hooks. Agents are careless, not adversarial.
+- `.githooks/pre-commit` runs a small node check: each package's `@polyhymnia/*` dependencies must equal its entry in `.githooks/deps.json`; otherwise the commit stops with "Dependency chain change. Ask the user."
+- The user bypasses it by updating `deps.json` in the same commit.
+- Enabled by the root `prepare` script (`git config core.hooksPath .githooks`).
+- AGENTS.md rule: never edit `.githooks/**`, use `--no-verify` or change hook config; hook fails → stop and ask the user.
+- Nothing else: no lockfile or lifecycle checks, no env overrides, no CI verification.
 
 ---
 
@@ -290,7 +290,7 @@ Integration C:
 - `packages/audio` was renamed to `packages/web-audio` (`@polyhymnia/web-audio`) in integration F.
 - Phase G ran as local prep only (metadata, changesets, `npm pack` smoke installs, local `git subtree split` branches); publishing, repo creation, pushes and CI are the user's.
 - Local `split/repo-{music-theory,web-audio,musicxml-to-mnx,app}` branches carry each split's history plus a standalone commit (own tsconfig base, README, changesets for packages). `web-audio` history was rebuilt across the `audio` rename with a path-mapping filter, since `git subtree split` does not follow renames. `music-theory` and `web-audio` install, build and test standalone; the converter and the app were verified against packed tarballs and get lockfiles once the packages are on npm. Re-run the split for later monorepo commits to those directories.
-- Phase H's guard lives in this repo only until the split repos exist; the user copies `.githooks/` and the `prepare` script into each new repo.
+- Phase H's guard lives in this repo only until the split repos exist; the user copies `.githooks/` (with a `deps.json` for that repo's packages) and the `prepare` script into each new repo that has internal dependencies.
 
 **Phase G: split and publish.** Coordinator and user, sequential, each publish and each first push user-approved.
 - Every package gets `repository`, `publishConfig.access: public`, and has `private` removed.
@@ -301,7 +301,7 @@ Integration C:
 - **G4.** Split the app. Add `dev:link`/`dev:unlink` and Vite `resolve.dedupe: ['react', 'react-dom']`, then switch it to npm.
 - Before each publish, `npm pack` and smoke-install in a scratch project.
 
-**Phase H: guard.** Coordinator, after G. Build the small guard (Part 1 "Guards") in each repo, add the AGENTS.md rule, test once: a dependency change fails, `ALLOW_DEPS=1` passes, a non-dependency `package.json` edit passes.
+**Phase H: guard.** Coordinator, after G. Build the small guard (Part 1 "Guards") in each repo, add the AGENTS.md rule, test once: an internal dependency change fails, the same change with `deps.json` updated passes, a non-dependency `package.json` edit passes.
 
 ## AGENTS.md rules to rewrite (coordinator, during integrations)
 - "Only `normalize*.ts` reads MNX" becomes: the timeline and the engine (engraving only) read MNX; addressing comes from `mnx`.

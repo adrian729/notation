@@ -1,0 +1,36 @@
+{
+  "@polyhymnia/app": [
+    "@polyhymnia/mnx",
+    "@polyhymnia/mnx-score",
+    "@polyhymnia/music-theory",
+    "@polyhymnia/notation-engine",
+    "@polyhymnia/notation-react",
+    "@polyhymnia/web-audio"
+  ],
+  "@polyhymnia/web": [
+    "@polyhymnia/mnx",
+    "@polyhymnia/mnx-score",
+    "@polyhymnia/music-theory",
+    "@polyhymnia/notation-engine",
+    "@polyhymnia/notation-react",
+    "@polyhymnia/web-audio"
+  ],
+  "@polyhymnia/mnx-score": ["@polyhymnia/mnx", "@polyhymnia/music-theory"],
+  "@polyhymnia/mnx": [],
+  "@polyhymnia/music-theory": [],
+  "@polyhymnia/notation-engine": [
+    "@polyhymnia/mnx",
+    "@polyhymnia/mnx-score",
+    "@polyhymnia/music-theory",
+    "@polyhymnia/notation-fonts"
+  ],
+  "@polyhymnia/notation-fonts": [],
+  "@polyhymnia/notation-react": [
+    "@polyhymnia/mnx",
+    "@polyhymnia/mnx-score",
+    "@polyhymnia/notation-engine",
+    "@polyhymnia/notation-fonts"
+  ],
+  "@polyhymnia/web-audio": [],
+  "@polyhymnia/musicxml-to-mnx": ["@polyhymnia/mnx"]
+}
