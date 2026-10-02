@@ -1,4 +1,4 @@
-import { elementIds } from '../mnx/element-ids.js';
+import { elementIds, type ElementScope } from '../mnx/element-ids.js';
 import type { MnxDocument, Pitch } from '../mnx/types.js';
 import { cleanupPartMeasure } from './cleanup.js';
 import type { ApplyResult, EditIntent } from './types.js';
@@ -59,6 +59,14 @@ function substituteAtPath(
   return out;
 }
 
+function scopeOf(doc: MnxDocument, partIndex: number): ElementScope {
+  const staves = asObject(asArray(doc.parts)[partIndex])?.staves;
+  const count = typeof staves === 'number' && Number.isInteger(staves) && staves > 1 ? staves : 1;
+  return count > 1
+    ? { parts: [partIndex], staves: Array.from({ length: count }, (_, i) => i + 1) }
+    : { parts: [partIndex] };
+}
+
 function idsRemovedBy(
   doc: MnxDocument,
   partIndex: number,
@@ -70,7 +78,7 @@ function idsRemovedBy(
     ...doc,
     parts: doc.parts.map((p, i) => (i === partIndex ? { ...part, measures: rawMeasures } : p)),
   } as MnxDocument;
-  const rawIds = elementIds(rawDoc, { parts: [partIndex] });
+  const rawIds = elementIds(rawDoc, scopeOf(doc, partIndex));
   const removed = new Set<string>();
   for (const id of oldIds) {
     if (id && !rawIds.nodeOf(id)) removed.add(id);
@@ -79,7 +87,7 @@ function idsRemovedBy(
 }
 
 function setPitches(doc: MnxDocument, eventId: string, pitches: readonly Pitch[], partIndex: number): ApplyResult {
-  const ids = elementIds(doc, { parts: [partIndex] });
+  const ids = elementIds(doc, scopeOf(doc, partIndex));
   const found = ids.nodeOf(eventId);
   if (!found || found.element.kind !== 'event') {
     if (found?.element.kind === 'fullMeasureRest') return { doc, changed: [], diagnostics: unsupported(eventId) };

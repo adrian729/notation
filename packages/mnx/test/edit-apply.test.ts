@@ -141,6 +141,18 @@ describe('applyIntent setPitches', () => {
     expectValid(result.doc);
   });
 
+  it('re-pitches a staff-2 event of a grand-staff part by its st2. id', () => {
+    const base = mnx({ sequences: [{ content: [note(C4, 'w')] }, { staff: 2, content: [rest('w')] }] });
+    const doc = { ...base, parts: [{ ...base.parts[0], staves: 2 }] } as typeof base;
+    const result = applyIntent(doc, { type: 'setPitches', event: 'st2.m0.s1.e0', pitches: [D4] });
+    const event = result.doc.parts[0].measures[0].sequences[1].content[0] as any;
+    expect(result.diagnostics).toEqual([]);
+    expect(result.changed).toEqual(['st2.m0.s1.e0']);
+    expect(event.notes).toEqual([{ pitch: D4 }]);
+    expect(result.doc.parts[0].measures[0].sequences[0]).toBe(doc.parts[0].measures[0].sequences[0]);
+    expectValid(result.doc);
+  });
+
   it('leaves untouched part-measures and global as ===', () => {
     const doc = mnx(measure(note(C4, 'q')), measure(note(D4, 'q')));
     const id = elementIds(doc).idAt(ev([0]))!;
