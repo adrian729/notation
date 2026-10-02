@@ -1,16 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import type { MnxDocument } from '@polyhymnia/mnx';
-import { normalize } from '../src/layout/normalize.js';
-import { temporal } from '../src/layout/temporal.js';
+import { layoutScore } from '../src/index.js';
 import { modernStyle } from '@polyhymnia/notation-fonts';
 import { fontContext } from '../src/font/context.js';
 import { fixture, measure, mnx, note, withGlobal } from './mnx.js';
 
+function run(doc: MnxDocument) {
+  const { timeline, diagnostics } = layoutScore(doc);
+  return { elements: timeline.entries, measures: timeline.measures, diagnostics };
+}
+
 describe('normalize — forward inheritance', () => {
   it('carries clef, key and time forward until a measure restates them', () => {
-    const measures = normalize(fixture('inheritance')).staves[0]!.measures;
+    const layout = layoutScore(fixture('inheritance'));
+    const measures = layout.measures;
 
-    expect(measures.map((m) => `${m.time.beats}/${m.time.beatType}`)).toEqual(['4/4', '3/4', '3/4', '3/4', '3/4']);
+    expect(layout.timeline.measures.map((m) => `${m.time.beats}/${m.time.beatType}`)).toEqual([
+      '4/4',
+      '3/4',
+      '3/4',
+      '3/4',
+      '3/4',
+    ]);
     expect(measures.map((m) => m.clef.kind)).toEqual(['treble', 'treble', 'treble', 'bass', 'bass']);
     expect(measures.map((m) => m.key.fifths)).toEqual([2, 2, 2, -3, -3]);
   });
@@ -36,39 +47,41 @@ describe('normalize — never throws', () => {
   } as unknown as MnxDocument;
 
   it('degrades a deliberately malformed MNX document into diagnostics', () => {
-    const normalized = normalize(malformed, { divisions: -7 });
-    const codes = normalized.diagnostics.map((d) => d.code);
+    const layout = layoutScore(malformed, { divisions: -7 });
+    const codes = layout.diagnostics.map((d) => d.code);
 
     expect(codes).toContain('invalid-divisions');
     expect(codes).toContain('invalid-time-signature');
     expect(codes).toContain('missing-sequences');
     expect(codes).toContain('too-many-voices');
-    expect(normalized.divisions).toBe(3360);
-    expect(normalized.staves[0]!.measures[0]!.clef.kind).toBe('treble');
-    expect(normalized.staves[0]!.measures[0]!.key.fifths).toBe(7);
-    expect(normalized.staves[0]!.measures[0]!.time).toEqual({ beats: 4, beatType: 4 });
-    expect(normalized.staves[0]!.measures[1]!.time).toEqual({ beats: 3, beatType: 4 });
-    expect(normalized.staves[0]!.measures[2]!.time).toEqual({ beats: 3, beatType: 4 });
+    expect(layout.timeline.divisions).toBe(3360);
+    expect(layout.measures[0]!.clef.kind).toBe('treble');
+    expect(layout.measures[0]!.key.fifths).toBe(7);
+    expect(layout.timeline.measures.slice(0, 3).map((m) => m.time)).toEqual([
+      { beats: 4, beatType: 4 },
+      { beats: 3, beatType: 4 },
+      { beats: 3, beatType: 4 },
+    ]);
   });
 
   it('survives an empty, missing or nonsense document', () => {
-    expect(() => normalize(undefined as unknown as MnxDocument)).not.toThrow();
-    expect(() => normalize({} as MnxDocument)).not.toThrow();
-    expect(normalize({} as MnxDocument).diagnostics.map((d) => d.code)).toContain('mnx-invalid');
+    expect(() => layoutScore(undefined as unknown as MnxDocument)).not.toThrow();
+    expect(() => layoutScore({} as MnxDocument)).not.toThrow();
+    expect(layoutScore({} as MnxDocument).diagnostics.map((d) => d.code)).toContain('mnx-invalid');
     expect(
-      normalize({ mnx: { version: 1 }, global: { measures: [] }, parts: [] }).diagnostics.map((d) => d.code),
+      layoutScore({ mnx: { version: 1 }, global: { measures: [] }, parts: [] }).diagnostics.map((d) => d.code),
     ).toContain('no-parts');
-    expect(() => temporal(normalize(malformed))).not.toThrow();
+    expect(() => layoutScore(malformed)).not.toThrow();
   });
 
   it('reports an unknown mnx.version and still lays out what it can read', () => {
     const doc = { ...mnx({}, measure(note('C4', 'w'))), mnx: { version: 2 } };
-    const normalized = normalize(doc);
+    const map = run(doc);
 
-    expect(normalized.diagnostics).toContainEqual(
+    expect(map.diagnostics).toContainEqual(
       expect.objectContaining({ severity: 'error', code: 'mnx-unsupported-version' }),
     );
-    expect(temporal(normalized).elements).toHaveLength(1);
+    expect(map.elements).toHaveLength(1);
   });
 });
 
@@ -79,7 +92,7 @@ describe('temporal', () => {
       measure(note('C4', 'q'), note('D4', '8'), note('E4', '8'), note('F4', 'h')),
       measure(note('G4', 'w')),
     );
-    const map = temporal(normalize(doc));
+    const map = run(doc);
 
     expect(map.elements.map((e) => e.tick)).toEqual([0, 3360, 5040, 6720, 13440]);
     expect(map.elements.map((e) => e.measureTick)).toEqual([0, 3360, 5040, 6720, 0]);
@@ -90,7 +103,7 @@ describe('temporal', () => {
   });
 
   it('pads an underfull measure instead of throwing', () => {
-    const map = temporal(normalize(mnx({}, measure(note('C4', 'w')), measure(note('C4', 'q')))));
+    const map = run(mnx({}, measure(note('C4', 'w')), measure(note('C4', 'q'))));
     const second = map.elements.filter((e) => e.measureIndex === 1);
 
     expect(map.diagnostics.map((d) => d.code)).toEqual(['measure-underfull']);
@@ -100,7 +113,7 @@ describe('temporal', () => {
   });
 
   it('truncates an overfull measure at the barline', () => {
-    const map = temporal(normalize(mnx({}, measure(note('C4', 'w'), note('D4', 'h'), note('E4', 'q')))));
+    const map = run(mnx({}, measure(note('C4', 'w'), note('D4', 'h'), note('E4', 'q'))));
 
     expect(map.diagnostics.map((d) => d.code)).toEqual(['measure-overfull']);
     expect(map.diagnostics[0]!.severity).toBe('error');
@@ -109,7 +122,7 @@ describe('temporal', () => {
   });
 
   it('gives a whole-bar rest the measure capacity, not the whole note length', () => {
-    const map = temporal(normalize(fixture('whole-bar-9-8')));
+    const map = run(fixture('whole-bar-9-8'));
 
     expect(map.elements.map((e) => [e.tick, e.durationTicks])).toEqual([
       [0, 15120],

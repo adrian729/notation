@@ -11,14 +11,19 @@ import { horizontal } from './horizontal.js';
 import { justify } from './justify.js';
 import { normalize } from './normalize.js';
 import { temporal } from './temporal.js';
+import { timelineFor } from './timeline.js';
 import { tuplets } from './tuplets.js';
 import type { LayoutResult } from './types.js';
 import { vertical } from './vertical.js';
 
+const isCollision = (d: Diagnostic): boolean => d.code === 'id-collision';
+
 export function layoutScore(doc: MnxDocument, options?: NotationOptions): LayoutResult {
   const fonts = fontContext(options);
-  const normalized = normalize(doc, options);
-  const timed = temporal(normalized, options);
+  const timeline = timelineFor(doc, options?.divisions);
+  const beamIds = timeline.ids.fork();
+  const normalized = normalize(doc, options, timeline, beamIds);
+  const timed = temporal(normalized);
   const resolvedAccidentals = accidentals(normalized, timed, options);
   const groups = grouping(normalized, timed, options);
   const placed = vertical(normalized, timed, resolvedAccidentals, fonts);
@@ -30,8 +35,8 @@ export function layoutScore(doc: MnxDocument, options?: NotationOptions): Layout
   const curveShapes = curves(justified, placed, beamed, normalized.ties, normalized.slurs, fonts);
 
   const diagnostics: Diagnostic[] = [
+    ...timeline.diagnostics.filter((d) => !isCollision(d)),
     ...normalized.diagnostics,
-    ...timed.diagnostics,
     ...resolvedAccidentals.diagnostics,
     ...groups.diagnostics,
     ...placed.diagnostics,
@@ -41,15 +46,15 @@ export function layoutScore(doc: MnxDocument, options?: NotationOptions): Layout
     ...beamed.diagnostics,
     ...tupletShapes.diagnostics,
     ...curveShapes.diagnostics,
+    ...timeline.diagnostics.filter(isCollision),
+    ...beamIds.diagnostics,
   ];
 
   return emit(
     {
       justified,
       temporal: timed,
-      tempo: normalized.tempo,
-      flow: normalized.flow,
-      divisions: normalized.divisions,
+      timeline,
       diagnostics,
       beams: beamed,
       tuplets: tupletShapes,

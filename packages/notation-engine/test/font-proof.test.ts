@@ -33,7 +33,7 @@ function round(value: unknown): unknown {
 describe('font proof', () => {
   it('lays out with Leland metrics', async () => {
     const layout = layoutScore(doc, { style: 'modern', font: lelandFont });
-    const { timemap, ...rest } = layout;
+    const { timemap, timeline: _timeline, placements: _placements, ...rest } = layout;
     const json = `${JSON.stringify(round({ ...rest, timemap: { divisions: timemap.divisions, entries: timemap.entries } }), null, 2)}\n`;
     await expect(json).toMatchFileSnapshot('__golden__/font-leland.json');
   });

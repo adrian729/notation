@@ -10,7 +10,7 @@ import {
 } from '../layout/records.js';
 import type { TemporalElement } from '../layout/temporal.js';
 import type { SystemBox } from '../layout/types.js';
-import type { PlaySegment } from './playorder.js';
+import type { PlaySegment } from '@polyhymnia/mnx-score';
 
 export interface TimeMapEntry {
   ids: readonly NoteId[];

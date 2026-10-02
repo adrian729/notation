@@ -254,7 +254,7 @@ describe('unsupported constructs render what they can and say so', () => {
     const map = temporal(normalize(doc));
     expect(map.elements[0]!.dots).toBe(2);
     expect(map.elements[0]!.durationTicks).toBe((13440 * 15) / 16);
-    expect(map.diagnostics).toEqual([]);
+    expect(layoutScore(doc).diagnostics.filter((d) => d.code !== 'mnx-unsupported')).toEqual([]);
     expect(unsupported(doc)).toEqual([
       'Unsupported MNX: 128th note value in measure 0; the event is skipped.',
       'Unsupported MNX: 3 dots in measure 0; two dots are drawn.',

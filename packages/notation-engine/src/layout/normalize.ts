@@ -1,105 +1,86 @@
-import { elementIds, noteValueLength, readMnx, tupletRatio, Rational as R } from '@polyhymnia/mnx';
+import { readMnx } from '@polyhymnia/mnx';
 import type {
   Diagnostic,
+  ElementIds,
   ElementPosition,
   Event as MnxEvent,
   MeasureGlobal,
   MnxDocument,
   Note as MnxNote,
-  NoteValue,
   PartMeasure,
-  Rational,
+  Pitch,
   Sequence,
   Slur,
-  Tie,
 } from '@polyhymnia/mnx';
+import type { Timeline, TimelineEntry, TimelineNote } from '@polyhymnia/mnx-score';
+import { stepNumberOf } from '@polyhymnia/music-theory';
 import type { NotationOptions } from '../options.js';
 import {
   DEFAULT_TIME,
-  DURATION_BASES,
-  stepNumber,
   type AccidentalPolicy,
   type Alter,
   type ClefSpec,
-  type Dots,
-  type DurationBase,
-  type ElementNote,
   type KeySpec,
-  type MeasureFlow,
-  type MeasureFlows,
-  type NormalizedEvent,
   type NormalizedMeasure,
   type NormalizedScore,
-  type NormalizedVoice,
   type NoteId,
-  type NoteValueSpec,
   type StaffPitch,
-  type TempoEvent,
-  type TempoMap,
+  type StepNumber,
   type TimeSpec,
-  type TupletRef,
 } from './records.js';
-import { MIDDLE_LINE } from './staff.js';
-import { asArray, asObject, createReader, idFor, type MutableNote, type Reader } from './normalize-reader.js';
+import { asArray, asObject, createReader, sequenceKey, type Reader, type SlurNote } from './normalize-reader.js';
 import {
   barlineEndOf,
   isMidMeasure,
   reportGlobalConstructs,
   reportPartConstructs,
   resolveClef,
-  resolveDivisions,
   resolveKey,
-  resolveTime,
 } from './normalize-measure.js';
 import { resolveBeams } from './normalize-beams.js';
+import { timelineFor } from './timeline.js';
 
 const DEFAULT_CLEF: ClefSpec = { kind: 'treble' };
 const DEFAULT_KEY: KeySpec = { fifths: 0 };
-const SUPPORTED_BASES = new Set<string>(DURATION_BASES);
 const HANDLED_MARKINGS = new Set(['breath', 'caesura', '_c', '_x', 'id']);
 
 interface SequenceScope {
   measureIndex: number;
   sequenceIndex: number;
-  voice: 0 | 1;
-  eventCount: number;
-  tupletCount: number;
 }
 
-export function normalize(doc: MnxDocument, options?: NotationOptions): NormalizedScore {
+export function normalize(
+  doc: MnxDocument,
+  options?: NotationOptions,
+  timeline: Timeline = timelineFor(doc, options?.divisions),
+  beamIds: ElementIds = timeline.ids.fork(),
+): NormalizedScore {
   const diagnostics: Diagnostic[] = [];
-  const divisions = resolveDivisions(options?.divisions, diagnostics);
+  const laidOut = new Map<NoteId, TimelineEntry>();
+  for (const entry of timeline.entries) {
+    if (!entry.synthetic && !laidOut.has(entry.id)) laidOut.set(entry.id, entry);
+  }
+  const reader = createReader(timeline.ids, laidOut, diagnostics);
   const empty = (): NormalizedScore => ({
     id: 'score',
-    divisions,
-    tempo: [],
-    flow: [],
+    divisions: timeline.divisions,
+    timeline,
     staves: [],
+    events: reader.events,
+    notes: reader.notes,
     beams: [],
     ties: [],
     slurs: [],
     diagnostics,
-    usedIds: new Set(),
   });
 
   const read = readMnx(doc);
-  diagnostics.push(...read.diagnostics);
   const source = read.doc ?? (read.diagnostics.some((d) => d.code === 'mnx-unsupported-version') ? doc : null);
   if (!source) return empty();
 
-  const ids = elementIds(source);
-  const reader = createReader(ids, diagnostics);
-
   const parts = asArray(source.parts);
   const part = asObject(parts[0]);
-  if (!part) {
-    diagnostics.push({
-      severity: 'warning',
-      code: 'no-parts',
-      message: 'Document has no parts; nothing to lay out.',
-    });
-    return { ...empty(), id: idOf(source) };
-  }
+  if (!part) return { ...empty(), id: idOf(source) };
   if (parts.length > 1) {
     reader.unsupported(`${parts.length} parts`, undefined, 'only the first part is laid out');
   }
@@ -114,24 +95,9 @@ export function normalize(doc: MnxDocument, options?: NotationOptions): Normaliz
 
   const globals = asArray(asObject(source.global)?.measures);
   const partMeasures = asArray(part.measures);
-  if (globals.length === 0) {
-    diagnostics.push({
-      severity: 'warning',
-      code: 'no-measures',
-      message: 'Document has no global measures; nothing to lay out.',
-    });
-  }
-  if (partMeasures.length !== globals.length) {
-    diagnostics.push({
-      severity: 'warning',
-      code: 'measure-count-mismatch',
-      message: `Part has ${partMeasures.length} measures but global has ${globals.length}; laying out ${globals.length}.`,
-    });
-  }
 
   let currentClef = DEFAULT_CLEF;
   let currentKey = DEFAULT_KEY;
-  let currentTime = DEFAULT_TIME;
   let pendingClef: ClefSpec | undefined;
   let firstClef: ClefSpec | undefined;
   let firstKey: KeySpec | undefined;
@@ -140,8 +106,9 @@ export function normalize(doc: MnxDocument, options?: NotationOptions): Normaliz
   const measures: NormalizedMeasure[] = globals.map((raw, index) => {
     const g = (asObject(raw) ?? {}) as MeasureGlobal;
     const pm = (asObject(partMeasures[index]) ?? {}) as Partial<PartMeasure>;
+    const timed = timeline.measures[index];
+    const time: TimeSpec = timed?.time ?? DEFAULT_TIME;
 
-    if (g.time !== undefined) currentTime = resolveTime(g.time, currentTime, index, diagnostics);
     if (g.key !== undefined) currentKey = resolveKey(g.key, currentKey, index, reader);
 
     if (pendingClef) currentClef = pendingClef;
@@ -169,55 +136,33 @@ export function normalize(doc: MnxDocument, options?: NotationOptions): Normaliz
 
     reportGlobalConstructs(g, index, reader);
     reportPartConstructs(pm, index, reader);
-
-    if (partMeasures[index] !== undefined && !Array.isArray(pm.sequences)) {
-      diagnostics.push({
-        severity: 'warning',
-        code: 'missing-sequences',
-        message: `Measure ${index} has no sequences array; treated as empty.`,
-        measureIndex: index,
-      });
-    }
-    const voices = readSequences(asArray(pm.sequences), index, reader);
-    const meterCapacity = R.of(currentTime.beats, currentTime.beatType);
-    const longest = voices.reduce((max, v) => R.max(max, voiceLength(v.events)), R.ZERO);
-    const hasWholeBar = voices.some((v) => v.events.some((e) => e.kind === 'rest' && e.wholeBar === true));
-    const pickup =
-      index === 0 && !hasWholeBar && R.compare(longest, R.ZERO) > 0 && R.compare(longest, meterCapacity) < 0;
-    const capacity = pickup ? longest : meterCapacity;
+    readSequences(asArray(pm.sequences), index, reader);
 
     firstClef ??= currentClef;
     firstKey ??= currentKey;
-    firstTime ??= currentTime;
+    firstTime ??= time;
 
     return {
       index,
       clef: currentClef,
       key: currentKey,
-      time: currentTime,
-      voices,
-      pickup,
-      capacity,
-      capacityTicks: R.toTicks(capacity, divisions),
+      time,
+      pickup: timed?.pickup ?? false,
+      capacityTicks: timed ? timed.endTick - timed.startTick : 0,
       ...(g.repeatStart ? { barlineStart: 'repeat-start' as const } : {}),
       ...barlineEndOf(g, index, reader),
       systemBreak: false,
     } satisfies NormalizedMeasure;
   });
 
-  resolveTies(reader);
   resolveSlurs(reader);
   applySystemBreaks(source, globals, measures, reader);
-  const tempo = resolveTempo(globals, measures, divisions, reader);
-  const flow = resolveFlow(globals, divisions);
-  diagnostics.push(...ids.diagnostics);
-  const beams = resolveBeams(source, partMeasures, measures, reader, options);
+  const beams = resolveBeams(source, partMeasures, measures, timeline, beamIds, reader, options);
 
   return {
     id: idOf(source),
-    divisions,
-    tempo,
-    flow,
+    divisions: timeline.divisions,
+    timeline,
     staves: [
       {
         index: 0,
@@ -227,11 +172,12 @@ export function normalize(doc: MnxDocument, options?: NotationOptions): Normaliz
         measures,
       },
     ],
+    events: reader.events,
+    notes: reader.notes,
     beams,
-    ties: reader.resolvedTies,
+    ties: timeline.ties.map((tie) => ({ ...tie, measureIndex: timeline.ids.nodeOf(tie.from)?.measureIndex ?? 0 })),
     slurs: reader.resolvedSlurs,
     diagnostics,
-    usedIds: reader.usedIds,
   };
 }
 
@@ -239,7 +185,7 @@ function idOf(source: MnxDocument): string {
   return typeof source.id === 'string' ? source.id : 'score';
 }
 
-function readSequences(sequences: readonly unknown[], measureIndex: number, reader: Reader): NormalizedVoice[] {
+function readSequences(sequences: readonly unknown[], measureIndex: number, reader: Reader): void {
   const kept: { sequence: Partial<Sequence>; index: number }[] = [];
   sequences.forEach((raw, index) => {
     const sequence = asObject(raw) as Partial<Sequence> | undefined;
@@ -252,236 +198,68 @@ function readSequences(sequences: readonly unknown[], measureIndex: number, read
     kept.push({ sequence, index });
   });
 
-  if (kept.length > 2) {
-    reader.diagnostics.push({
-      severity: 'warning',
-      code: 'too-many-voices',
-      message: `Measure ${measureIndex} has ${kept.length} sequences; only 2 are supported, the rest were dropped.`,
-      measureIndex,
-    });
-  }
-
-  return kept.slice(0, 2).map(({ sequence, index }, i) => {
+  const voices: (0 | 1)[] = [];
+  kept.slice(0, 2).forEach(({ sequence, index }, i) => {
     const voice = (i === 1 ? 1 : 0) as 0 | 1;
-    const scope: SequenceScope = { measureIndex, sequenceIndex: index, voice, eventCount: 0, tupletCount: 0 };
-    const events: NormalizedEvent[] = [];
-    readContent(asArray(sequence.content), scope, undefined, events, reader, []);
+    voices.push(voice);
+    reader.voiceOfSequence.set(sequenceKey(measureIndex, index), voice);
+    readContent(asArray(sequence.content), { measureIndex, sequenceIndex: index }, reader, []);
     const full = asObject(sequence.fullMeasure);
     if (full) {
       if (full.fermata) reader.unsupported('fermata', measureIndex, 'not drawn');
       if (full.visualDuration !== undefined) {
         reader.unsupported('full-measure rest visualDuration', measureIndex, 'drawn as a whole-bar rest');
       }
-      events.push({
-        id: idFor(
-          reader,
-          { measureIndex, sequenceIndex: index, path: [], fullMeasureRest: true },
-          `m${measureIndex}.s${index}.full`,
-        ),
-        kind: 'rest',
-        base: 'whole',
-        dots: 0,
-        length: R.ONE,
-        notes: [],
-        wholeBar: true,
-        ...(typeof full.staffPosition === 'number' ? { staffPosition: MIDDLE_LINE - full.staffPosition / 2 } : {}),
-      });
     }
-    return { index: voice, events };
   });
+  reader.voicesByMeasure.set(measureIndex, voices);
 }
 
-function readContent(
-  content: readonly unknown[],
-  scope: SequenceScope,
-  tuplet: TupletRef | undefined,
-  out: NormalizedEvent[],
-  reader: Reader,
-  path: readonly number[],
-): void {
-  const { measureIndex } = scope;
+function readContent(content: readonly unknown[], scope: SequenceScope, reader: Reader, path: readonly number[]): void {
   content.forEach((raw, localIndex) => {
     const item = asObject(raw);
     if (!item) return;
     const itemPath = [...path, localIndex];
     switch (item.type) {
-      case 'tuplet': {
-        const ref = readTuplet(item, scope, tuplet, reader, itemPath);
-        readContent(asArray(item.content), scope, ref, out, reader, itemPath);
+      case 'tuplet':
+        if (typeof item.staff === 'number' && item.staff !== 1) {
+          reader.unsupported('cross-staff tuplet', scope.measureIndex, 'laid out on staff 1');
+        }
+        if (item.showValue !== undefined) {
+          reader.unsupported('tuplet showValue', scope.measureIndex, 'only the actual count is drawn');
+        }
+        readContent(asArray(item.content), scope, reader, itemPath);
         break;
-      }
-      case 'grace':
-        scope.eventCount += asArray(item.content).length;
-        reader.unsupported('grace notes', measureIndex, 'not drawn');
-        break;
-      case 'space': {
-        const length = fractionOf(item.duration);
-        if (length) out.push({ kind: 'space', length });
-        break;
-      }
-      case 'tremolo': {
-        scope.eventCount += asArray(item.content).length;
-        reader.unsupported('multi-note tremolo', measureIndex, 'its time is left blank');
-        const length = quantityLength(item.outer);
-        if (length) out.push({ kind: 'space', length: scaled(length, tuplet) });
-        break;
-      }
       case undefined:
-      case 'event': {
-        const event = readEvent(item as MnxEvent, scope, tuplet, reader, itemPath);
-        if (event) out.push(event);
+      case 'event':
+        readEvent(item as MnxEvent, { ...scope, path: itemPath }, reader);
         break;
-      }
-      default:
-        reader.unsupported(`sequence content of type ${String(item.type)}`, measureIndex, 'skipped');
     }
   });
 }
 
-function readTuplet(
-  item: Record<string, any>,
-  scope: SequenceScope,
-  outer: TupletRef | undefined,
-  reader: Reader,
-  path: readonly number[],
-): TupletRef | undefined {
-  const index = scope.tupletCount;
-  scope.tupletCount += 1;
-  const id = idFor(
-    reader,
-    { measureIndex: scope.measureIndex, sequenceIndex: scope.sequenceIndex, path },
-    `m${scope.measureIndex}.s${scope.sequenceIndex}.t${index}`,
-  );
-  if (typeof item.staff === 'number' && item.staff !== 1) {
-    reader.unsupported('cross-staff tuplet', scope.measureIndex, 'laid out on staff 1');
-  }
-  if (item.showValue !== undefined) {
-    reader.unsupported('tuplet showValue', scope.measureIndex, 'only the actual count is drawn');
-  }
-  const displayFields = {
-    ...(item.bracket !== undefined ? { bracket: item.bracket } : {}),
-    ...(item.showNumber !== undefined ? { showNumber: item.showNumber } : {}),
-    ...(item.placement !== undefined ? { placement: item.placement } : {}),
-  };
-  const display = Object.keys(displayFields).length > 0 ? { display: displayFields } : {};
-  const ratio = quantityLength(item.inner) && quantityLength(item.outer) ? tupletRatio(item as never) : null;
-  if (!ratio) {
-    reader.unsupported(
-      'tuplet with an unsupported note value',
-      scope.measureIndex,
-      outer ? "its content keeps only the outer tuplet's ratio" : 'its content is laid out untupled',
-    );
-    return outer;
-  }
-  if (!outer) return { id, actual: ratio.actual, normal: ratio.normal, ...display };
-  reader.unsupported('nested tuplet', scope.measureIndex, 'flattened into one tuplet');
-  return { id, actual: ratio.actual * outer.actual, normal: ratio.normal * outer.normal, ...display };
-}
+function readEvent(event: MnxEvent, pos: ElementPosition, reader: Reader): void {
+  const { measureIndex } = pos;
+  const id = reader.ids.idAt(pos);
+  const entry = id === undefined ? undefined : reader.laidOut.get(id);
+  if (id === undefined || !entry) return;
 
-function readEvent(
-  event: MnxEvent,
-  scope: SequenceScope,
-  tuplet: TupletRef | undefined,
-  reader: Reader,
-  path: readonly number[],
-): NormalizedEvent | undefined {
-  const { measureIndex, sequenceIndex } = scope;
-  const index = scope.eventCount;
-  scope.eventCount += 1;
-  const id: NoteId = idFor(
-    reader,
-    { measureIndex, sequenceIndex, path },
-    `m${measureIndex}.s${sequenceIndex}.e${index}`,
-  );
-
-  const value = readNoteValue(event.duration, measureIndex, reader);
-  if (!value) return undefined;
-  const length = scaled(value.length, tuplet);
-  const order = reader.eventOrder[scope.voice];
-  reader.eventOrder[scope.voice] = order + 1;
-
+  if (entry.dots > 2) reader.unsupported(`${entry.dots} dots`, measureIndex, 'two dots are drawn');
   reportEventConstructs(event, measureIndex, reader);
+  if (entry.notes.length === 0) return;
 
-  const notes = asArray(event.notes)
+  const mnxNotes = asArray(event.notes)
     .map((raw) => asObject(raw) as MnxNote | undefined)
     .filter((n): n is MnxNote => n !== undefined);
-
-  if (notes.length === 0 && !asObject(event.rest)) {
-    if (asArray(event.kitNotes).length > 0) {
-      reader.unsupported('percussion kit notes', measureIndex, 'their time is left blank');
-    } else {
-      reader.unsupported('event without notes or rest', measureIndex, 'its time is left blank');
-    }
-    return { kind: 'space', length };
-  }
-
-  const common = {
-    id,
-    base: value.base,
-    dots: value.dots,
-    length,
-    ...(tuplet ? { tuplet } : {}),
-  };
-
-  if (notes.length === 0) {
-    const staffPosition = asObject(event.rest)?.staffPosition;
-    return {
-      ...common,
-      kind: 'rest',
-      notes: [],
-      ...(typeof staffPosition === 'number' ? { staffPosition: MIDDLE_LINE - staffPosition / 2 } : {}),
-    };
-  }
-
-  const elementNotes = notes.map((note, k) =>
-    readNote(
-      note,
-      { measureIndex, sequenceIndex, path, note: k },
-      notes.length === 1 ? id : `${id}.n${k}`,
-      measureIndex,
-      reader,
-    ),
-  );
-  for (const en of elementNotes) reader.noteOrder.set(en, { voice: scope.voice, order });
-  reader.eventsById.set(id, elementNotes);
+  const notes = entry.notes.map((note, k) => readNote(mnxNotes[k] ?? ({} as MnxNote), note, measureIndex, reader));
+  reader.eventsById.set(id, notes);
   asArray(event.slurs).forEach((raw, k) => {
     const slur = asObject(raw) as Slur | undefined;
-    if (slur) reader.slurs.push({ fromEventId: id, fromNotes: elementNotes, slur, k, measureIndex });
+    if (slur) reader.slurs.push({ fromEventId: id, fromNotes: notes, slur, k, measureIndex });
   });
   const stem = event.stemDirection === 'up' || event.stemDirection === 'down' ? event.stemDirection : undefined;
   const breath = breathOf(event, measureIndex, reader);
-  return {
-    ...common,
-    kind: notes.length === 1 ? 'note' : 'chord',
-    notes: elementNotes,
-    ...(stem ? { stem } : {}),
-    ...(breath ? { breath } : {}),
-  };
-}
-
-function readNoteValue(
-  value: NoteValue | undefined,
-  measureIndex: number,
-  reader: Reader,
-): (NoteValueSpec & { length: Rational }) | undefined {
-  const nv = asObject(value) as NoteValue | undefined;
-  if (!nv || typeof nv.base !== 'string') {
-    reader.diagnostics.push({
-      severity: 'warning',
-      code: 'invalid-duration',
-      message: `Measure ${measureIndex} has an event with no readable duration; skipped.`,
-      measureIndex,
-    });
-    return undefined;
-  }
-  const dots = typeof nv.dots === 'number' && nv.dots > 0 ? Math.floor(nv.dots) : 0;
-  const length = SUPPORTED_BASES.has(nv.base) ? noteValueLength({ base: nv.base, dots }) : null;
-  if (!length) {
-    reader.unsupported(`${nv.base} note value`, measureIndex, 'the event is skipped');
-    return undefined;
-  }
-  if (dots > 2) reader.unsupported(`${dots} dots`, measureIndex, 'two dots are drawn');
-  return { base: nv.base as DurationBase, dots: Math.min(dots, 2) as Dots, length };
+  reader.events.set(id, { ...(stem ? { stem } : {}), ...(breath ? { breath } : {}) });
 }
 
 function reportEventConstructs(event: MnxEvent, measureIndex: number, reader: Reader): void {
@@ -518,52 +296,26 @@ function breathOf(event: MnxEvent, measureIndex: number, reader: Reader): 'comma
   return 'comma';
 }
 
-function readNote(
-  note: MnxNote,
-  pos: ElementPosition,
-  candidate: NoteId,
-  measureIndex: number,
-  reader: Reader,
-): ElementNote {
-  const noteId = idFor(reader, pos, candidate);
-  const element: MutableNote = {
-    id: noteId,
-    pitch: readPitch(note.pitch, measureIndex, reader),
-  };
+function readNote(note: MnxNote, timed: TimelineNote, measureIndex: number, reader: Reader): SlurNote {
+  const pitch = staffPitch(timed.pitch, measureIndex, reader);
   const policy = accidentalPolicyOf(note, measureIndex, reader);
-  if (policy) element.accidentalPolicy = policy;
   if (typeof note.staff === 'number' && note.staff !== 1) {
     reader.unsupported('cross-staff note', measureIndex, 'laid out on staff 1');
   }
   if (note.written) reader.unsupported('note.written', measureIndex, 'sounding pitch is drawn instead');
   if (note.perform) reader.unsupported('note.perform', measureIndex, 'ignored');
-  if (typeof note.id === 'string') reader.notesById.set(note.id, element);
-  for (const tie of asArray(note.ties)) {
-    const t = asObject(tie) as Tie | undefined;
-    if (t) reader.ties.push({ from: element, tie: t, measureIndex });
-  }
-  return element;
+  if (typeof note.id === 'string') reader.explicitNotes.add(note.id);
+  reader.notes.set(timed.id, { pitch, ...(policy ? { accidentalPolicy: policy } : {}) });
+  return { id: timed.id, pitch };
 }
 
-function readPitch(value: unknown, measureIndex: number, reader: Reader): StaffPitch {
-  const pitch = asObject(value);
-  const step = stepNumber(pitch?.step);
-  const octave = pitch?.octave;
-  if (step === undefined || typeof octave !== 'number' || !Number.isInteger(octave)) {
-    reader.diagnostics.push({
-      severity: 'warning',
-      code: 'invalid-pitch',
-      message: `Measure ${measureIndex} has a note with an unreadable pitch ${JSON.stringify(value)}; drawn as C4.`,
-      measureIndex,
-    });
-    return { step: 0, alter: 0, octave: 4 };
-  }
-  const raw = typeof pitch?.alter === 'number' ? pitch.alter : 0;
+function staffPitch(pitch: Pitch, measureIndex: number, reader: Reader): StaffPitch {
+  const raw = pitch.alter ?? 0;
   const alter = Math.max(-2, Math.min(2, Math.round(raw))) as Alter;
   if (alter !== raw) {
     reader.unsupported(`alter ${raw}`, measureIndex, `drawn with alter ${alter}`);
   }
-  return { step, alter, octave };
+  return { step: stepNumberOf(pitch.step) as StepNumber, alter, octave: pitch.octave };
 }
 
 function accidentalPolicyOf(note: MnxNote, measureIndex: number, reader: Reader): AccidentalPolicy | undefined {
@@ -620,55 +372,6 @@ function reportDocumentConstructs(source: MnxDocument, part: Record<string, unkn
   }
 }
 
-function resolveTies(reader: Reader): void {
-  for (const { from, tie, measureIndex } of reader.ties) {
-    if (tie.lv === true) {
-      reader.unsupported('laissez-vibrer tie', measureIndex, 'not drawn');
-      continue;
-    }
-    if (tie.targetType !== undefined && tie.targetType !== 'nextNote') {
-      reader.unsupported(`tie with targetType ${tie.targetType}`, measureIndex, 'not drawn');
-      continue;
-    }
-    const target = typeof tie.target === 'string' ? reader.notesById.get(tie.target) : undefined;
-    if (!target) {
-      reader.diagnostics.push({
-        severity: 'warning',
-        code: 'tie-target-unresolved',
-        message: `Measure ${measureIndex}: tie from note ${from.id} targets ${JSON.stringify(tie.target)}, which is not a laid-out note id; ignored.`,
-        measureIndex,
-      });
-      continue;
-    }
-    from.tie = from.tie === 'stop' || from.tie === 'continue' ? 'continue' : 'start';
-    target.tie = target.tie === 'start' || target.tie === 'continue' ? 'continue' : 'stop';
-    const side = tie.side === 'up' || tie.side === 'down' ? tie.side : undefined;
-    reader.resolvedTies.push({
-      id: `${from.id}.tie`,
-      from: from.id,
-      to: target.id,
-      ...(side ? { side } : {}),
-      measureIndex,
-    });
-
-    const fromOrder = reader.noteOrder.get(from);
-    const targetOrder = reader.noteOrder.get(target);
-    const adjacent =
-      fromOrder !== undefined &&
-      targetOrder !== undefined &&
-      fromOrder.voice === targetOrder.voice &&
-      targetOrder.order === fromOrder.order + 1;
-    if (!adjacent) {
-      reader.diagnostics.push({
-        severity: 'warning',
-        code: 'tie-target-not-adjacent',
-        message: `Measure ${measureIndex}: tie from note ${from.id} targets ${target.id}, which is not the next event in the voice; drawn anyway.`,
-        measureIndex,
-      });
-    }
-  }
-}
-
 function resolveSlurs(reader: Reader): void {
   for (const { fromEventId, fromNotes, slur, k, measureIndex } of reader.slurs) {
     if (slur.lineType !== undefined && slur.lineType !== 'solid') {
@@ -711,7 +414,7 @@ function resolveSlurNote(
   kind: string,
 ): NoteId | null | undefined {
   if (raw === undefined) return undefined;
-  if (typeof raw === 'string' && reader.notesById.has(raw)) return raw;
+  if (typeof raw === 'string' && reader.explicitNotes.has(raw)) return raw;
   slurUnresolved(reader, measureIndex, fromEventId, kind, raw);
   return null;
 }
@@ -725,13 +428,13 @@ function slurUnresolved(reader: Reader, measureIndex: number, fromEventId: NoteI
   });
 }
 
-function bottomOf<K extends 'fromBottom' | 'toBottom'>(key: K, notes: readonly MutableNote[]): { [P in K]?: NoteId } {
+function bottomOf<K extends 'fromBottom' | 'toBottom'>(key: K, notes: readonly SlurNote[]): { [P in K]?: NoteId } {
   if (notes.length <= 1) return {};
   const lowest = notes.reduce((a, b) => (pitchIndex(b.pitch) < pitchIndex(a.pitch) ? b : a));
   return { [key]: lowest.id } as { [P in K]?: NoteId };
 }
 
-function pickAnchor(notes: readonly MutableNote[], side: 'up' | 'down' | undefined): NoteId {
+function pickAnchor(notes: readonly SlurNote[], side: 'up' | 'down' | undefined): NoteId {
   if (notes.length === 1) return notes[0]!.id;
   const sorted = [...notes].sort((a, b) => pitchIndex(b.pitch) - pitchIndex(a.pitch));
   return (side === 'down' ? sorted[sorted.length - 1]! : sorted[0]!).id;
@@ -777,107 +480,4 @@ function applySystemBreaks(
     const previous = measures[index - 1];
     if (previous) previous.systemBreak = true;
   }
-}
-
-function resolveTempo(
-  globals: readonly unknown[],
-  measures: readonly NormalizedMeasure[],
-  divisions: number,
-  reader: Reader,
-): TempoMap {
-  const tempo: TempoEvent[] = [];
-  let start = R.ZERO;
-  globals.forEach((raw, index) => {
-    for (const entry of asArray(asObject(raw)?.tempos)) {
-      const t = asObject(entry);
-      if (!t) continue;
-      if (typeof t.bpm !== 'number' || !(t.bpm > 0)) {
-        reader.unsupported('invalid tempo bpm', index, 'entry ignored');
-        continue;
-      }
-      if (asObject(t.location)?.graceIndex !== undefined) {
-        reader.unsupported('graceIndex in a tempo position', index, 'grace positioning ignored');
-      }
-      const offset = fractionOf(asObject(t.location)?.fraction) ?? R.ZERO;
-      const value = asObject(t.value) as NoteValue | undefined;
-      const dots = typeof value?.dots === 'number' ? value.dots : 0;
-      let beatUnit: NoteValueSpec | undefined;
-      if (value && SUPPORTED_BASES.has(value.base) && dots <= 2) {
-        beatUnit = { base: value.base as DurationBase, dots: dots as Dots };
-      } else {
-        reader.unsupported('tempo beat unit', index, 'a quarter-note beat is used');
-      }
-      tempo.push({
-        tick: R.toTicks(R.add(start, offset), divisions),
-        bpm: t.bpm,
-        ...(beatUnit ? { beatUnit } : {}),
-      });
-    }
-    const measure = measures[index];
-    if (measure) start = R.add(start, measure.capacity);
-  });
-  return tempo;
-}
-
-function resolveFlow(globals: readonly unknown[], divisions: number): MeasureFlows {
-  return globals.map((raw) => {
-    const g = asObject(raw) ?? {};
-    const flow: { -readonly [K in keyof MeasureFlow]: MeasureFlow[K] } = { repeatStart: g.repeatStart !== undefined };
-    const offsetOf = (value: unknown): number | undefined => {
-      const fraction = fractionOf(asObject(asObject(value)?.location)?.fraction);
-      return fraction === undefined ? undefined : R.toTicks(fraction, divisions);
-    };
-    if (g.repeatEnd !== undefined) {
-      const times = asObject(g.repeatEnd)?.times;
-      flow.repeatEnd = typeof times === 'number' && Number.isInteger(times) && times >= 2 ? times : 2;
-    }
-    const ending = asObject(g.ending);
-    if (ending) {
-      const numbers = asArray(ending.numbers).filter((n): n is number => typeof n === 'number');
-      if (numbers.length > 0 && typeof ending.duration === 'number') {
-        flow.ending = { numbers, duration: ending.duration };
-      }
-    }
-    const segno = offsetOf(g.segno);
-    if (segno !== undefined) flow.segno = segno;
-    const fine = offsetOf(g.fine);
-    if (fine !== undefined) flow.fine = fine;
-    const jump = asObject(g.jump);
-    if (jump) {
-      const offset = offsetOf(jump);
-      if ((jump.type === 'segno' || jump.type === 'dsalfine') && offset !== undefined) {
-        flow.jump = { type: jump.type, offset };
-      } else {
-        flow.invalid = 'jump';
-      }
-    }
-    return flow;
-  });
-}
-
-function fractionOf(value: unknown): Rational | undefined {
-  const fraction = asArray(value);
-  const [n, d] = fraction;
-  if (typeof n !== 'number' || typeof d !== 'number' || !Number.isInteger(n) || !Number.isInteger(d)) {
-    return undefined;
-  }
-  if (n < 0 || d <= 0) return undefined;
-  return R.of(n, d);
-}
-
-function quantityLength(value: unknown): Rational | undefined {
-  const quantity = asObject(value);
-  const nv = asObject(quantity?.duration) as NoteValue | undefined;
-  const multiple = quantity?.multiple;
-  if (!nv || typeof multiple !== 'number' || !Number.isInteger(multiple) || multiple <= 0) return undefined;
-  const length = noteValueLength(nv);
-  return length ? R.multiply(length, R.of(multiple)) : undefined;
-}
-
-function scaled(length: Rational, tuplet: TupletRef | undefined): Rational {
-  return tuplet ? R.multiply(length, R.of(tuplet.normal, tuplet.actual)) : length;
-}
-
-function voiceLength(events: readonly NormalizedEvent[]): Rational {
-  return events.reduce((sum, e) => (e.kind === 'rest' && e.wholeBar ? sum : R.add(sum, e.length)), R.ZERO);
 }

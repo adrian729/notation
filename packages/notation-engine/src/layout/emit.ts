@@ -1,19 +1,19 @@
 import type { Diagnostic } from '@polyhymnia/mnx';
+import type { Timeline } from '@polyhymnia/mnx-score';
 import type { EngravingDefaults } from '@polyhymnia/notation-fonts';
 import type { FontContext } from '../font/context.js';
 import {
   describePitch,
   type Duration,
   type DurationBase,
-  type MeasureFlows,
   type NoteId,
+  type NoteValueSpec,
   type TempoMap,
   type TimeSpec,
 } from './records.js';
 import type { BeamsResult } from './beams.js';
 import type { CurvesResult } from './curves.js';
 import type { TupletsResult } from './tuplets.js';
-import { resolvePlayOrder } from '../query/playorder.js';
 import { buildTimeMap, type MeasureTime, type Placement } from '../query/timemap.js';
 import { buildMeasureBox, contentBounds } from '../query/measures.js';
 import { measureSlots } from '../query/slots.js';
@@ -24,9 +24,11 @@ import type { TemporalScore } from './temporal.js';
 import type {
   Box,
   ElementBox,
+  EntryPlacement,
   GlyphRun,
   LayoutResult,
   MeasureBox,
+  MeasurePlacement,
   PathShape,
   RectShape,
   Slot,
@@ -43,9 +45,7 @@ const CONTENT_PAD = 0.5;
 export interface EmitInput {
   justified: JustifiedScore;
   temporal: TemporalScore;
-  tempo: TempoMap;
-  flow: MeasureFlows;
-  divisions: number;
+  timeline: Timeline;
   diagnostics: readonly Diagnostic[];
   beams: BeamsResult;
   tuplets: TupletsResult;
@@ -151,15 +151,14 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
   const height =
     topMargin + Math.max(1, systems.length) * STAFF_HEIGHT + Math.max(0, systems.length - 1) * systemGap + bottomMargin;
 
-  const playOrder = resolvePlayOrder(input.flow, measureTimes);
   const timemap = buildTimeMap({
-    divisions: input.divisions,
-    tempo: input.tempo,
+    divisions: input.timeline.divisions,
+    tempo: tempoMapOf(input.timeline),
     elements: input.temporal.elements.filter((e) => e.staffIndex === 0),
     placement,
     measures: measureTimes,
     systems,
-    playOrder: playOrder.segments,
+    playOrder: input.timeline.playOrder,
   });
 
   const fontNames = tagFonts(glyphs, fonts);
@@ -175,9 +174,38 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
     slots,
     measures,
     timemap,
-    diagnostics: [...input.diagnostics, ...playOrder.diagnostics],
+    timeline: input.timeline,
+    placements: placementsOf(placement, measureTimes),
+    diagnostics: input.diagnostics,
     ...(fontNames ? { fonts: fontNames } : {}),
   };
+}
+
+function tempoMapOf(timeline: Timeline): TempoMap {
+  return timeline.tempo
+    .filter((segment, i) => !(i === 0 && isDefaultTempo(segment)))
+    .map((segment) => ({
+      tick: segment.tick,
+      bpm: segment.bpm,
+      beatUnit: { base: segment.beatUnit.base, dots: segment.beatUnit.dots } as NoteValueSpec,
+    }));
+}
+
+function isDefaultTempo(segment: Timeline['tempo'][number]): boolean {
+  return (
+    segment.tick === 0 && segment.bpm === 120 && segment.beatUnit.base === 'quarter' && segment.beatUnit.dots === 0
+  );
+}
+
+function placementsOf(
+  placement: ReadonlyMap<NoteId, Placement>,
+  measureTimes: readonly MeasureTime[],
+): LayoutResult['placements'] {
+  const entries: Record<NoteId, EntryPlacement> = {};
+  for (const [id, { x, y, systemIndex }] of placement) entries[id] = { x, y, systemIndex };
+  const measures: MeasurePlacement[] = [];
+  for (const { index, systemIndex, x, w } of measureTimes) measures[index] = { systemIndex, x, w };
+  return { entries, measures };
 }
 
 function emitChrome(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], fonts: FontContext): void {

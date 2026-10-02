@@ -7,10 +7,13 @@ export type { ClefSpec, KeySpec, StaffPitch, TimeSpec } from './layout/records.j
 export { layoutScore } from './layout/index.js';
 export type {
   ElementBox,
+  EntryPlacement,
   GlyphRun,
   LayoutResult,
   MeasureBox,
+  MeasurePlacement,
   PathShape,
+  Placements,
   RectShape,
   Slot,
   SlotRef,
@@ -22,5 +25,7 @@ export type { TempoOverride, TimeMap, TimeMapEntry } from './query/timemap.js';
 
 export { hitTest, HIT_STAFF_MARGIN } from './query/hitTest.js';
 export type { HitKind, HitOptions, HitResult } from './query/hitTest.js';
+export { positionAtTick } from './query/position.js';
+export type { TickPosition } from './query/position.js';
 export { previewShapes } from './query/preview.js';
 export type { PreviewNote } from './query/preview.js';

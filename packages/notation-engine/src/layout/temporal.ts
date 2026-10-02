@@ -1,17 +1,17 @@
-import { Rational as R } from '@polyhymnia/mnx';
-import type { Diagnostic, Rational } from '@polyhymnia/mnx';
-import type { NotationOptions } from '../options.js';
-import {
-  decomposeLength,
-  noteValueSpecLength,
-  type DurationBase,
-  type ElementNote,
-  type NormalizedEvent,
-  type NormalizedMeasure,
-  type NormalizedScore,
-  type NoteId,
-  type TupletRef,
+import type { TimelineEntry, TimelineNote } from '@polyhymnia/mnx-score';
+import { stepNumberOf } from '@polyhymnia/music-theory';
+import type {
+  Alter,
+  Dots,
+  DurationBase,
+  ElementNote,
+  NormalizedScore,
+  NoteId,
+  StaffPitch,
+  StepNumber,
+  TupletRef,
 } from './records.js';
+import { MIDDLE_LINE } from './staff.js';
 
 export interface TemporalElement {
   id: NoteId;
@@ -45,7 +45,6 @@ export interface TemporalScore {
   divisions: number;
   measures: readonly TemporalMeasure[];
   elements: readonly TemporalElement[];
-  diagnostics: readonly Diagnostic[];
 }
 
 export function elementsByStaffMeasureKey(staffIndex: number, measureIndex: number): string {
@@ -69,180 +68,57 @@ export function indexElementsByStaffMeasure(score: TemporalScore): ReadonlyMap<s
   return byMeasure;
 }
 
-export function temporal(normalized: NormalizedScore, _options?: NotationOptions): TemporalScore {
-  const { divisions } = normalized;
-  const elements: TemporalElement[] = [];
-  const measures: TemporalMeasure[] = [];
-  const diagnostics: Diagnostic[] = [];
-  const usedIds = new Set(normalized.usedIds);
-
-  for (const staff of normalized.staves) {
-    let measureStart = R.ZERO;
-    for (const measure of staff.measures) {
-      const startTick = R.toTicks(measureStart, divisions);
-      for (const voice of measure.voices) {
-        walkVoice(
-          measure,
-          voice.index,
-          voice.events,
-          staff.index,
-          measureStart,
-          divisions,
-          elements,
-          diagnostics,
-          usedIds,
-        );
-      }
-      measures.push({
-        index: measure.index,
-        staffIndex: staff.index,
-        startTick,
-        endTick: startTick + measure.capacityTicks,
-        capacityTicks: measure.capacityTicks,
-      });
-      measureStart = R.add(measureStart, measure.capacity);
-    }
-  }
-
-  return { divisions, measures, elements, diagnostics };
+export function temporal(normalized: NormalizedScore): TemporalScore {
+  const { timeline } = normalized;
+  const elements = timeline.entries
+    .filter((entry) => entry.kind !== 'space')
+    .sort((a, b) => a.measureIndex - b.measureIndex || a.voice - b.voice || a.eventIndex - b.eventIndex)
+    .map((entry) => element(entry, normalized));
+  const measures = timeline.measures.map((m) => ({
+    index: m.index,
+    staffIndex: 0,
+    startTick: m.startTick,
+    endTick: m.endTick,
+    capacityTicks: m.endTick - m.startTick,
+  }));
+  return { divisions: timeline.divisions, measures, elements };
 }
 
-function walkVoice(
-  measure: NormalizedMeasure,
-  voiceIndex: 0 | 1,
-  events: readonly NormalizedEvent[],
-  staffIndex: number,
-  measureStart: Rational,
-  divisions: number,
-  out: TemporalElement[],
-  diagnostics: Diagnostic[],
-  usedIds: Set<string>,
-): void {
-  const { capacity, index: measureIndex } = measure;
-  const wholeBarLength = wholeBarShare(events, capacity);
-  let onset = R.ZERO;
-  let truncated = false;
-
-  for (const ev of events) {
-    const length = ev.kind === 'rest' && ev.wholeBar ? wholeBarLength : ev.length;
-    if (R.compare(length, R.ZERO) <= 0) {
-      diagnostics.push({
-        severity: 'warning',
-        code: 'zero-length-element',
-        message: `Measure ${measureIndex} voice ${voiceIndex} has an element with no duration; skipped.`,
-        measureIndex,
-        voice: voiceIndex,
-        tick: R.toTicks(R.add(measureStart, onset), divisions),
-      });
-      continue;
-    }
-
-    if (!measure.pickup && R.compare(onset, capacity) >= 0) {
-      truncated = true;
-      continue;
-    }
-    let effective = length;
-    if (!measure.pickup && R.compare(R.add(onset, length), capacity) > 0) {
-      effective = R.subtract(capacity, onset);
-      truncated = true;
-    }
-
-    if (ev.kind !== 'space') {
-      out.push({
-        id: ev.id,
-        kind: ev.kind,
-        base: ev.base,
-        dots: ev.dots,
-        ...(ev.tuplet ? { tuplet: ev.tuplet } : {}),
-        notes: ev.notes,
-        ...(ev.stem ? { stem: ev.stem } : {}),
-        ...(ev.breath ? { breath: ev.breath } : {}),
-        ...(ev.wholeBar ? { wholeBar: true } : {}),
-        ...(ev.staffPosition !== undefined ? { staffPosition: ev.staffPosition } : {}),
-        staffIndex,
-        measureIndex,
-        voice: voiceIndex,
-        tick: R.toTicks(R.add(measureStart, onset), divisions),
-        measureTick: R.toTicks(onset, divisions),
-        durationTicks: R.toTicks(effective, divisions),
-      });
-    }
-    onset = R.add(onset, length);
-  }
-
-  if (truncated) {
-    diagnostics.push({
-      severity: 'error',
-      code: 'measure-overfull',
-      message:
-        `Measure ${measureIndex} voice ${voiceIndex} overflows its ` +
-        `${measure.time.beats}/${measure.time.beatType} capacity; truncated at the barline.`,
-      measureIndex,
-      voice: voiceIndex,
-      tick: R.toTicks(R.add(measureStart, capacity), divisions),
-    });
-    return;
-  }
-
-  if (measure.pickup || R.compare(onset, capacity) >= 0) return;
-  const padding = decomposeLength(R.subtract(capacity, onset));
-  if (padding.length === 0) return;
-  diagnostics.push({
-    severity: 'warning',
-    code: 'measure-underfull',
-    message:
-      `Measure ${measureIndex} voice ${voiceIndex} does not fill its ` +
-      `${measure.time.beats}/${measure.time.beatType} capacity; padded with ` +
-      `${padding.length} rest(s).`,
-    measureIndex,
-    voice: voiceIndex,
-    tick: R.toTicks(R.add(measureStart, onset), divisions),
-  });
-  padding.forEach((value, k) => {
-    const length = noteValueSpecLength(value);
-    const candidate = `m${measureIndex}.v${voiceIndex}.pad${k}`;
-    let id = candidate;
-    let n = 2;
-    while (usedIds.has(id)) {
-      id = `${candidate}~${n}`;
-      n += 1;
-    }
-    if (id !== candidate) {
-      diagnostics.push({
-        severity: 'warning',
-        code: 'id-collision',
-        message: `Synthesized id ${JSON.stringify(candidate)} collides with an existing id; using ${JSON.stringify(id)} instead.`,
-        measureIndex,
-        voice: voiceIndex,
-        tick: R.toTicks(R.add(measureStart, onset), divisions),
-      });
-    }
-    usedIds.add(id);
-    out.push({
-      id,
-      kind: 'rest',
-      base: value.base,
-      dots: value.dots,
-      notes: [],
-      staffIndex,
-      measureIndex,
-      voice: voiceIndex,
-      tick: R.toTicks(R.add(measureStart, onset), divisions),
-      measureTick: R.toTicks(onset, divisions),
-      durationTicks: R.toTicks(length, divisions),
-      synthetic: true,
-    });
-    onset = R.add(onset, length);
-  });
+function element(entry: TimelineEntry, normalized: NormalizedScore): TemporalElement {
+  const engraving = normalized.events.get(entry.id);
+  return {
+    id: entry.id,
+    kind: entry.kind === 'note' || entry.kind === 'chord' ? entry.kind : 'rest',
+    base: entry.base as DurationBase,
+    dots: Math.min(entry.dots, 2) as Dots,
+    ...(entry.tuplet ? { tuplet: entry.tuplet } : {}),
+    notes: entry.notes.map((note) => elementNote(note, normalized)),
+    ...(engraving?.stem ? { stem: engraving.stem } : {}),
+    ...(engraving?.breath ? { breath: engraving.breath } : {}),
+    ...(entry.wholeBar ? { wholeBar: true } : {}),
+    ...(entry.restPosition !== undefined ? { staffPosition: MIDDLE_LINE - entry.restPosition / 2 } : {}),
+    staffIndex: 0,
+    measureIndex: entry.measureIndex,
+    voice: entry.voice as 0 | 1,
+    tick: entry.tick,
+    measureTick: entry.measureTick,
+    durationTicks: entry.durationTicks,
+    ...(entry.synthetic ? { synthetic: true } : {}),
+  };
 }
 
-function wholeBarShare(events: readonly NormalizedEvent[], capacity: Rational): Rational {
-  let others = R.ZERO;
-  let wholeBarCount = 0;
-  for (const ev of events) {
-    if (ev.kind === 'rest' && ev.wholeBar) wholeBarCount += 1;
-    else others = R.add(others, ev.length);
-  }
-  const remainder = R.max(R.ZERO, R.subtract(capacity, others));
-  return R.divide(remainder, R.of(Math.max(1, wholeBarCount)));
+function elementNote(note: TimelineNote, normalized: NormalizedScore): ElementNote {
+  const engraving = normalized.notes.get(note.id);
+  const tie = note.tie.start ? (note.tie.stop ? 'continue' : 'start') : note.tie.stop ? 'stop' : undefined;
+  return {
+    id: note.id,
+    pitch: engraving?.pitch ?? staffPitchOf(note),
+    ...(engraving?.accidentalPolicy ? { accidentalPolicy: engraving.accidentalPolicy } : {}),
+    ...(tie ? { tie } : {}),
+  };
+}
+
+function staffPitchOf({ pitch }: TimelineNote): StaffPitch {
+  const alter = Math.max(-2, Math.min(2, Math.round(pitch.alter ?? 0))) as Alter;
+  return { step: stepNumberOf(pitch.step) as StepNumber, alter, octave: pitch.octave };
 }
