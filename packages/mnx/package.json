@@ -32,7 +32,7 @@
     "gen:mnx-types": "node scripts/gen-mnx-types.mjs"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
+    "typescript": "^7.0.2",
     "vitest": "^3.0.0",
     "fast-check": "^3.23.0",
     "json-schema-to-typescript": "16.0.0",
