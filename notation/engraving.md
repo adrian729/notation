@@ -289,6 +289,8 @@ Each a `RectShape` (or several, for double/final/repeat) at the measure's right 
 
 Contributes to the column rod width (`Horizontal spacing`, above) via `fixedWidths(clef, key, time, barlines)`.
 
+On a grand staff every barline (and a dashed barline's dash run) spans from staff 1's top line to staff 2's bottom line; repeat dots are drawn on each staff.
+
 ## Breath marks
 
 From MNX `event.markings.breath`/`.caesura` (`mnx.md`), carried as `TemporalElement.breath` — not a sequence-content item of its own: a breath is a performance direction attached to a note's event, so it consumes no time and can never affect the fullness rule. It is drawn immediately after the note it hangs off, before the next element in the voice.
@@ -320,6 +322,16 @@ Exactly 2 per staff — covers everything needed, avoids the 3+-voice collision 
 A beam's own stem-reach-the-middle-line rule (Beams, above) is skipped for a beam in a two-voice measure — a voice's beam is expected to sit off to its own side of the staff and never has to cross toward the middle line.
 
 Out of scope: shared-stem merging, opposing-voice accidental interleaving.
+
+## Grand staff
+
+A part with `staves: 2` (or more — only staves 1 and 2 are laid out, + `mnx-unsupported`) is drawn as a grand staff (`mnx.md`):
+
+- **Per staff**: its own clef, clef changes and courtesy clef, up to 2 voices (stem rules above apply per staff), beams, tuplets, accidental state, ties and slurs. Key and time are shared and drawn on both staves. A slur's obstacles come from its own staff only.
+- **Horizontal**: one set of columns per measure for both staves, so simultaneous notes line up. Chrome widths (clef, key, time, courtesy) are the maximum over the staves; a clef column holds every staff's clef change anchored before the same element column.
+- **Vertical**: staff 2 sits `max(6, staff 1's content below + staff 2's content above)` sp below staff 1's bottom line; each staff's content margins are measured separately. `SystemBox.h` covers both staves, and `SystemBox.staves` gives each staff's top line.
+- **System start**: a thin system line at x = 0 joins the staves, and a `brace` glyph sits 0.3 sp left of it, scaled (`GlyphRun.scale`) to the system's height. The left margin widens by the brace's width.
+- **Cross-staff** notes, events and tuplets are laid out on their sequence's staff; cross-staff beams, ties and slurs are not drawn (`mnx-unsupported`).
 
 ## Implementation notes
 

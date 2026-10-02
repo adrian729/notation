@@ -18,21 +18,24 @@ interface HitOptions { kinds?: readonly HitKind[]; voice?: 0|1; radius?: number;
 // kinds default: ['element', 'slot', 'point'], tried in that order. radius: sp tolerance, default 0.5.
 // insertAlteration default 'key'.
 type HitResult =
-  | { kind:'element'; id:NoteId; part:'notehead'|'rest'; box:ElementBox; staffPosition:number; pitch:Pitch|null }
-  | { kind:'slot'; slot:Slot; staffPosition:number; pitch:Pitch }
-  | { kind:'point'; measureIndex:number; systemIndex:number; x:number; tick:number; staffPosition:number; pitch:Pitch };
+  | { kind:'element'; id:NoteId; part:'notehead'|'rest'; box:ElementBox; staffPosition:number; pitch:Pitch|null; staff?:number }
+  | { kind:'slot'; slot:Slot; staffPosition:number; pitch:Pitch; staff?:number }
+  | { kind:'point'; measureIndex:number; systemIndex:number; x:number; tick:number; staffPosition:number; pitch:Pitch; staff?:number };
+// staff: 2-staff parts only, 0 = staff 1, 1 = staff 2.
 ```
 
 `NoteId` is a plain string — the MNX id when the document supplies one, else the engine's deterministic positional id (`mnx.md`'s ID rule). `Pitch` here is MNX's pitch shape, `{ step: 'A'..'G'; alter?: number; octave: number }` (`mnx`'s `types.ts`), the same shape `@polyhymnia/music-theory`'s `parsePitch('C#4')` produces — `hitTest` omits `alter` when it's 0.
 
-Resolution: a system is found first from `p.y` (staff band ±4 sp, a ledger-line allowance — a point further off-staff than that misses every kind and `hitTest` returns `null`); `element` is tried against every `ElementBox` in that system regardless of measure (its own padded `hitBox`, expanded by `opts.radius`); a chord's several member boxes resolve to the member whose `staffPosition` is nearest the click, and among members on the same position (a chromatic unison's side-by-side noteheads) to the one whose box centre is horizontally nearest. `slot`/`point` then need a `MeasureBox` found from `p.x` within that system — no matching measure means both miss. `element`'s `pitch` is `null` for a rest, otherwise the same key-relative derivation as `slot`/`point` (below) from the box's own `staffPosition`, not the note's true written accidental — `ElementBox` doesn't carry the written `Pitch`, only position.
+Resolution: a system is found first from `p.y` (the system band `SystemBox.y`..`y + h` ±4 sp, a ledger-line allowance — a point further off-staff than that misses every kind and `hitTest` returns `null`); `element` is tried against every `ElementBox` in that system regardless of measure (its own padded `hitBox`, expanded by `opts.radius`); a chord's several member boxes resolve to the member whose `staffPosition` is nearest the click, and among members on the same position (a chromatic unison's side-by-side noteheads) to the one whose box centre is horizontally nearest. `slot`/`point` then need a `MeasureBox` found from `p.x` within that system — no matching measure means both miss. `element`'s `pitch` is `null` for a rest, otherwise the same key-relative derivation as `slot`/`point` (below) from the box's own `staffPosition`, not the note's true written accidental — `ElementBox` doesn't carry the written `Pitch`, only position.
+
+On a grand staff an element's `staffPosition` is measured from its own staff's top line (`SystemBox.staves`), and `slot`/`point` first pick the staff nearest `p.y` (distance to its line band, 0 inside it), then use that staff's y, slots and clef (`MeasureBox.staves`); the result carries `staff`.
 
 ## Slot model
 
 Addressable insertion points, emitted by the layout pipeline's `emit` stage (only it knows column x-ranges — `architecture.md`), one slot per existing event onset per voice.
 
 ```ts
-interface SlotRef { measureIndex: number; voice: 0|1; tick: number }
+interface SlotRef { measureIndex: number; staff?: number; voice: 0|1; tick: number }   // staff: 2-staff parts only
 interface Slot extends SlotRef {
   x: number; w: number;              // horizontal band, bands tile the measure with no gaps
   eventId: NoteId;                    // the event-level id — Slot.eventId/ElementBox.eventId
@@ -40,7 +43,7 @@ interface Slot extends SlotRef {
 }
 ```
 
-Generation, per measure/voice: one slot per column's element at that voice (`query/slots.ts`) — no grid subdivision. A whole-bar (`fullMeasure`) rest gets one slot spanning the whole measure's content band (`MeasureBox.contentX` to the measure's right edge) instead of a column band; its `eventId` is the same id `isFullMeasureRest` checks in `mnx`, so a dictation `setPitches` against it correctly no-ops with `intent-target-unsupported` (below) rather than editing something that isn't a real event. Non-whole-bar slots tile the measure column-to-column: each column's band runs from its own x to the next column's x (or the measure's content-right edge for the last column), so bands are contiguous with no gaps or overlaps. Clef-change columns get no slot of their own: the band before one ends at the clef column's x and the next element column's band starts there, so a pointer over the clef reads the new clef, as `previewShapes` does at the same x (`clefAtX`; one lookup for hit-testing and previews).
+Generation, per measure/voice: one slot per column's element at that voice (`query/slots.ts`) — no grid subdivision. A whole-bar (`fullMeasure`) rest gets one slot spanning the whole measure's content band (`MeasureBox.contentX` to the measure's right edge) instead of a column band; its `eventId` is the same id `isFullMeasureRest` checks in `mnx`, so a dictation `setPitches` against it correctly no-ops with `intent-target-unsupported` (below) rather than editing something that isn't a real event. Non-whole-bar slots tile the measure column-to-column: each column's band runs from its own x to the next column's x (or the measure's content-right edge for the last column), so bands are contiguous with no gaps or overlaps. Clef-change columns get no slot of their own: the band before one ends at the clef column's x and the next element column's band starts there, so a pointer over the clef reads the new clef, as `previewShapes` does at the same x (`clefAtX`; one lookup for hit-testing and previews). On a grand staff, slots are generated per staff (`measureSlots(measure, bounds, staff)`) over the columns holding that staff's elements or clef changes, so each staff's bands tile the measure on their own: a half note on staff 2 keeps one band across the quarter-note columns of staff 1.
 
 `staffPosition = round(y*2)/2`. `pitch` = invert the pitch→y formula (`architecture.md`) in the clef in force (a `slot`'s at its tick, a `point`'s at its x — `MeasureBox.clefChanges`) + current key signature's alteration for that step, expressed as an MNX pitch — clicking the F line in D major yields F♯, not F♮ (`opts.insertAlteration: 'key' | 'natural'` switches this; `'natural'` always yields `alter: 0`).
 
@@ -53,13 +56,14 @@ interface MeasureBox {
   startTick: number; capacityTicks: number;
   clef: ClefSpec; key: KeySpec;
   clefChanges?: readonly { x: number; tick: number; clef: ClefSpec }[];
+  staves?: readonly { clef: ClefSpec; key: KeySpec; clefChanges?: readonly MeasureClefChange[] }[];   // 2-staff parts only
 }
 ```
 
-`LayoutResult.measures` carries one `MeasureBox` per `PositionedMeasure` (built by `query/measures.ts`'s `buildMeasureBox`), so `hitTest` and `previewShapes` can look up a measure's clef/key at call time without re-running layout. `contentX` is the first element column's `xStart` (the content band's left edge, chrome excluded); an empty measure with no element columns falls back to the content-right edge, giving it a zero-width band. `clef` is the clef at the measure start; `clefChanges`, present only when the measure has mid-measure clef changes, lists each change's glyph x, absolute tick and clef. `w` stops at the end barline: an end-of-system courtesy after it belongs to no measure.
+`LayoutResult.measures` carries one `MeasureBox` per `PositionedMeasure` (built by `query/measures.ts`'s `buildMeasureBox`), so `hitTest` and `previewShapes` can look up a measure's clef/key at call time without re-running layout. `contentX` is the first element column's `xStart` (the content band's left edge, chrome excluded); an empty measure with no element columns falls back to the content-right edge, giving it a zero-width band. `clef` is the clef at the measure start; `clefChanges`, present only when the measure has mid-measure clef changes, lists each change's glyph x, absolute tick and clef. `w` stops at the end barline: an end-of-system courtesy after it belongs to no measure. On a grand staff, `clef`/`key`/`clefChanges` describe staff 1 and `staves` lists both staves; `PreviewNote.staff` picks the staff a preview is drawn on.
 
 ```ts
-interface PreviewNote { measureIndex: number; x: number; pitch: Pitch; voice?: 0|1 }
+interface PreviewNote { measureIndex: number; x: number; pitch: Pitch; voice?: 0|1; staff?: number }
 function previewShapes(layout: LayoutResult, preview: PreviewNote): { glyphs: readonly GlyphRun[]; rects: readonly RectShape[] };
 ```
 
@@ -88,7 +92,7 @@ interface NotationInteractionProps {
 Behavior:
 
 - `<svg>` gets `onClick` (→ `activate` when a hit resolves) and `onPointerMove`/`onPointerLeave` (→ `hover`). The client→sp conversion (`svg.getScreenCTM().inverse()`) is the only geometry `notation-react` performs; the result feeds straight into `hitTest(layout, point, { kinds: targets, voice, insertAlteration })`.
-- Hover is deduped by hit identity (element id, slot's `eventId`, or point's `(measureIndex, staffPosition)`) — a hover handler and a following preview ghost fire once per target change, not once per pixel of pointer movement; `hover: null` fires once on pointer leave.
+- Hover is deduped by hit identity (element id, slot's `eventId`, or point's `(measureIndex, staff, staffPosition)`) — a hover handler and a following preview ghost fire once per target change, not once per pixel of pointer movement; `hover: null` fires once on pointer leave.
 - When `'element'` is in `targets`, every element `<g>` additionally gets `role="button"` + `tabIndex={0}`; Enter/Space on a focused one produces the same `activate` a click on that notehead would.
 - One channel covers every exercise: the app turns an `activate` on a slot into `applyIntent({ type: 'setPitches', ... })` for a dictation answer, or just into a "check the answer" comparison for click-what-you-heard and error-detection exercises — the renderer doesn't know which.
 
@@ -112,7 +116,7 @@ Exercise state itself — which ids are given, which is currently being asked, w
 
 ## Applying intents
 
-`applyIntent` ships from the `./edit` entry of `mnx` (`@polyhymnia/mnx/edit`; the `.` entry no longer re-exports it), not `notation-engine` — edits are document surgery, not layout, and the model already owns id synthesis (`mnx.md` "ID rule") that an edit has to stay consistent with. Ids come from scoped addressing, `elementIds(doc, scope?)`: the default scope (part 0, staff 1, 2 voices) keeps the plain `m{n}.s{n}.e{k}` ids; ids outside it are prefixed `p{n}.`/`st{k}.`. It's not wired into `<Notation>`: the quiz layer can reject an edit (wrong answer, locked measure) without fighting the renderer. It is a pure **MNX → MNX** function: everything in the document it doesn't touch passes through `===` unchanged (`AGENTS.md`).
+`applyIntent` ships from the `./edit` entry of `mnx` (`@polyhymnia/mnx/edit`; the `.` entry no longer re-exports it), not `notation-engine` — edits are document surgery, not layout, and the model already owns id synthesis (`mnx.md` "ID rule") that an edit has to stay consistent with. Ids come from scoped addressing, `elementIds(doc, scope?)`, over every staff the part declares (`parts[part].staves`): the default scope (part 0, staff 1, 2 voices) keeps the plain `m{n}.s{n}.e{k}` ids; ids outside it are prefixed `p{n}.`/`st{k}.`, so a grand staff's staff-2 events are edited by their `st2.` ids, the same ids layout reports. It's not wired into `<Notation>`: the quiz layer can reject an edit (wrong answer, locked measure) without fighting the renderer. It is a pure **MNX → MNX** function: everything in the document it doesn't touch passes through `===` unchanged (`AGENTS.md`).
 
 ```ts
 type EditIntent = { type: 'setPitches'; event: NoteId; pitches: readonly Pitch[] };

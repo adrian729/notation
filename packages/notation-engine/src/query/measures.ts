@@ -1,7 +1,7 @@
 import { isClefColumn } from '../layout/horizontal.js';
 import type { PositionedMeasure } from '../layout/justify.js';
 import type { ClefSpec } from '../layout/records.js';
-import type { MeasureBox, MeasureClefChange } from '../layout/types.js';
+import type { MeasureBox, MeasureClefChange, MeasureStaff } from '../layout/types.js';
 
 export interface ContentBounds {
   contentX: number;
@@ -14,11 +14,25 @@ export function contentBounds(measure: PositionedMeasure): ContentBounds {
   return { contentX, contentRight };
 }
 
-export function buildMeasureBox(measure: PositionedMeasure, bounds: ContentBounds): MeasureBox {
-  const clefChanges: MeasureClefChange[] = measure.columns
+function clefChangesOf(measure: PositionedMeasure, staffIndex: number): MeasureClefChange[] {
+  return measure.columns
     .filter(isClefColumn)
     .filter((column) => column.tick < measure.endTick)
-    .map((column) => ({ x: column.x, tick: column.tick, clef: column.clef }));
+    .flatMap((column) =>
+      column.clefs
+        .filter((c) => c.staffIndex === staffIndex)
+        .map((c) => ({ x: column.x, tick: column.tick, clef: c.clef })),
+    );
+}
+
+export function buildMeasureBox(measure: PositionedMeasure, bounds: ContentBounds, multi: boolean): MeasureBox {
+  const clefChanges = clefChangesOf(measure, 0);
+  const staves = multi
+    ? measure.staves.map((staff, s): MeasureStaff => {
+        const changes = clefChangesOf(measure, s);
+        return { clef: staff.clef, key: staff.key, ...(changes.length > 0 ? { clefChanges: changes } : {}) };
+      })
+    : undefined;
   return {
     index: measure.index,
     systemIndex: measure.systemIndex,
@@ -30,11 +44,17 @@ export function buildMeasureBox(measure: PositionedMeasure, bounds: ContentBound
     clef: measure.clef,
     key: measure.key,
     ...(clefChanges.length > 0 ? { clefChanges } : {}),
+    ...(staves ? { staves } : {}),
   };
 }
 
-export function clefAtX(box: MeasureBox, x: number): ClefSpec {
-  let clef = box.clef;
-  for (const change of box.clefChanges ?? []) if (x >= change.x) clef = change.clef;
+export function measureStaff(box: MeasureBox, staff: number | undefined): MeasureStaff {
+  return box.staves?.[staff ?? 0] ?? box;
+}
+
+export function clefAtX(box: MeasureBox, x: number, staff?: number): ClefSpec {
+  const { clef: start, clefChanges } = measureStaff(box, staff);
+  let clef = start;
+  for (const change of clefChanges ?? []) if (x >= change.x) clef = change.clef;
   return clef;
 }

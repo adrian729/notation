@@ -31,6 +31,7 @@ const SLUR_SAMPLES = 8;
 
 export interface CurveShape {
   systemIndex: number;
+  staffIndex: number;
   d: string;
   cls: 'tie' | 'slur';
   el: string;
@@ -59,7 +60,9 @@ export function curves(
   const e = fonts.engravingDefaults;
   const noteMap = buildNoteMap(justified);
   const elementsBySystem = buildElementsBySystem(justified);
-  const twoVoiceMeasures = new Set(placedScore.elements.filter((e) => e.voice === 1).map((e) => e.measureIndex));
+  const twoVoiceMeasures = new Set(
+    placedScore.elements.filter((e) => e.voice === 1).map((e) => staffMeasure(e.staffIndex, e.measureIndex)),
+  );
   const chordTies = new Map<NoteId, NormalizedTie[]>();
   for (const tie of ties) {
     const from = noteMap.get(tie.from);
@@ -84,6 +87,10 @@ export function curves(
       });
       continue;
     }
+    if (from.el.staffIndex !== to.el.staffIndex) {
+      crossStaff(diagnostics, 'tie', tie.measureIndex);
+      continue;
+    }
 
     const siblingTies = from.el.kind === 'chord' ? (chordTies.get(from.el.id) ?? [tie]) : [tie];
     const siblings = siblingTies.map((t) => noteMap.get(t.from)).filter((p): p is PlacedNote => p !== undefined);
@@ -92,7 +99,7 @@ export function curves(
         ? 1
         : tie.side === 'down'
           ? -1
-          : directionFor(from, siblings, twoVoiceMeasures.has(tie.measureIndex));
+          : directionFor(from, siblings, twoVoiceMeasures.has(staffMeasure(from.el.staffIndex, tie.measureIndex)));
 
     for (const span of spansBetween(from, to, justified)) shapes.push(tieShape(e, tie.id, span, dir));
   }
@@ -101,7 +108,12 @@ export function curves(
     const from0 = noteMap.get(slur.from);
     const to0 = noteMap.get(slur.to);
     if (!from0 || !to0) continue;
-    const dir = slurDirection(slur, from0, to0, twoVoiceMeasures.has(slur.measureIndex), elementsBySystem);
+    if (from0.el.staffIndex !== to0.el.staffIndex) {
+      crossStaff(diagnostics, 'slur', slur.measureIndex);
+      continue;
+    }
+    const twoVoice = twoVoiceMeasures.has(staffMeasure(from0.el.staffIndex, slur.measureIndex));
+    const dir = slurDirection(slur, from0, to0, twoVoice, elementsBySystem);
     const from = (dir === -1 && slur.fromBottom ? noteMap.get(slur.fromBottom) : undefined) ?? from0;
     const to = (dir === -1 && slur.toBottom ? noteMap.get(slur.toBottom) : undefined) ?? to0;
 
@@ -111,6 +123,19 @@ export function curves(
   }
 
   return { shapes, diagnostics };
+}
+
+function staffMeasure(staffIndex: number, measureIndex: number): string {
+  return `${staffIndex}:${measureIndex}`;
+}
+
+function crossStaff(diagnostics: Diagnostic[], kind: string, measureIndex: number): void {
+  diagnostics.push({
+    severity: 'warning',
+    code: 'mnx-unsupported',
+    message: `Unsupported MNX: cross-staff ${kind} in measure ${measureIndex}; not drawn.`,
+    measureIndex,
+  });
 }
 
 function buildNoteMap(justified: JustifiedScore): Map<NoteId, PlacedNote> {
@@ -225,6 +250,7 @@ type CurveSpan =
 
 interface CurveGeometry {
   systemIndex: number;
+  staffIndex: number;
   x0: number;
   x3: number;
   y0: number;
@@ -268,6 +294,7 @@ function curveSpan(span: CurveSpan, endpointYOf: (note: PlacedNote) => number): 
       const x3 = Math.max(leftEdge(to) - GAP, x0 + MIN_SPAN);
       return {
         systemIndex: from.systemIndex,
+        staffIndex: from.el.staffIndex,
         x0,
         x3,
         y0: endpointYOf(from),
@@ -281,14 +308,23 @@ function curveSpan(span: CurveSpan, endpointYOf: (note: PlacedNote) => number): 
       const x0 = rightEdge(from) + GAP;
       const x3 = Math.max(x0 + MIN_SPAN, Math.min(systemEndX(system), lastColumnX(system) + SYSTEM_END_MARGIN));
       const y = endpointYOf(from);
-      return { systemIndex: from.systemIndex, x0, x3, y0: y, y3: y, lo: from.x, hi: x3 };
+      return {
+        systemIndex: from.systemIndex,
+        staffIndex: from.el.staffIndex,
+        x0,
+        x3,
+        y0: y,
+        y3: y,
+        lo: from.x,
+        hi: x3,
+      };
     }
     case 'end': {
       const { to, system } = span;
       const x3 = leftEdge(to) - GAP;
       const x0 = Math.min(x3 - MIN_SPAN, Math.max(0, firstColumnX(system) - SYSTEM_START_MARGIN));
       const y = endpointYOf(to);
-      return { systemIndex: to.systemIndex, x0, x3, y0: y, y3: y, lo: x0, hi: to.x };
+      return { systemIndex: to.systemIndex, staffIndex: to.el.staffIndex, x0, x3, y0: y, y3: y, lo: x0, hi: to.x };
     }
   }
 }
@@ -308,6 +344,7 @@ function curveShape(
   return {
     el: id,
     systemIndex: g.systemIndex,
+    staffIndex: g.staffIndex,
     cls,
     d: curvePath([g.x0, g.y0], [g.x3, g.y3], dir, arch, endT, midT),
   };
@@ -333,20 +370,22 @@ function slurDirection(
 }
 
 function anyStemDownInSpan(from: PlacedNote, to: PlacedNote, elementsBySystem: ElementsBySystem): boolean {
+  const staffIndex = from.el.staffIndex;
+  const down = (pe: PlacedElement): boolean => pe.el.stem?.dir === -1 && pe.el.staffIndex === staffIndex;
   if (from.systemIndex === to.systemIndex) {
     const bucket = elementsBySystem.get(from.systemIndex) ?? [];
     for (const pe of bucket) {
-      if (pe.el.stem?.dir === -1 && pe.x >= from.x && pe.x <= to.x) return true;
+      if (down(pe) && pe.x >= from.x && pe.x <= to.x) return true;
     }
     return false;
   }
   const fromBucket = elementsBySystem.get(from.systemIndex) ?? [];
   for (const pe of fromBucket) {
-    if (pe.el.stem?.dir === -1 && pe.x >= from.x) return true;
+    if (down(pe) && pe.x >= from.x) return true;
   }
   const toBucket = elementsBySystem.get(to.systemIndex) ?? [];
   for (const pe of toBucket) {
-    if (pe.el.stem?.dir === -1 && pe.x <= to.x) return true;
+    if (down(pe) && pe.x <= to.x) return true;
   }
   return false;
 }
@@ -386,7 +425,7 @@ function slurShape(
     [g.x0, g.y0],
     [g.x3, g.y3],
     dir,
-    slurObstacles(g.systemIndex, g.lo, g.hi, beamsResult, elementsBySystem),
+    slurObstacles(g.systemIndex, g.staffIndex, g.lo, g.hi, beamsResult, elementsBySystem),
   );
   return curveShape(e, id, 'slur', g, dir, arch);
 }
@@ -438,6 +477,7 @@ function bezierPoint(
 
 function slurObstacles(
   systemIndex: number,
+  staffIndex: number,
   lo: number,
   hi: number,
   beamsResult: BeamsResult,
@@ -446,7 +486,7 @@ function slurObstacles(
   const obstacles: Obstacle[] = [];
   const bucket = elementsBySystem.get(systemIndex) ?? [];
   for (const pe of bucket) {
-    if (pe.x <= lo || pe.x >= hi) continue;
+    if (pe.el.staffIndex !== staffIndex || pe.x <= lo || pe.x >= hi) continue;
     for (const head of pe.el.noteheads) {
       obstacles.push({
         x0: pe.x + head.dx,
@@ -468,7 +508,7 @@ function slurObstacles(
     }
   }
   for (const poly of beamsResult.polygons) {
-    if (poly.systemIndex !== systemIndex) continue;
+    if (poly.systemIndex !== systemIndex || poly.staffIndex !== staffIndex) continue;
     const xs = poly.points.map(([x]) => x);
     const ys = poly.points.map(([, y]) => y);
     const minX = Math.min(...xs);

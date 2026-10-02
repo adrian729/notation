@@ -197,6 +197,61 @@ describe('element hit-testing (chords)', () => {
   });
 });
 
+describe('grand staff', () => {
+  const grand = () => {
+    const doc = mnx(
+      {},
+      withPart(
+        { clefs: [{ clef: TREBLE }, { clef: BASS, staff: 2 }] },
+        {
+          sequences: [
+            { content: [note('C5', 'q'), note('D5', 'q'), note('E5', 'q'), note('F5', 'q')] },
+            { staff: 2, content: [note('C3', 'h'), note('E3', 'h')] },
+          ],
+        },
+      ),
+    );
+    return { ...doc, parts: [{ ...doc.parts[0]!, staves: 2 }] };
+  };
+
+  it('resolves points and slots against the nearest staff and its own clef and columns', () => {
+    const layout = layoutScore(grand());
+    const [upper, lower] = layout.systems[0]!.staves!;
+    const lowerSlots = layout.slots.filter((s) => s.staff === 1).sort((a, b) => a.x - b.x);
+    const secondQuarter = layout.slots.find((s) => s.staff === 0 && s.eventId === 'm0.s0.e1')!;
+
+    expect(hitTest(layout, { x: secondQuarter.x + 0.1, y: upper!.y + 2 }, { kinds: ['point'] })).toMatchObject({
+      staff: 0,
+      pitch: { step: 'B', octave: 4 },
+      tick: 3360,
+    });
+    expect(hitTest(layout, { x: secondQuarter.x + 0.1, y: lower!.y + 2 }, { kinds: ['point'] })).toMatchObject({
+      staff: 1,
+      pitch: { step: 'D', octave: 3 },
+      tick: 0,
+    });
+    expect(lowerSlots.map((s) => s.eventId)).toEqual(['st2.m0.s1.e0', 'st2.m0.s1.e1']);
+    expect(lowerSlots[0]!.x + lowerSlots[0]!.w).toBeCloseTo(lowerSlots[1]!.x, 5);
+    const hit = hitTest(layout, { x: secondQuarter.x + 0.1, y: lower!.y + 1 }, { kinds: ['slot'] });
+    expect(hit?.kind === 'slot' ? [hit.slot.eventId, hit.staff, hit.pitch] : null).toEqual([
+      'st2.m0.s1.e0',
+      1,
+      { step: 'F', octave: 3 },
+    ]);
+  });
+
+  it('hits a staff-2 notehead and previews on that staff', () => {
+    const layout = layoutScore(grand());
+    const lower = layout.systems[0]!.staves![1]!;
+    const box = layout.elements['st2.m0.s1.e1']!;
+    expect(hitTest(layout, center(box), { kinds: ['element'] })).toMatchObject({ id: box.id, staff: 1 });
+
+    const preview = previewShapes(layout, { measureIndex: 0, x: box.x, pitch: { step: 'E', octave: 3 }, staff: 1 });
+    expect(preview.glyphs[0]!.y).toBeCloseTo(box.y + box.h / 2, 5);
+    expect(preview.glyphs[0]!.y).toBeGreaterThan(lower.y);
+  });
+});
+
 describe('dictation round trip', () => {
   it('re-pitches a rest via a slot hit, keeping the element id stable and every other id untouched', () => {
     const doc = mnx({}, measure(rest('q'), rest('q'), rest('q'), rest('q')));

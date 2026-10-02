@@ -26,8 +26,13 @@ export interface Reader {
   resolvedSlurs: NormalizedSlur[];
   events: Map<NoteId, EventEngraving>;
   notes: Map<NoteId, NoteEngraving>;
-  voicesByMeasure: Map<number, (0 | 1)[]>;
-  voiceOfSequence: Map<string, 0 | 1>;
+  voicesByMeasure: Map<string, (0 | 1)[]>;
+  voiceOfSequence: Map<string, SequenceVoice>;
+}
+
+export interface SequenceVoice {
+  staffIndex: number;
+  voice: 0 | 1;
 }
 
 export function createReader(
@@ -65,6 +70,10 @@ export function createReader(
 
 export function sequenceKey(measureIndex: number, sequenceIndex: number): string {
   return `${measureIndex}:${sequenceIndex}`;
+}
+
+export function staffMeasureKey(staffIndex: number, measureIndex: number): string {
+  return `${staffIndex}:${measureIndex}`;
 }
 
 export function asArray(value: unknown): readonly unknown[] {

@@ -14,7 +14,7 @@ import {
   type NoteId,
   type TupletRef,
 } from './records.js';
-import { asArray, asObject, sequenceKey, type Reader } from './normalize-reader.js';
+import { asArray, asObject, sequenceKey, staffMeasureKey, type Reader } from './normalize-reader.js';
 
 const BEAM_LEVEL: Partial<Record<DurationBase, number>> = { eighth: 1, '16th': 2, '32nd': 3, '64th': 4 };
 
@@ -35,6 +35,7 @@ interface BeamGap {
 type BeamEvent = BeamElement | BeamGap;
 
 interface ElementLocation {
+  staffIndex: number;
   measureIndex: number;
   voice: 0 | 1;
   index: number;
@@ -52,6 +53,7 @@ export function resolveBeams(
   source: MnxDocument,
   partMeasures: readonly unknown[],
   measures: readonly NormalizedMeasure[],
+  staffCount: number,
   timeline: Timeline,
   ids: ElementIds,
   reader: Reader,
@@ -60,10 +62,10 @@ export function resolveBeams(
   const voiceEvents = voiceEventsOf(timeline);
   const index = new Map<string, ElementLocation>();
   for (const [key, events] of voiceEvents) {
-    const [measureIndex, voice] = key.split(':').map(Number) as [number, 0 | 1];
+    const [staffIndex, measureIndex, voice] = key.split(':').map(Number) as [number, number, 0 | 1];
     events.forEach((event, i) => {
       if (event.kind === 'space') return;
-      if (!index.has(event.id)) index.set(event.id, { measureIndex, voice, index: i });
+      if (!index.has(event.id)) index.set(event.id, { staffIndex, measureIndex, voice, index: i });
     });
   }
 
@@ -71,8 +73,8 @@ export function resolveBeams(
   const ctx: BeamContext = { timeline, ids, reader, index, claimed: new Set() };
   const beams: NormalizedBeam[] = [];
   const warnedMeters = new Set<string>();
-  const eventsOf = (measureIndex: number, voice: 0 | 1): readonly BeamEvent[] =>
-    voiceEvents.get(`${measureIndex}:${voice}`) ?? [];
+  const eventsOf = (staffIndex: number, measureIndex: number, voice: 0 | 1): readonly BeamEvent[] =>
+    voiceEvents.get(voiceKey(staffIndex, measureIndex, voice)) ?? [];
 
   measures.forEach((measure, measureIndex) => {
     const pm = asObject(partMeasures[measureIndex]);
@@ -85,19 +87,35 @@ export function resolveBeams(
       return;
     }
     if (useBeams) return;
-    for (const voice of reader.voicesByMeasure.get(measureIndex) ?? []) {
-      beams.push(...autoBeamVoice(measure, voice, eventsOf(measureIndex, voice), options, ctx, warnedMeters));
+    for (let staffIndex = 0; staffIndex < staffCount; staffIndex += 1) {
+      for (const voice of reader.voicesByMeasure.get(staffMeasureKey(staffIndex, measureIndex)) ?? []) {
+        beams.push(
+          ...autoBeamVoice(
+            measure,
+            staffIndex,
+            voice,
+            eventsOf(staffIndex, measureIndex, voice),
+            options,
+            ctx,
+            warnedMeters,
+          ),
+        );
+      }
     }
   });
 
   return beams;
 }
 
+function voiceKey(staffIndex: number, measureIndex: number, voice: number): string {
+  return `${staffIndex}:${measureIndex}:${voice}`;
+}
+
 function voiceEventsOf(timeline: Timeline): Map<string, BeamEvent[]> {
   const grouped = new Map<string, TimelineEntry[]>();
   for (const entry of timeline.entries) {
     if (entry.synthetic) continue;
-    const key = `${entry.measureIndex}:${entry.voice}`;
+    const key = voiceKey(entry.staff - 1, entry.measureIndex, entry.voice);
     const bucket = grouped.get(key);
     if (bucket) bucket.push(entry);
     else grouped.set(key, [entry]);
@@ -135,8 +153,10 @@ function locate(id: string, ctx: BeamContext): ElementLocation | undefined {
   if (found) return found;
   const node = ctx.timeline.ids.nodeOf(id);
   if (node?.element.kind !== 'event') return undefined;
-  const voice = ctx.reader.voiceOfSequence.get(sequenceKey(node.measureIndex, node.sequenceIndex));
-  return voice === undefined ? undefined : { measureIndex: node.measureIndex, voice, index: Infinity };
+  const owner = ctx.reader.voiceOfSequence.get(sequenceKey(node.measureIndex, node.sequenceIndex));
+  return owner === undefined
+    ? undefined
+    : { staffIndex: owner.staffIndex, measureIndex: node.measureIndex, voice: owner.voice, index: Infinity };
 }
 
 function invalidBeam(measureIndex: number, reader: Reader): undefined {
@@ -152,7 +172,7 @@ function invalidBeam(measureIndex: number, reader: Reader): undefined {
 function resolveExplicitBeam(
   raw: unknown,
   measureIndex: number,
-  eventsOf: (measureIndex: number, voice: 0 | 1) => readonly BeamEvent[],
+  eventsOf: (staffIndex: number, measureIndex: number, voice: 0 | 1) => readonly BeamEvent[],
   ctx: BeamContext,
 ): NormalizedBeam | undefined {
   const { reader, claimed } = ctx;
@@ -166,12 +186,16 @@ function resolveExplicitBeam(
     return invalidBeam(measureIndex, reader);
   }
   const resolved = locations as ElementLocation[];
-  const voice = resolved[0]!.voice;
+  const { staffIndex, voice } = resolved[0]!;
+  if (resolved.some((loc) => loc.measureIndex === measureIndex && loc.staffIndex !== staffIndex)) {
+    reader.unsupported('cross-staff beam', measureIndex, 'not drawn');
+    return undefined;
+  }
   if (resolved.some((loc) => loc.measureIndex !== measureIndex || loc.voice !== voice)) {
     return invalidBeam(measureIndex, reader);
   }
 
-  const voiceEvents = eventsOf(measureIndex, voice);
+  const voiceEvents = eventsOf(staffIndex, measureIndex, voice);
 
   const inRange = resolved.map((loc, i) => ({ id: ids[i]!, loc })).filter(({ loc }) => loc.index < voiceEvents.length);
   if (inRange.length < 2) return invalidBeam(measureIndex, reader);
@@ -215,7 +239,7 @@ function resolveExplicitBeam(
   const segments =
     nested.length > 0 ? resolveExplicitSegments(nested, 2, groupIds, onsetById) : deriveSegments(spanElements);
 
-  return { id: beamId, measureIndex, voice, elements: span, segments };
+  return { id: beamId, staffIndex, measureIndex, voice, elements: span, segments };
 }
 
 function beamIdOf(explicit: unknown, candidate: string, measureIndex: number, ids: ElementIds): NoteId {
@@ -316,6 +340,7 @@ function deriveSegments(span: readonly BeamElement[]): BeamSegment[] {
 
 function autoBeamVoice(
   measure: NormalizedMeasure,
+  staffIndex: number,
   voice: 0 | 1,
   events: readonly BeamEvent[],
   options: NotationOptions | undefined,
@@ -354,6 +379,7 @@ function autoBeamVoice(
     const noteSpan = group.map((id) => byId.get(id)!);
     return {
       id: ctx.ids.mint(`${group[0]}.beam`, { measureIndex }),
+      staffIndex,
       measureIndex,
       voice,
       elements: group,

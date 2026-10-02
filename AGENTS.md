@@ -35,7 +35,7 @@
 - Beat grouping (`beamGroups`, `beatGroupingFor`) lives in `notation-engine` `src/layout/beam-policy/`, engine-internal; never export it from `mnx`.
 
 # mnx-score
-- Owns musical time and ids for layout and playback: `buildTimeline(doc, {scope?, divisions?})` → `Timeline`.
+- Owns musical time and ids for layout and playback: `buildTimeline(doc, {scope?, divisions?})` → `Timeline`. Layout's scope is part 0, staff 1, widened to staves 1–2 when part 0 declares 2+ staves (grand staff).
 - Engine and audio consumers never re-derive time, pitch → midi or ids from MNX.
 - Playback events come from `performance(timeline, {tempo?})`; whole-score playback uses `buildTimeline(doc, {scope: 'all'})`; cursor sync uses `layout.timeline`.
 

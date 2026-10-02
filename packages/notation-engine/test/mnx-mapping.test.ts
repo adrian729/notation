@@ -223,7 +223,7 @@ describe('unsupported constructs render what they can and say so', () => {
     expect(unsupported(doc)).toEqual(['Unsupported MNX: grace notes in measure 0; not drawn.']);
   });
 
-  it('lays out only the first part and staff 1', () => {
+  it('lays out only the first part, and staff 1 unless the part declares more staves', () => {
     const doc = mnx(
       {},
       {
@@ -237,6 +237,28 @@ describe('unsupported constructs render what they can and say so', () => {
     expect(layout.diagnostics.map((d) => d.message)).toEqual([
       'Unsupported MNX: 2 parts; only the first part is laid out.',
       'Unsupported MNX: sequence on staff 2 in measure 0; not laid out.',
+    ]);
+  });
+
+  it('lays out staves 1-2 of a part with 3 staves', () => {
+    const doc = mnx(
+      {},
+      {
+        sequences: [
+          { content: [note('C5', 'w')] },
+          { staff: 2, content: [note('C3', 'w')] },
+          { staff: 3, content: [note('C2', 'w')] },
+        ],
+      },
+    );
+    const layout = layoutScore({ ...doc, parts: [{ ...doc.parts[0]!, staves: 3 }] });
+
+    expect(Object.values(layout.elements).map((b) => [b.id, b.staff])).toEqual([
+      ['m0.s0.e0', 0],
+      ['st2.m0.s1.e0', 1],
+    ]);
+    expect(layout.diagnostics.map((d) => d.message)).toEqual([
+      'Unsupported MNX: a part with 3 staves; only staves 1-2 are laid out.',
     ]);
   });
 

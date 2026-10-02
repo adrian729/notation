@@ -407,6 +407,7 @@ function Glyph({
     <text
       x={glyph.x}
       y={glyph.y}
+      fontSize={glyph.scale !== undefined ? GLYPH_FONT_SIZE * glyph.scale : undefined}
       fontFamily={family !== undefined && family !== primary ? family : undefined}
       data-pn={glyph.cls}
       data-pn-el={glyph.el}

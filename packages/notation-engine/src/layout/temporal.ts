@@ -72,7 +72,10 @@ export function temporal(normalized: NormalizedScore): TemporalScore {
   const { timeline } = normalized;
   const elements = timeline.entries
     .filter((entry) => entry.kind !== 'space')
-    .sort((a, b) => a.measureIndex - b.measureIndex || a.voice - b.voice || a.eventIndex - b.eventIndex)
+    .sort(
+      (a, b) =>
+        a.measureIndex - b.measureIndex || a.staff - b.staff || a.voice - b.voice || a.eventIndex - b.eventIndex,
+    )
     .map((entry) => element(entry, normalized));
   const measures = timeline.measures.map((m) => ({
     index: m.index,
@@ -97,7 +100,7 @@ function element(entry: TimelineEntry, normalized: NormalizedScore): TemporalEle
     ...(engraving?.breath ? { breath: engraving.breath } : {}),
     ...(entry.wholeBar ? { wholeBar: true } : {}),
     ...(entry.restPosition !== undefined ? { staffPosition: MIDDLE_LINE - entry.restPosition / 2 } : {}),
-    staffIndex: 0,
+    staffIndex: entry.staff - 1,
     measureIndex: entry.measureIndex,
     voice: entry.voice as 0 | 1,
     tick: entry.tick,

@@ -31,6 +31,8 @@ const TOP_MARGIN = 4;
 const BOTTOM_MARGIN = 4;
 const SIDE_MARGIN = 1;
 const SYSTEM_GAP = 8;
+const STAFF_GAP = 6;
+const BRACE_GAP = 0.3;
 const CONTENT_PAD = 0.5;
 
 export interface EmitInput {
@@ -41,6 +43,7 @@ export interface EmitInput {
   beams: BeamsResult;
   tuplets: TupletsResult;
   curves: CurvesResult;
+  staffCount: number;
 }
 
 interface MeasureTime {
@@ -56,6 +59,14 @@ interface Placement {
   systemIndex: number;
   x: number;
   y: number;
+  staff?: number;
+}
+
+interface Brace {
+  scale: number;
+  glyphWidth: number;
+  bottom: number;
+  width: number;
 }
 
 export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
@@ -69,26 +80,50 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
   const slots: Slot[] = [];
   const placement = new Map<NoteId, Placement>();
 
+  const staffCount = Math.max(1, input.staffCount);
+  const multi = staffCount > 1;
   const width = Math.max(input.justified.width, 1);
-  const { above, below } = contentMargins(fonts, input.justified, input.beams, input.tuplets, input.curves);
-  const topMargin = Math.max(TOP_MARGIN, above);
-  const bottomMargin = Math.max(BOTTOM_MARGIN, below);
-  const systemGap = Math.max(SYSTEM_GAP, above + below);
+  const margins = contentMargins(fonts, input.justified, input.beams, input.tuplets, input.curves, staffCount);
+  const firstMargins = margins[0]!;
+  const lastMargins = margins[staffCount - 1]!;
+  const topMargin = Math.max(TOP_MARGIN, firstMargins.above);
+  const bottomMargin = Math.max(BOTTOM_MARGIN, lastMargins.below);
+  const systemGap = Math.max(SYSTEM_GAP, firstMargins.above + lastMargins.below);
+  const staffOffsets = [0];
+  for (let s = 1; s < staffCount; s += 1) {
+    const gap = Math.max(STAFF_GAP, margins[s - 1]!.below + margins[s]!.above);
+    staffOffsets.push(staffOffsets[s - 1]! + STAFF_HEIGHT + gap);
+  }
+  const systemHeight = staffOffsets[staffCount - 1]! + STAFF_HEIGHT;
+  const brace = multi ? braceOf(fonts, systemHeight) : null;
+  const staffTopsBySystem = new Map<number, readonly number[]>();
 
   for (const system of input.justified.systems) {
-    const staffTop = topMargin + system.index * (STAFF_HEIGHT + systemGap);
-    systems.push({ index: system.index, x: 0, y: staffTop, w: system.width, h: STAFF_HEIGHT });
+    const systemTop = topMargin + system.index * (systemHeight + systemGap);
+    const staffTops = staffOffsets.map((offset) => systemTop + offset);
+    staffTopsBySystem.set(system.index, staffTops);
+    systems.push({
+      index: system.index,
+      x: 0,
+      y: systemTop,
+      w: system.width,
+      h: systemHeight,
+      ...(multi ? { staves: staffTops.map((y, index) => ({ index, y, h: STAFF_HEIGHT })) } : {}),
+    });
 
-    for (let line = 0; line < STAFF_LINES; line += 1) {
-      rects.push(
-        centeredRect(0, staffTop + line, system.width, fonts.engravingDefaults.staffLineThickness, 'staff-line'),
-      );
+    for (const staffTop of staffTops) {
+      for (let line = 0; line < STAFF_LINES; line += 1) {
+        rects.push(
+          centeredRect(0, staffTop + line, system.width, fonts.engravingDefaults.staffLineThickness, 'staff-line'),
+        );
+      }
     }
+    if (brace) emitSystemStart(brace, systemTop, systemHeight, glyphs, rects, fonts);
 
     for (const measure of system.measures) {
-      emitChrome(measure, staffTop, glyphs, fonts);
-      emitBarlines(measure, staffTop, glyphs, rects, fonts);
-      emitCourtesy(measure, staffTop, glyphs, fonts);
+      emitChrome(measure, staffTops, glyphs, fonts);
+      emitBarlines(measure, staffTops, glyphs, rects, fonts);
+      emitCourtesy(measure, staffTops, glyphs, fonts);
       measureTimes.push({
         index: measure.index,
         startTick: measure.startTick,
@@ -99,15 +134,16 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
       });
 
       const bounds = contentBounds(measure);
-      measures.push(buildMeasureBox(measure, bounds));
-      slots.push(...measureSlots(measure, bounds));
+      measures.push(buildMeasureBox(measure, bounds, multi));
+      for (let s = 0; s < staffCount; s += 1) slots.push(...measureSlots(measure, bounds, s, multi));
 
       const { contentRight } = bounds;
       measure.columns.forEach((column, i) => {
         if (isClefColumn(column)) {
-          glyphs.push(
-            glyphRun(fonts, clefChangeGlyph(column.clef), column.x, staffTop + clefGlyphY(column.clef), 'clef-change'),
-          );
+          for (const { staffIndex, clef } of column.clefs) {
+            const staffTop = staffTops[staffIndex] ?? systemTop;
+            glyphs.push(glyphRun(fonts, clefChangeGlyph(clef), column.x, staffTop + clefGlyphY(clef), 'clef-change'));
+          }
           return;
         }
         const next = measure.columns[i + 1];
@@ -117,7 +153,8 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
             x: column.x,
             columnLeft: column.xStart,
             columnRight,
-            staffTop,
+            staffTop: staffTops[element.staffIndex] ?? systemTop,
+            ...(multi ? { staff: element.staffIndex } : {}),
             systemIndex: system.index,
             glyphs,
             rects,
@@ -131,9 +168,10 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
     }
   }
 
-  const staffTopOf = new Map(systems.map((s) => [s.index, s.y] as const));
+  const staffTopOf = (systemIndex: number, staffIndex: number): number =>
+    staffTopsBySystem.get(systemIndex)?.[staffIndex] ?? 0;
   for (const poly of input.beams.polygons) {
-    const staffTop = staffTopOf.get(poly.systemIndex) ?? 0;
+    const staffTop = staffTopOf(poly.systemIndex, poly.staffIndex);
     paths.push({
       d: pathFrom(poly.points, staffTop),
       cls: 'beam',
@@ -142,7 +180,7 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
   }
 
   for (const rect of input.tuplets.brackets) {
-    const staffTop = staffTopOf.get(rect.systemIndex) ?? 0;
+    const staffTop = staffTopOf(rect.systemIndex, rect.staffIndex);
     rects.push({
       x: rect.x,
       y: staffTop + rect.y,
@@ -153,22 +191,23 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
     });
   }
   for (const numeral of input.tuplets.numerals) {
-    const staffTop = staffTopOf.get(numeral.systemIndex) ?? 0;
+    const staffTop = staffTopOf(numeral.systemIndex, numeral.staffIndex);
     glyphs.push(glyphRun(fonts, numeral.name, numeral.x, staffTop + numeral.y, 'tuplet-number', numeral.el));
   }
   for (const curve of input.curves.shapes) {
-    const staffTop = staffTopOf.get(curve.systemIndex) ?? 0;
+    const staffTop = staffTopOf(curve.systemIndex, curve.staffIndex);
     paths.push({ d: offsetPathY(curve.d, staffTop), cls: curve.cls, el: curve.el });
   }
 
   const height =
-    topMargin + Math.max(1, systems.length) * STAFF_HEIGHT + Math.max(0, systems.length - 1) * systemGap + bottomMargin;
+    topMargin + Math.max(1, systems.length) * systemHeight + Math.max(0, systems.length - 1) * systemGap + bottomMargin;
 
   const fontNames = tagFonts(glyphs, fonts);
+  const leftMargin = SIDE_MARGIN + (brace?.width ?? 0);
 
   return {
     version: 1,
-    viewBox: { x: -SIDE_MARGIN, y: 0, w: width + 2 * SIDE_MARGIN, h: height },
+    viewBox: { x: -leftMargin, y: 0, w: width + 2 * SIDE_MARGIN + (brace?.width ?? 0), h: height },
     systems,
     glyphs,
     rects,
@@ -183,55 +222,98 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
   };
 }
 
+function braceOf(fonts: FontContext, systemHeight: number): Brace {
+  const bbox = fonts.bbox('brace');
+  const natural = bbox.bBoxNE[1] - bbox.bBoxSW[1];
+  const scale = natural > 0 ? systemHeight / natural : 1;
+  const glyphWidth = Math.max(bbox.bBoxNE[0], fonts.advanceWidth('brace')) * scale;
+  return { scale, glyphWidth, bottom: bbox.bBoxSW[1] * scale, width: glyphWidth + BRACE_GAP };
+}
+
+function emitSystemStart(
+  brace: Brace,
+  systemTop: number,
+  systemHeight: number,
+  glyphs: GlyphRun[],
+  rects: RectShape[],
+  fonts: FontContext,
+): void {
+  const thickness = fonts.engravingDefaults.thinBarlineThickness;
+  rects.push({ x: 0, y: systemTop, w: thickness, h: systemHeight, cls: 'barline' });
+  const x = -BRACE_GAP - brace.glyphWidth;
+  const y = systemTop + systemHeight + brace.bottom;
+  glyphs.push({ ...glyphRun(fonts, 'brace', x, y, 'brace'), scale: brace.scale });
+}
+
 function placementsOf(
   placement: ReadonlyMap<NoteId, Placement>,
   measureTimes: readonly MeasureTime[],
 ): LayoutResult['placements'] {
   const entries: Record<NoteId, EntryPlacement> = {};
-  for (const [id, { x, y, systemIndex }] of placement) entries[id] = { x, y, systemIndex };
+  for (const [id, { x, y, systemIndex, staff }] of placement) {
+    entries[id] = { x, y, systemIndex, ...(staff !== undefined ? { staff } : {}) };
+  }
   const measures: MeasurePlacement[] = [];
   for (const { index, systemIndex, x, w } of measureTimes) measures[index] = { systemIndex, x, w };
   return { entries, measures };
 }
 
-function emitChrome(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], fonts: FontContext): void {
-  let x = measure.x + measure.chrome.startBarlineWidth;
+function emitChrome(
+  measure: PositionedMeasure,
+  staffTops: readonly number[],
+  glyphs: GlyphRun[],
+  fonts: FontContext,
+): void {
+  staffTops.forEach((staffTop, s) => {
+    const { clef, key } = measure.staves[s] ?? measure;
+    let x = measure.x + measure.chrome.startBarlineWidth;
 
-  if (measure.chrome.showClef) {
-    glyphs.push(glyphRun(fonts, clefGlyph(measure.clef), x, staffTop + clefGlyphY(measure.clef), 'clef'));
-    x += measure.chrome.clefWidth;
-  }
-
-  if (measure.chrome.keyWidth > 0) {
-    const key = layOutKeyGlyphs(fonts, measure.key, measure.clef, measure.chrome.cancelKey, measure.chrome.showKey, x);
-    for (const acc of key.glyphs) {
-      glyphs.push(glyphRun(fonts, acc.glyph, acc.x, staffTop + acc.y, 'key-accidental'));
+    if (measure.chrome.showClef) {
+      if (measure.chrome.staffClefs[s] ?? true) {
+        glyphs.push(glyphRun(fonts, clefGlyph(clef), x, staffTop + clefGlyphY(clef), 'clef'));
+      }
+      x += measure.chrome.clefWidth;
     }
-    x = measure.x + measure.chrome.startBarlineWidth + measure.chrome.clefWidth + measure.chrome.keyWidth;
-  }
 
-  if (measure.chrome.showTime) emitTimeSignature(measure.time, x, staffTop, glyphs, fonts);
+    if (measure.chrome.keyWidth > 0) {
+      const layout = layOutKeyGlyphs(fonts, key, clef, measure.chrome.cancelKey, measure.chrome.showKey, x);
+      for (const acc of layout.glyphs) {
+        glyphs.push(glyphRun(fonts, acc.glyph, acc.x, staffTop + acc.y, 'key-accidental'));
+      }
+      x = measure.x + measure.chrome.startBarlineWidth + measure.chrome.clefWidth + measure.chrome.keyWidth;
+    }
+
+    if (measure.chrome.showTime) emitTimeSignature(measure.time, x, staffTop, glyphs, fonts);
+  });
 }
 
-function emitCourtesy(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], fonts: FontContext): void {
+function emitCourtesy(
+  measure: PositionedMeasure,
+  staffTops: readonly number[],
+  glyphs: GlyphRun[],
+  fonts: FontContext,
+): void {
   const courtesy = measure.showCourtesy ? measure.courtesy : null;
   if (!courtesy) return;
   const clefX = measure.x + measure.width + COURTESY_LEAD;
-  if (courtesy.showClef) {
-    glyphs.push(
-      glyphRun(fonts, clefChangeGlyph(courtesy.clef), clefX, staffTop + clefGlyphY(courtesy.clef), 'courtesy-clef'),
-    );
-  }
-  const x = clefX + courtesy.clefWidth;
-  if (courtesy.showKey) {
-    const key = layOutKeyGlyphs(fonts, courtesy.key, courtesy.clef, courtesy.cancelKey, true, x);
-    for (const acc of key.glyphs) {
-      glyphs.push(glyphRun(fonts, acc.glyph, acc.x, staffTop + acc.y, 'courtesy-key'));
+  staffTops.forEach((staffTop, s) => {
+    const staff = courtesy.staves[s] ?? courtesy;
+    if (staff.showClef) {
+      glyphs.push(
+        glyphRun(fonts, clefChangeGlyph(staff.clef), clefX, staffTop + clefGlyphY(staff.clef), 'courtesy-clef'),
+      );
     }
-  }
-  if (courtesy.showTime) {
-    emitTimeSignature(courtesy.time, x + courtesy.keyWidth, staffTop, glyphs, fonts, 'courtesy-time');
-  }
+    const x = clefX + courtesy.clefWidth;
+    if (courtesy.showKey) {
+      const key = layOutKeyGlyphs(fonts, courtesy.key, staff.clef, courtesy.cancelKey, true, x);
+      for (const acc of key.glyphs) {
+        glyphs.push(glyphRun(fonts, acc.glyph, acc.x, staffTop + acc.y, 'courtesy-key'));
+      }
+    }
+    if (courtesy.showTime) {
+      emitTimeSignature(courtesy.time, x + courtesy.keyWidth, staffTop, glyphs, fonts, 'courtesy-time');
+    }
+  });
 }
 
 function emitTimeSignature(
@@ -281,13 +363,20 @@ function emitDigits(
 
 function emitBarlines(
   measure: PositionedMeasure,
-  staffTop: number,
+  staffTops: readonly number[],
   glyphs: GlyphRun[],
   rects: RectShape[],
   fonts: FontContext,
 ): void {
   const e = fonts.engravingDefaults;
-  const bottom = staffTop + STAFF_HEIGHT;
+  const staffTop = staffTops[0]!;
+  const bottom = staffTops[staffTops.length - 1]! + STAFF_HEIGHT;
+  const repeatDots = (x: number): void => {
+    for (const top of staffTops) {
+      glyphs.push(glyphRun(fonts, 'repeatDot', x, top + 1.5, 'repeat-dot'));
+      glyphs.push(glyphRun(fonts, 'repeatDot', x, top + 2.5, 'repeat-dot'));
+    }
+  };
   const line = (x: number, thickness: number): RectShape => ({
     x,
     y: staffTop,
@@ -302,8 +391,7 @@ function emitBarlines(
     x += e.thickBarlineThickness + e.thinThickBarlineSeparation;
     rects.push(line(x, e.thinBarlineThickness));
     x += e.thinBarlineThickness + e.repeatBarlineDotSeparation;
-    glyphs.push(glyphRun(fonts, 'repeatDot', x, staffTop + 1.5, 'repeat-dot'));
-    glyphs.push(glyphRun(fonts, 'repeatDot', x, staffTop + 2.5, 'repeat-dot'));
+    repeatDots(x);
   }
 
   const right = measure.x + measure.width;
@@ -330,9 +418,7 @@ function emitBarlines(
       rects.push(line(right - e.thickBarlineThickness, e.thickBarlineThickness));
       const thinX = right - e.thickBarlineThickness - e.thinThickBarlineSeparation - e.thinBarlineThickness;
       rects.push(line(thinX, e.thinBarlineThickness));
-      const dotX = thinX - e.repeatBarlineDotSeparation - fonts.advanceWidth('repeatDot');
-      glyphs.push(glyphRun(fonts, 'repeatDot', dotX, staffTop + 1.5, 'repeat-dot'));
-      glyphs.push(glyphRun(fonts, 'repeatDot', dotX, staffTop + 2.5, 'repeat-dot'));
+      repeatDots(thinX - e.repeatBarlineDotSeparation - fonts.advanceWidth('repeatDot'));
       break;
     }
     default:
@@ -363,6 +449,7 @@ interface ElementContext {
   columnLeft: number;
   columnRight: number;
   staffTop: number;
+  staff?: number;
   systemIndex: number;
   glyphs: GlyphRun[];
   rects: RectShape[];
@@ -456,6 +543,7 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
       systemIndex: ctx.systemIndex,
       x: ctx.x,
       y: staffTop + first.staffPosition,
+      ...staffOf(ctx),
     });
   }
 }
@@ -482,6 +570,7 @@ function emitRest(element: VerticalElement, ctx: ElementContext): void {
     systemIndex: ctx.systemIndex,
     measureIndex: element.measureIndex,
     voice: element.voice,
+    ...staffOf(ctx),
     ...box,
     hitBox: pad(box),
     staffPosition: rest.y,
@@ -490,7 +579,7 @@ function emitRest(element: VerticalElement, ctx: ElementContext): void {
     label: restLabel(element, rest.wholeBar),
     eventId: element.id,
   };
-  ctx.placement.set(element.id, { systemIndex: ctx.systemIndex, x, y });
+  ctx.placement.set(element.id, { systemIndex: ctx.systemIndex, x, y, ...staffOf(ctx) });
 }
 
 function noteBox(element: VerticalElement, head: NoteheadLayout, headX: number, ctx: ElementContext): ElementBox {
@@ -506,6 +595,7 @@ function noteBox(element: VerticalElement, head: NoteheadLayout, headX: number, 
     systemIndex: ctx.systemIndex,
     measureIndex: element.measureIndex,
     voice: element.voice,
+    ...staffOf(ctx),
     ...box,
     hitBox: pad(box),
     staffPosition: head.staffPosition,
@@ -515,6 +605,10 @@ function noteBox(element: VerticalElement, head: NoteheadLayout, headX: number, 
     eventId: element.id,
     pitch: head.pitch,
   };
+}
+
+function staffOf(ctx: ElementContext): { staff?: number } {
+  return ctx.staff !== undefined ? { staff: ctx.staff } : {};
 }
 
 function pad(box: Box): Box {
@@ -542,67 +636,63 @@ function restLabel(element: VerticalElement, wholeBar: boolean): string {
   return `${what}, measure ${element.measureIndex + 1}`;
 }
 
+interface StaffMargins {
+  above: number;
+  below: number;
+}
+
 function contentMargins(
   fonts: FontContext,
   justified: JustifiedScore,
   beamsResult: BeamsResult,
   tupletsResult: TupletsResult,
   curvesResult: CurvesResult,
-): { above: number; below: number } {
-  let minY = 0;
-  let maxY = STAFF_HEIGHT;
+  staffCount: number,
+): StaffMargins[] {
+  const minY = Array.from({ length: staffCount }, () => 0);
+  const maxY = Array.from({ length: staffCount }, () => STAFF_HEIGHT);
+  const extend = (staffIndex: number, lo: number, hi: number): void => {
+    const s = Math.min(Math.max(0, staffIndex), staffCount - 1);
+    minY[s] = Math.min(minY[s]!, lo);
+    maxY[s] = Math.max(maxY[s]!, hi);
+  };
 
   for (const system of justified.systems) {
     for (const measure of system.measures) {
       for (const column of measure.columns) {
         for (const el of column.elements) {
           for (const head of el.noteheads) {
-            for (const y of head.ledgerLines) {
-              minY = Math.min(minY, y);
-              maxY = Math.max(maxY, y);
-            }
+            for (const y of head.ledgerLines) extend(el.staffIndex, y, y);
           }
           if (el.stem?.drawn) {
             const override = beamsResult.stemOverrides.get(el.id);
-            minY = Math.min(minY, override?.yTop ?? el.stem.yTop);
-            maxY = Math.max(maxY, override?.yBottom ?? el.stem.yBottom);
+            extend(el.staffIndex, override?.yTop ?? el.stem.yTop, override?.yBottom ?? el.stem.yBottom);
           }
-          if (el.rest) {
-            minY = Math.min(minY, el.rest.y - 1);
-            maxY = Math.max(maxY, el.rest.y + 1);
-          }
+          if (el.rest) extend(el.staffIndex, el.rest.y - 1, el.rest.y + 1);
         }
       }
     }
   }
 
   for (const poly of beamsResult.polygons) {
-    for (const [, y] of poly.points) {
-      minY = Math.min(minY, y);
-      maxY = Math.max(maxY, y);
-    }
+    for (const [, y] of poly.points) extend(poly.staffIndex, y, y);
   }
 
-  for (const rect of tupletsResult.brackets) {
-    minY = Math.min(minY, rect.y);
-    maxY = Math.max(maxY, rect.y + rect.h);
-  }
+  for (const rect of tupletsResult.brackets) extend(rect.staffIndex, rect.y, rect.y + rect.h);
   for (const numeral of tupletsResult.numerals) {
     const bbox = fonts.bbox(numeral.name);
-    minY = Math.min(minY, numeral.y - bbox.bBoxNE[1]);
-    maxY = Math.max(maxY, numeral.y - bbox.bBoxSW[1]);
+    extend(numeral.staffIndex, numeral.y - bbox.bBoxNE[1], numeral.y - bbox.bBoxSW[1]);
   }
 
   for (const curve of curvesResult.shapes) {
     const [curveMin, curveMax] = pathYExtent(curve.d);
-    minY = Math.min(minY, curveMin);
-    maxY = Math.max(maxY, curveMax);
+    extend(curve.staffIndex, curveMin, curveMax);
   }
 
-  return {
-    above: Math.max(0, -minY) + CONTENT_PAD,
-    below: Math.max(0, maxY - STAFF_HEIGHT) + CONTENT_PAD,
-  };
+  return minY.map((lo, s) => ({
+    above: Math.max(0, -lo) + CONTENT_PAD,
+    below: Math.max(0, maxY[s]! - STAFF_HEIGHT) + CONTENT_PAD,
+  }));
 }
 
 const PATH_POINT = /(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g;

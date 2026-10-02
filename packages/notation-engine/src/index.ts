@@ -13,11 +13,13 @@ export type {
   MeasureBox,
   MeasureClefChange,
   MeasurePlacement,
+  MeasureStaff,
   PathShape,
   Placements,
   RectShape,
   Slot,
   SlotRef,
+  StaffBox,
   SystemBox,
   ViewBox,
 } from './layout/types.js';

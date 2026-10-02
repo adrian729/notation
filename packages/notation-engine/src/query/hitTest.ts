@@ -1,6 +1,6 @@
 import type { Pitch as MnxPitch } from '@polyhymnia/mnx';
 import { toMnxPitch, type ClefSpec, type NoteId, type StepNumber } from '../layout/records.js';
-import { STAFF_HEIGHT, keyAlterOf, stepIndexAt } from '../layout/staff.js';
+import { keyAlterOf, stepIndexAt } from '../layout/staff.js';
 import type { Box, ElementBox, LayoutResult, MeasureBox, Slot, SystemBox } from '../layout/types.js';
 import { clefAtX } from './measures.js';
 
@@ -21,8 +21,9 @@ export type HitResult =
       box: ElementBox;
       staffPosition: number;
       pitch: MnxPitch | null;
+      staff?: number;
     }
-  | { kind: 'slot'; slot: Slot; staffPosition: number; pitch: MnxPitch }
+  | { kind: 'slot'; slot: Slot; staffPosition: number; pitch: MnxPitch; staff?: number }
   | {
       kind: 'point';
       measureIndex: number;
@@ -31,6 +32,7 @@ export type HitResult =
       tick: number;
       staffPosition: number;
       pitch: MnxPitch;
+      staff?: number;
     };
 
 const DEFAULT_KINDS: readonly HitKind[] = ['element', 'slot', 'point'];
@@ -51,7 +53,31 @@ function pitchAt(
 }
 
 function findSystem(layout: LayoutResult, y: number): SystemBox | undefined {
-  return layout.systems.find((s) => y >= s.y - HIT_STAFF_MARGIN && y <= s.y + STAFF_HEIGHT + HIT_STAFF_MARGIN);
+  return layout.systems.find((s) => y >= s.y - HIT_STAFF_MARGIN && y <= s.y + s.h + HIT_STAFF_MARGIN);
+}
+
+interface StaffHit {
+  y: number;
+  tag: { staff?: number };
+  index: number;
+}
+
+function nearestStaff(system: SystemBox, y: number): StaffHit {
+  if (!system.staves || system.staves.length === 0) return { y: system.y, tag: {}, index: 0 };
+  let best = system.staves[0]!;
+  let bestDist = Infinity;
+  for (const staff of system.staves) {
+    const dist = y < staff.y ? staff.y - y : y > staff.y + staff.h ? y - staff.y - staff.h : 0;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = staff;
+    }
+  }
+  return { y: best.y, tag: { staff: best.index }, index: best.index };
+}
+
+function staffY(system: SystemBox | undefined, staff: number | undefined): number {
+  return system?.staves?.[staff ?? 0]?.y ?? system?.y ?? 0;
 }
 
 function findMeasure(layout: LayoutResult, systemIndex: number, x: number): MeasureBox | undefined {
@@ -70,14 +96,14 @@ function hitElement(
   radius: number,
   voice: 0 | 1 | undefined,
 ): HitResult | null {
-  const systemY = new Map(layout.systems.map((s) => [s.index, s.y] as const));
+  const systemByIndex = new Map(layout.systems.map((s) => [s.index, s] as const));
   let best: ElementBox | undefined;
   let bestDist = Infinity;
   let bestDx = Infinity;
   for (const box of Object.values(layout.elements)) {
     if (voice !== undefined && box.voice !== voice) continue;
     if (!inflatedContains(box.hitBox, p, radius)) continue;
-    const y = systemY.get(box.systemIndex) ?? 0;
+    const y = staffY(systemByIndex.get(box.systemIndex), box.staff);
     const dist = Math.abs(box.staffPosition - (p.y - y));
     const dx = Math.abs(box.x + box.w / 2 - p.x);
     if (dist < bestDist || (dist === bestDist && dx < bestDx)) {
@@ -96,13 +122,14 @@ function hitElement(
     box: best,
     staffPosition: best.staffPosition,
     pitch,
+    ...(best.staff !== undefined ? { staff: best.staff } : {}),
   };
 }
 
 function hitSlot(
   layout: LayoutResult,
   measureBox: MeasureBox,
-  systemY: number,
+  staff: StaffHit,
   p: { x: number; y: number },
   voice: 0 | 1 | undefined,
   insertAlteration: 'key' | 'natural',
@@ -110,29 +137,41 @@ function hitSlot(
   const slot = layout.slots.find(
     (s) =>
       s.measureIndex === measureBox.index &&
+      (s.staff ?? 0) === staff.index &&
       p.x >= s.x &&
       p.x < s.x + s.w &&
       (voice === undefined || s.voice === voice),
   );
   if (!slot) return null;
-  const staffPosition = Math.round((p.y - systemY) * 2) / 2;
-  const pitch = pitchAt(staffPosition, measureBox, clefAtX(measureBox, p.x), insertAlteration);
-  return { kind: 'slot', slot, staffPosition, pitch };
+  const staffPosition = Math.round((p.y - staff.y) * 2) / 2;
+  const pitch = pitchAt(staffPosition, measureBox, clefAtX(measureBox, p.x, staff.tag.staff), insertAlteration);
+  return { kind: 'slot', slot, staffPosition, pitch, ...staff.tag };
 }
 
 function hitPoint(
   layout: LayoutResult,
   measureBox: MeasureBox,
   systemIndex: number,
-  systemY: number,
+  staff: StaffHit,
   p: { x: number; y: number },
   insertAlteration: 'key' | 'natural',
 ): HitResult {
-  const staffPosition = Math.round((p.y - systemY) * 2) / 2;
-  const pitch = pitchAt(staffPosition, measureBox, clefAtX(measureBox, p.x), insertAlteration);
-  const slotHere = layout.slots.find((s) => s.measureIndex === measureBox.index && p.x >= s.x && p.x < s.x + s.w);
+  const staffPosition = Math.round((p.y - staff.y) * 2) / 2;
+  const pitch = pitchAt(staffPosition, measureBox, clefAtX(measureBox, p.x, staff.tag.staff), insertAlteration);
+  const slotHere = layout.slots.find(
+    (s) => s.measureIndex === measureBox.index && (s.staff ?? 0) === staff.index && p.x >= s.x && p.x < s.x + s.w,
+  );
   const tick = slotHere ? slotHere.tick - measureBox.startTick : 0;
-  return { kind: 'point', measureIndex: measureBox.index, systemIndex, x: p.x, tick, staffPosition, pitch };
+  return {
+    kind: 'point',
+    measureIndex: measureBox.index,
+    systemIndex,
+    x: p.x,
+    tick,
+    staffPosition,
+    pitch,
+    ...staff.tag,
+  };
 }
 
 export function hitTest(layout: LayoutResult, p: { x: number; y: number }, opts: HitOptions = {}): HitResult | null {
@@ -150,14 +189,15 @@ export function hitTest(layout: LayoutResult, p: { x: number; y: number }, opts:
 
   const measureBox = findMeasure(layout, system.index, p.x);
   if (!measureBox) return null;
+  const staff = nearestStaff(system, p.y);
 
   if (kinds.includes('slot')) {
-    const hit = hitSlot(layout, measureBox, system.y, p, opts.voice, insertAlteration);
+    const hit = hitSlot(layout, measureBox, staff, p, opts.voice, insertAlteration);
     if (hit) return hit;
   }
 
   if (kinds.includes('point')) {
-    return hitPoint(layout, measureBox, system.index, system.y, p, insertAlteration);
+    return hitPoint(layout, measureBox, system.index, staff, p, insertAlteration);
   }
 
   return null;

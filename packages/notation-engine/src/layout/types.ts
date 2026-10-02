@@ -15,6 +15,13 @@ export interface SystemBox {
   y: number;
   w: number;
   h: number;
+  staves?: readonly StaffBox[];
+}
+
+export interface StaffBox {
+  index: number;
+  y: number;
+  h: number;
 }
 
 export interface GlyphRun {
@@ -24,6 +31,7 @@ export interface GlyphRun {
   cls: string;
   el?: NoteId;
   font?: number;
+  scale?: number;
 }
 
 export interface RectShape {
@@ -55,6 +63,7 @@ export interface ElementBox {
   systemIndex: number;
   measureIndex: number;
   voice: 0 | 1;
+  staff?: number;
   x: number;
   y: number;
   w: number;
@@ -70,6 +79,7 @@ export interface ElementBox {
 
 export interface SlotRef {
   measureIndex: number;
+  staff?: number;
   voice: 0 | 1;
   tick: number;
 }
@@ -92,6 +102,13 @@ export interface MeasureBox {
   clef: ClefSpec;
   key: KeySpec;
   clefChanges?: readonly MeasureClefChange[];
+  staves?: readonly MeasureStaff[];
+}
+
+export interface MeasureStaff {
+  clef: ClefSpec;
+  key: KeySpec;
+  clefChanges?: readonly MeasureClefChange[];
 }
 
 export interface MeasureClefChange {
@@ -104,6 +121,7 @@ export interface EntryPlacement {
   x: number;
   y: number;
   systemIndex: number;
+  staff?: number;
 }
 
 export interface MeasurePlacement {

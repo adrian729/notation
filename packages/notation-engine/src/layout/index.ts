@@ -59,6 +59,7 @@ export function layoutScore(doc: MnxDocument, options?: NotationOptions): Layout
       beams: beamed,
       tuplets: tupletShapes,
       curves: curveShapes,
+      staffCount: normalized.staves.length,
     },
     fonts,
   );

@@ -29,7 +29,15 @@ import {
   type StepNumber,
   type TimeSpec,
 } from './records.js';
-import { asArray, asObject, createReader, sequenceKey, type Reader, type SlurNote } from './normalize-reader.js';
+import {
+  asArray,
+  asObject,
+  createReader,
+  sequenceKey,
+  staffMeasureKey,
+  type Reader,
+  type SlurNote,
+} from './normalize-reader.js';
 import {
   barlineEndOf,
   reportGlobalConstructs,
@@ -39,7 +47,7 @@ import {
 } from './normalize-measure.js';
 import { resolveBeams } from './normalize-beams.js';
 import { clefEquals, lastClef } from './staff.js';
-import { timelineFor } from './timeline.js';
+import { declaredStaves, laidOutStaves, timelineFor } from './timeline.js';
 
 const DEFAULT_CLEF: ClefSpec = { kind: 'treble' };
 const DEFAULT_KEY: KeySpec = { fifths: 0 };
@@ -48,6 +56,7 @@ const HANDLED_MARKINGS = new Set(['breath', 'caesura', '_c', '_x', 'id']);
 interface SequenceScope {
   measureIndex: number;
   sequenceIndex: number;
+  staff: number;
 }
 
 export function normalize(
@@ -85,8 +94,10 @@ export function normalize(
   if (parts.length > 1) {
     reader.unsupported(`${parts.length} parts`, undefined, 'only the first part is laid out');
   }
-  if (typeof part.staves === 'number' && part.staves > 1) {
-    reader.unsupported(`a part with ${part.staves} staves`, undefined, 'only staff 1 is laid out');
+  const declared = declaredStaves(source);
+  const staffCount = laidOutStaves(source);
+  if (declared > staffCount) {
+    reader.unsupported(`a part with ${declared} staves`, undefined, `only staves 1-${staffCount} are laid out`);
   }
   reportDocumentConstructs(source, part, reader);
   if (part.kit) reader.unsupported('percussion kit', undefined, 'kit notes are not laid out');
@@ -96,15 +107,17 @@ export function normalize(
 
   const globals = asArray(asObject(source.global)?.measures);
   const partMeasures = asArray(part.measures);
+  const staffIndices = Array.from({ length: staffCount }, (_, i) => i);
 
   const elementTicks = elementTicksByMeasure(timeline);
-  let currentClef = DEFAULT_CLEF;
+  const currentClefs: ClefSpec[] = staffIndices.map(() => DEFAULT_CLEF);
+  const firstClefs: (ClefSpec | undefined)[] = staffIndices.map(() => undefined);
   let currentKey = DEFAULT_KEY;
-  let firstClef: ClefSpec | undefined;
   let firstKey: KeySpec | undefined;
   let firstTime: TimeSpec | undefined;
+  const measuresByStaff: NormalizedMeasure[][] = staffIndices.map(() => []);
 
-  const measures: NormalizedMeasure[] = globals.map((raw, index) => {
+  globals.forEach((raw, index) => {
     const g = (asObject(raw) ?? {}) as MeasureGlobal;
     const pm = (asObject(partMeasures[index]) ?? {}) as Partial<PartMeasure>;
     const timed = timeline.measures[index];
@@ -112,49 +125,54 @@ export function normalize(
 
     if (g.key !== undefined) currentKey = resolveKey(g.key, currentKey, index, reader);
 
-    const clefs = readClefs(asArray(pm.clefs), index, currentClef, elementTicks.get(index) ?? [], timeline, reader);
-    currentClef = clefs.carried;
+    const clefs = readClefs(asArray(pm.clefs), index, currentClefs, elementTicks, timeline, reader, declared);
+    clefs.forEach((c, s) => {
+      currentClefs[s] = c.carried;
+      firstClefs[s] ??= c.start;
+    });
 
     reportGlobalConstructs(g, index, reader);
     reportPartConstructs(pm, index, reader);
-    readSequences(asArray(pm.sequences), index, reader);
+    readSequences(asArray(pm.sequences), index, reader, staffCount, declared);
 
-    firstClef ??= clefs.start;
     firstKey ??= currentKey;
     firstTime ??= time;
 
-    return {
-      index,
-      clef: clefs.start,
-      clefChanges: clefs.changes,
+    const shared = {
       key: currentKey,
       time,
       pickup: timed?.pickup ?? false,
       capacityTicks: timed ? timed.endTick - timed.startTick : 0,
       ...(g.repeatStart ? { barlineStart: 'repeat-start' as const } : {}),
       ...barlineEndOf(g, index, reader),
-      systemBreak: false,
-    } satisfies NormalizedMeasure;
+    };
+    clefs.forEach((c, s) => {
+      measuresByStaff[s]!.push({
+        index,
+        clef: c.start,
+        clefChanges: c.changes,
+        ...shared,
+        systemBreak: false,
+      } satisfies NormalizedMeasure);
+    });
   });
 
-  assignTrailingClefs(measures, currentClef);
+  measuresByStaff.forEach((measures, s) => assignTrailingClefs(measures, currentClefs[s]!));
   resolveSlurs(reader);
-  applySystemBreaks(source, globals, measures, reader);
-  const beams = resolveBeams(source, partMeasures, measures, timeline, beamIds, reader, options);
+  applySystemBreaks(source, globals, measuresByStaff, reader);
+  const beams = resolveBeams(source, partMeasures, measuresByStaff[0]!, staffCount, timeline, beamIds, reader, options);
 
   return {
     id: idOf(source),
     divisions: timeline.divisions,
     timeline,
-    staves: [
-      {
-        index: 0,
-        clef: firstClef ?? DEFAULT_CLEF,
-        key: firstKey ?? DEFAULT_KEY,
-        time: firstTime ?? DEFAULT_TIME,
-        measures,
-      },
-    ],
+    staves: measuresByStaff.map((measures, s) => ({
+      index: s,
+      clef: firstClefs[s] ?? DEFAULT_CLEF,
+      key: firstKey ?? DEFAULT_KEY,
+      time: firstTime ?? DEFAULT_TIME,
+      measures,
+    })),
     events: reader.events,
     notes: reader.notes,
     beams,
@@ -170,13 +188,14 @@ interface MeasureClefs {
   carried: ClefSpec;
 }
 
-function elementTicksByMeasure(timeline: Timeline): Map<number, number[]> {
-  const byMeasure = new Map<number, number[]>();
+function elementTicksByMeasure(timeline: Timeline): Map<string, number[]> {
+  const byMeasure = new Map<string, number[]>();
   for (const entry of timeline.entries) {
     if (entry.kind === 'space') continue;
-    const ticks = byMeasure.get(entry.measureIndex) ?? [];
+    const key = staffMeasureKey(entry.staff - 1, entry.measureIndex);
+    const ticks = byMeasure.get(key) ?? [];
     ticks.push(entry.measureTick);
-    byMeasure.set(entry.measureIndex, ticks);
+    byMeasure.set(key, ticks);
   }
   for (const ticks of byMeasure.values()) ticks.sort((a, b) => a - b);
   return byMeasure;
@@ -185,19 +204,21 @@ function elementTicksByMeasure(timeline: Timeline): Map<number, number[]> {
 function readClefs(
   entries: readonly unknown[],
   measureIndex: number,
-  previous: ClefSpec,
-  elementTicks: readonly number[],
+  previous: readonly ClefSpec[],
+  elementTicks: ReadonlyMap<string, readonly number[]>,
   timeline: Timeline,
   reader: Reader,
-): MeasureClefs {
-  let start = previous;
-  const positioned: ClefChange[] = [];
+  declared: number,
+): MeasureClefs[] {
+  const starts = [...previous];
+  const positioned: ClefChange[][] = previous.map(() => []);
   for (const raw of entries) {
     const entry = asObject(raw);
     if (!entry) continue;
     const staff = typeof entry.staff === 'number' ? entry.staff : 1;
-    if (staff !== 1) {
-      reader.unsupported(`clef on staff ${staff}`, measureIndex, 'ignored');
+    const staffIndex = staff - 1;
+    if (staffIndex < 0 || staffIndex >= previous.length) {
+      if (staff > declared || staff < 1) reader.unsupported(`clef on staff ${staff}`, measureIndex, 'ignored');
       continue;
     }
     if (asObject(entry.position)?.graceIndex !== undefined) {
@@ -207,11 +228,16 @@ function readClefs(
     if (!clef) continue;
     const tick = entry.position === undefined ? 0 : clefTick(timeline, measureIndex, entry.position, reader);
     if (tick === null) continue;
-    if (tick === 0) start = clef;
-    else positioned.push({ tick, clef });
+    if (tick === 0) starts[staffIndex] = clef;
+    else positioned[staffIndex]!.push({ tick, clef });
   }
-  positioned.sort((a, b) => a.tick - b.tick);
+  return positioned.map((changes, staffIndex) =>
+    anchorClefChanges(starts[staffIndex]!, changes, elementTicks.get(staffMeasureKey(staffIndex, measureIndex)) ?? []),
+  );
+}
 
+function anchorClefChanges(start: ClefSpec, positioned: ClefChange[], elementTicks: readonly number[]): MeasureClefs {
+  positioned.sort((a, b) => a.tick - b.tick);
   const byAnchor = new Map<number, ClefChange>();
   let deferred: ClefSpec | undefined;
   for (const change of positioned) {
@@ -247,34 +273,50 @@ function idOf(source: MnxDocument): string {
   return typeof source.id === 'string' ? source.id : 'score';
 }
 
-function readSequences(sequences: readonly unknown[], measureIndex: number, reader: Reader): void {
-  const kept: { sequence: Partial<Sequence>; index: number }[] = [];
+function readSequences(
+  sequences: readonly unknown[],
+  measureIndex: number,
+  reader: Reader,
+  staffCount: number,
+  declared: number,
+): void {
+  const kept: { sequence: Partial<Sequence>; index: number; staffIndex: number }[] = [];
   sequences.forEach((raw, index) => {
     const sequence = asObject(raw) as Partial<Sequence> | undefined;
     if (!sequence) return;
     const staff = typeof sequence.staff === 'number' ? sequence.staff : 1;
-    if (staff !== 1) {
-      reader.unsupported(`sequence on staff ${staff}`, measureIndex, 'not laid out');
+    if (staff < 1 || staff > staffCount) {
+      if (staff > declared || staff < 1) reader.unsupported(`sequence on staff ${staff}`, measureIndex, 'not laid out');
       return;
     }
-    kept.push({ sequence, index });
+    kept.push({ sequence, index, staffIndex: staff - 1 });
   });
 
-  const voices: (0 | 1)[] = [];
-  kept.slice(0, 2).forEach(({ sequence, index }, i) => {
-    const voice = (i === 1 ? 1 : 0) as 0 | 1;
-    voices.push(voice);
-    reader.voiceOfSequence.set(sequenceKey(measureIndex, index), voice);
-    readContent(asArray(sequence.content), { measureIndex, sequenceIndex: index }, reader, []);
-    const full = asObject(sequence.fullMeasure);
-    if (full) {
-      if (full.fermata) reader.unsupported('fermata', measureIndex, 'not drawn');
-      if (full.visualDuration !== undefined) {
-        reader.unsupported('full-measure rest visualDuration', measureIndex, 'drawn as a whole-bar rest');
-      }
-    }
-  });
-  reader.voicesByMeasure.set(measureIndex, voices);
+  for (let staffIndex = 0; staffIndex < staffCount; staffIndex += 1) {
+    const voices: (0 | 1)[] = [];
+    kept
+      .filter((k) => k.staffIndex === staffIndex)
+      .slice(0, 2)
+      .forEach(({ sequence, index }, i) => {
+        const voice = (i === 1 ? 1 : 0) as 0 | 1;
+        voices.push(voice);
+        reader.voiceOfSequence.set(sequenceKey(measureIndex, index), { staffIndex, voice });
+        readContent(
+          asArray(sequence.content),
+          { measureIndex, sequenceIndex: index, staff: staffIndex + 1 },
+          reader,
+          [],
+        );
+        const full = asObject(sequence.fullMeasure);
+        if (full) {
+          if (full.fermata) reader.unsupported('fermata', measureIndex, 'not drawn');
+          if (full.visualDuration !== undefined) {
+            reader.unsupported('full-measure rest visualDuration', measureIndex, 'drawn as a whole-bar rest');
+          }
+        }
+      });
+    reader.voicesByMeasure.set(staffMeasureKey(staffIndex, measureIndex), voices);
+  }
 }
 
 function readContent(content: readonly unknown[], scope: SequenceScope, reader: Reader, path: readonly number[]): void {
@@ -284,8 +326,8 @@ function readContent(content: readonly unknown[], scope: SequenceScope, reader: 
     const itemPath = [...path, localIndex];
     switch (item.type) {
       case 'tuplet':
-        if (typeof item.staff === 'number' && item.staff !== 1) {
-          reader.unsupported('cross-staff tuplet', scope.measureIndex, 'laid out on staff 1');
+        if (typeof item.staff === 'number' && item.staff !== scope.staff) {
+          reader.unsupported('cross-staff tuplet', scope.measureIndex, `laid out on staff ${scope.staff}`);
         }
         if (item.showValue !== undefined) {
           reader.unsupported('tuplet showValue', scope.measureIndex, 'only the actual count is drawn');
@@ -300,20 +342,22 @@ function readContent(content: readonly unknown[], scope: SequenceScope, reader: 
   });
 }
 
-function readEvent(event: MnxEvent, pos: ElementPosition, reader: Reader): void {
-  const { measureIndex } = pos;
+function readEvent(event: MnxEvent, pos: ElementPosition & { staff: number }, reader: Reader): void {
+  const { measureIndex, staff } = pos;
   const id = reader.ids.idAt(pos);
   const entry = id === undefined ? undefined : reader.laidOut.get(id);
   if (id === undefined || !entry) return;
 
   if (entry.dots > 2) reader.unsupported(`${entry.dots} dots`, measureIndex, 'two dots are drawn');
-  reportEventConstructs(event, measureIndex, reader);
+  reportEventConstructs(event, measureIndex, staff, reader);
   if (entry.notes.length === 0) return;
 
   const mnxNotes = asArray(event.notes)
     .map((raw) => asObject(raw) as MnxNote | undefined)
     .filter((n): n is MnxNote => n !== undefined);
-  const notes = entry.notes.map((note, k) => readNote(mnxNotes[k] ?? ({} as MnxNote), note, measureIndex, reader));
+  const notes = entry.notes.map((note, k) =>
+    readNote(mnxNotes[k] ?? ({} as MnxNote), note, measureIndex, staff, reader),
+  );
   reader.eventsById.set(id, notes);
   asArray(event.slurs).forEach((raw, k) => {
     const slur = asObject(raw) as Slur | undefined;
@@ -324,11 +368,11 @@ function readEvent(event: MnxEvent, pos: ElementPosition, reader: Reader): void 
   reader.events.set(id, { ...(stem ? { stem } : {}), ...(breath ? { breath } : {}) });
 }
 
-function reportEventConstructs(event: MnxEvent, measureIndex: number, reader: Reader): void {
+function reportEventConstructs(event: MnxEvent, measureIndex: number, staff: number, reader: Reader): void {
   if (event.fermata) reader.unsupported('fermata', measureIndex, 'not drawn');
   if (event.lyrics) reader.unsupported('lyrics', measureIndex, 'not drawn');
-  if (typeof event.staff === 'number' && event.staff !== 1) {
-    reader.unsupported('cross-staff event', measureIndex, 'laid out on staff 1');
+  if (typeof event.staff === 'number' && event.staff !== staff) {
+    reader.unsupported('cross-staff event', measureIndex, `laid out on staff ${staff}`);
   }
   const markings = asObject(event.markings);
   if (!markings) return;
@@ -358,11 +402,11 @@ function breathOf(event: MnxEvent, measureIndex: number, reader: Reader): 'comma
   return 'comma';
 }
 
-function readNote(note: MnxNote, timed: TimelineNote, measureIndex: number, reader: Reader): SlurNote {
+function readNote(note: MnxNote, timed: TimelineNote, measureIndex: number, staff: number, reader: Reader): SlurNote {
   const pitch = staffPitch(timed.pitch, measureIndex, reader);
   const policy = accidentalPolicyOf(note, measureIndex, reader);
-  if (typeof note.staff === 'number' && note.staff !== 1) {
-    reader.unsupported('cross-staff note', measureIndex, 'laid out on staff 1');
+  if (typeof note.staff === 'number' && note.staff !== staff) {
+    reader.unsupported('cross-staff note', measureIndex, `laid out on staff ${staff}`);
   }
   if (note.written) reader.unsupported('note.written', measureIndex, 'sounding pitch is drawn instead');
   if (note.perform) reader.unsupported('note.perform', measureIndex, 'ignored');
@@ -509,7 +553,7 @@ function pitchIndex(p: StaffPitch): number {
 function applySystemBreaks(
   source: MnxDocument,
   globals: readonly unknown[],
-  measures: NormalizedMeasure[],
+  measuresByStaff: readonly NormalizedMeasure[][],
   reader: Reader,
 ): void {
   const { diagnostics } = reader;
@@ -539,7 +583,9 @@ function applySystemBreaks(
       });
       continue;
     }
-    const previous = measures[index - 1];
-    if (previous) previous.systemBreak = true;
+    for (const measures of measuresByStaff) {
+      const previous = measures[index - 1];
+      if (previous) previous.systemBreak = true;
+    }
   }
 }

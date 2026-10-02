@@ -1,0 +1,1617 @@
+{
+  "version": 1,
+  "viewBox": {
+    "x": -2.279,
+    "y": 0,
+    "w": 68.279,
+    "h": 22
+  },
+  "systems": [
+    {
+      "index": 0,
+      "x": 0,
+      "y": 4,
+      "w": 65,
+      "h": 14,
+      "staves": [
+        {
+          "index": 0,
+          "y": 4,
+          "h": 4
+        },
+        {
+          "index": 1,
+          "y": 14,
+          "h": 4
+        }
+      ]
+    }
+  ],
+  "glyphs": [
+    {
+      "x": -1.279,
+      "y": 17.991,
+      "cp": 57344,
+      "cls": "brace",
+      "scale": 3.496
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "cp": 57424,
+      "cls": "clef"
+    },
+    {
+      "x": 3.284,
+      "y": 5,
+      "cp": 57476,
+      "cls": "time-signature-numerator"
+    },
+    {
+      "x": 3.284,
+      "y": 7,
+      "cp": 57476,
+      "cls": "time-signature-denominator"
+    },
+    {
+      "x": 0,
+      "y": 17,
+      "cp": 57424,
+      "cls": "clef"
+    },
+    {
+      "x": 3.284,
+      "y": 15,
+      "cp": 57476,
+      "cls": "time-signature-numerator"
+    },
+    {
+      "x": 3.284,
+      "y": 17,
+      "cp": 57476,
+      "cls": "time-signature-denominator"
+    },
+    {
+      "x": 5.764,
+      "y": 5.5,
+      "cp": 57507,
+      "cls": "notehead",
+      "el": "m0.s0.e0"
+    },
+    {
+      "x": 5.764,
+      "y": 19,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev4"
+    },
+    {
+      "x": 9.279,
+      "y": 17,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev5"
+    },
+    {
+      "x": 12.794,
+      "y": 18,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev6"
+    },
+    {
+      "x": 16.308,
+      "y": 17,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev7"
+    },
+    {
+      "x": 19.823,
+      "y": 4.5,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "m0.s0.e1"
+    },
+    {
+      "x": 19.823,
+      "y": 19,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev8"
+    },
+    {
+      "x": 23.338,
+      "y": 17,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev9"
+    },
+    {
+      "x": 26.853,
+      "y": 3.5,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "m0.s0.e2"
+    },
+    {
+      "x": 26.853,
+      "y": 18,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev10"
+    },
+    {
+      "x": 30.367,
+      "y": 17,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev11"
+    },
+    {
+      "x": 34.842,
+      "y": 6,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "m1.s0.e0"
+    },
+    {
+      "x": 36.222,
+      "y": 5.5,
+      "cp": 57831,
+      "cls": "dot",
+      "el": "m1.s0.e0"
+    },
+    {
+      "x": 34.842,
+      "y": 18.5,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev17"
+    },
+    {
+      "x": 38.357,
+      "y": 17,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev18"
+    },
+    {
+      "x": 41.872,
+      "y": 17.5,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev19"
+    },
+    {
+      "x": 45.386,
+      "y": 5.5,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev13"
+    },
+    {
+      "x": 45.386,
+      "y": 17,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev20"
+    },
+    {
+      "x": 47.884,
+      "y": 5,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev14"
+    },
+    {
+      "x": 50.381,
+      "y": 5.5,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "m1.s0.e3"
+    },
+    {
+      "x": 50.381,
+      "y": 19,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev21"
+    },
+    {
+      "x": 53.896,
+      "y": 17,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev22"
+    },
+    {
+      "x": 57.41,
+      "y": 6,
+      "cp": 58597,
+      "cls": "rest",
+      "el": "m1.s0.e4"
+    },
+    {
+      "x": 57.41,
+      "y": 18,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev23"
+    },
+    {
+      "x": 60.925,
+      "y": 17,
+      "cp": 57508,
+      "cls": "notehead",
+      "el": "ev24"
+    }
+  ],
+  "rects": [
+    {
+      "x": 0,
+      "y": 3.935,
+      "w": 65,
+      "h": 0.13,
+      "cls": "staff-line"
+    },
+    {
+      "x": 0,
+      "y": 4.935,
+      "w": 65,
+      "h": 0.13,
+      "cls": "staff-line"
+    },
+    {
+      "x": 0,
+      "y": 5.935,
+      "w": 65,
+      "h": 0.13,
+      "cls": "staff-line"
+    },
+    {
+      "x": 0,
+      "y": 6.935,
+      "w": 65,
+      "h": 0.13,
+      "cls": "staff-line"
+    },
+    {
+      "x": 0,
+      "y": 7.935,
+      "w": 65,
+      "h": 0.13,
+      "cls": "staff-line"
+    },
+    {
+      "x": 0,
+      "y": 13.935,
+      "w": 65,
+      "h": 0.13,
+      "cls": "staff-line"
+    },
+    {
+      "x": 0,
+      "y": 14.935,
+      "w": 65,
+      "h": 0.13,
+      "cls": "staff-line"
+    },
+    {
+      "x": 0,
+      "y": 15.935,
+      "w": 65,
+      "h": 0.13,
+      "cls": "staff-line"
+    },
+    {
+      "x": 0,
+      "y": 16.935,
+      "w": 65,
+      "h": 0.13,
+      "cls": "staff-line"
+    },
+    {
+      "x": 0,
+      "y": 17.935,
+      "w": 65,
+      "h": 0.13,
+      "cls": "staff-line"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "w": 0.16,
+      "h": 14,
+      "cls": "barline"
+    },
+    {
+      "x": 34.282,
+      "y": 4,
+      "w": 0.16,
+      "h": 14,
+      "cls": "barline"
+    },
+    {
+      "x": 5.764,
+      "y": 5.668,
+      "w": 0.12,
+      "h": 3.332,
+      "cls": "stem",
+      "el": "m0.s0.e0"
+    },
+    {
+      "x": 5.364,
+      "y": 18.92,
+      "w": 1.98,
+      "h": 0.16,
+      "cls": "ledger-line",
+      "el": "ev4"
+    },
+    {
+      "x": 6.824,
+      "y": 13.999,
+      "w": 0.12,
+      "h": 4.833,
+      "cls": "stem",
+      "el": "ev4"
+    },
+    {
+      "x": 10.339,
+      "y": 13.332,
+      "w": 0.12,
+      "h": 3.5,
+      "cls": "stem",
+      "el": "ev5"
+    },
+    {
+      "x": 13.854,
+      "y": 12.665,
+      "w": 0.12,
+      "h": 5.167,
+      "cls": "stem",
+      "el": "ev6"
+    },
+    {
+      "x": 17.368,
+      "y": 11.999,
+      "w": 0.12,
+      "h": 4.833,
+      "cls": "stem",
+      "el": "ev7"
+    },
+    {
+      "x": 19.823,
+      "y": 4.668,
+      "w": 0.12,
+      "h": 3.332,
+      "cls": "stem",
+      "el": "m0.s0.e1"
+    },
+    {
+      "x": 19.423,
+      "y": 18.92,
+      "w": 1.98,
+      "h": 0.16,
+      "cls": "ledger-line",
+      "el": "ev8"
+    },
+    {
+      "x": 20.883,
+      "y": 13.999,
+      "w": 0.12,
+      "h": 4.833,
+      "cls": "stem",
+      "el": "ev8"
+    },
+    {
+      "x": 24.398,
+      "y": 13.332,
+      "w": 0.12,
+      "h": 3.5,
+      "cls": "stem",
+      "el": "ev9"
+    },
+    {
+      "x": 26.853,
+      "y": 3.668,
+      "w": 0.12,
+      "h": 3.332,
+      "cls": "stem",
+      "el": "m0.s0.e2"
+    },
+    {
+      "x": 27.913,
+      "y": 12.665,
+      "w": 0.12,
+      "h": 5.167,
+      "cls": "stem",
+      "el": "ev10"
+    },
+    {
+      "x": 31.427,
+      "y": 11.999,
+      "w": 0.12,
+      "h": 4.833,
+      "cls": "stem",
+      "el": "ev11"
+    },
+    {
+      "x": 64.84,
+      "y": 4,
+      "w": 0.16,
+      "h": 14,
+      "cls": "barline"
+    },
+    {
+      "x": 34.842,
+      "y": 6.168,
+      "w": 0.12,
+      "h": 3.332,
+      "cls": "stem",
+      "el": "m1.s0.e0"
+    },
+    {
+      "x": 35.902,
+      "y": 13.832,
+      "w": 0.12,
+      "h": 4.5,
+      "cls": "stem",
+      "el": "ev17"
+    },
+    {
+      "x": 39.417,
+      "y": 13.332,
+      "w": 0.12,
+      "h": 3.5,
+      "cls": "stem",
+      "el": "ev18"
+    },
+    {
+      "x": 42.932,
+      "y": 12.832,
+      "w": 0.12,
+      "h": 4.5,
+      "cls": "stem",
+      "el": "ev19"
+    },
+    {
+      "x": 45.386,
+      "y": 5.668,
+      "w": 0.12,
+      "h": 4.25,
+      "cls": "stem",
+      "el": "ev13"
+    },
+    {
+      "x": 46.446,
+      "y": 12.332,
+      "w": 0.12,
+      "h": 4.5,
+      "cls": "stem",
+      "el": "ev20"
+    },
+    {
+      "x": 47.884,
+      "y": 5.168,
+      "w": 0.12,
+      "h": 4.25,
+      "cls": "stem",
+      "el": "ev14"
+    },
+    {
+      "x": 50.381,
+      "y": 5.668,
+      "w": 0.12,
+      "h": 3.332,
+      "cls": "stem",
+      "el": "m1.s0.e3"
+    },
+    {
+      "x": 49.981,
+      "y": 18.92,
+      "w": 1.98,
+      "h": 0.16,
+      "cls": "ledger-line",
+      "el": "ev21"
+    },
+    {
+      "x": 51.441,
+      "y": 13.999,
+      "w": 0.12,
+      "h": 4.833,
+      "cls": "stem",
+      "el": "ev21"
+    },
+    {
+      "x": 54.956,
+      "y": 13.332,
+      "w": 0.12,
+      "h": 3.5,
+      "cls": "stem",
+      "el": "ev22"
+    },
+    {
+      "x": 58.47,
+      "y": 12.665,
+      "w": 0.12,
+      "h": 5.167,
+      "cls": "stem",
+      "el": "ev23"
+    },
+    {
+      "x": 61.985,
+      "y": 11.999,
+      "w": 0.12,
+      "h": 4.833,
+      "cls": "stem",
+      "el": "ev24"
+    }
+  ],
+  "paths": [
+    {
+      "d": "M6.824,14.499 L17.488308857599005,12.476 L17.488308857599005,11.976 L6.824,13.999 Z",
+      "cls": "beam",
+      "el": "ev4.beam"
+    },
+    {
+      "d": "M20.883078476798673,14.499 L31.54738733439768,12.476 L31.54738733439768,11.976 L20.883078476798673,13.999 Z",
+      "cls": "beam",
+      "el": "ev8.beam"
+    },
+    {
+      "d": "M45.38646581119635,9.418 L48.00369366719884,8.894 L48.00369366719884,9.394 L45.38646581119635,9.918 Z",
+      "cls": "beam",
+      "el": "ev13.beam"
+    },
+    {
+      "d": "M45.38646581119635,8.668 L48.00369366719884,8.144 L48.00369366719884,8.644 L45.38646581119635,9.168 Z",
+      "cls": "beam",
+      "el": "ev13.beam"
+    },
+    {
+      "d": "M35.90215695359735,14.332 L46.56646581119635,12.815 L46.56646581119635,12.315 L35.90215695359735,13.832 Z",
+      "cls": "beam",
+      "el": "ev17.beam"
+    },
+    {
+      "d": "M51.44092152320133,14.499 L62.105230380800336,12.476 L62.105230380800336,11.976 L51.44092152320133,13.999 Z",
+      "cls": "beam",
+      "el": "ev21.beam"
+    }
+  ],
+  "elements": {
+    "m0.s0.e0": {
+      "id": "m0.s0.e0",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "staff": 0,
+      "x": 5.764,
+      "y": 5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 5.614,
+        "y": 4.85,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 1.5,
+      "tick": 0,
+      "durationTicks": 6720,
+      "label": "C 5, half note, measure 1",
+      "eventId": "m0.s0.e0",
+      "pitch": {
+        "step": 0,
+        "alter": 0,
+        "octave": 5
+      }
+    },
+    "ev4": {
+      "id": "ev4",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "staff": 1,
+      "x": 5.764,
+      "y": 18.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 5.614,
+        "y": 18.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 5,
+      "tick": 0,
+      "durationTicks": 1680,
+      "label": "C 4, eighth note, measure 1",
+      "eventId": "ev4",
+      "pitch": {
+        "step": 0,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev5": {
+      "id": "ev5",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "staff": 1,
+      "x": 9.279,
+      "y": 16.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 9.129,
+        "y": 16.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 3,
+      "tick": 1680,
+      "durationTicks": 1680,
+      "label": "G 4, eighth note, measure 1",
+      "eventId": "ev5",
+      "pitch": {
+        "step": 4,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev6": {
+      "id": "ev6",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "staff": 1,
+      "x": 12.794,
+      "y": 17.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 12.644,
+        "y": 17.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 4,
+      "tick": 3360,
+      "durationTicks": 1680,
+      "label": "E 4, eighth note, measure 1",
+      "eventId": "ev6",
+      "pitch": {
+        "step": 2,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev7": {
+      "id": "ev7",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "staff": 1,
+      "x": 16.308,
+      "y": 16.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 16.158,
+        "y": 16.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 3,
+      "tick": 5040,
+      "durationTicks": 1680,
+      "label": "G 4, eighth note, measure 1",
+      "eventId": "ev7",
+      "pitch": {
+        "step": 4,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "m0.s0.e1": {
+      "id": "m0.s0.e1",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "staff": 0,
+      "x": 19.823,
+      "y": 4,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 19.673,
+        "y": 3.85,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 0.5,
+      "tick": 6720,
+      "durationTicks": 3360,
+      "label": "E 5, quarter note, measure 1",
+      "eventId": "m0.s0.e1",
+      "pitch": {
+        "step": 2,
+        "alter": 0,
+        "octave": 5
+      }
+    },
+    "ev8": {
+      "id": "ev8",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "staff": 1,
+      "x": 19.823,
+      "y": 18.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 19.673,
+        "y": 18.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 5,
+      "tick": 6720,
+      "durationTicks": 1680,
+      "label": "C 4, eighth note, measure 1",
+      "eventId": "ev8",
+      "pitch": {
+        "step": 0,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev9": {
+      "id": "ev9",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "staff": 1,
+      "x": 23.338,
+      "y": 16.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 23.188,
+        "y": 16.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 3,
+      "tick": 8400,
+      "durationTicks": 1680,
+      "label": "G 4, eighth note, measure 1",
+      "eventId": "ev9",
+      "pitch": {
+        "step": 4,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "m0.s0.e2": {
+      "id": "m0.s0.e2",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "staff": 0,
+      "x": 26.853,
+      "y": 3,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 26.703,
+        "y": 2.85,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": -0.5,
+      "tick": 10080,
+      "durationTicks": 3360,
+      "label": "G 5, quarter note, measure 1",
+      "eventId": "m0.s0.e2",
+      "pitch": {
+        "step": 4,
+        "alter": 0,
+        "octave": 5
+      }
+    },
+    "ev10": {
+      "id": "ev10",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "staff": 1,
+      "x": 26.853,
+      "y": 17.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 26.703,
+        "y": 17.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 4,
+      "tick": 10080,
+      "durationTicks": 1680,
+      "label": "E 4, eighth note, measure 1",
+      "eventId": "ev10",
+      "pitch": {
+        "step": 2,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev11": {
+      "id": "ev11",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "staff": 1,
+      "x": 30.367,
+      "y": 16.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 30.217,
+        "y": 16.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 3,
+      "tick": 11760,
+      "durationTicks": 1680,
+      "label": "G 4, eighth note, measure 1",
+      "eventId": "ev11",
+      "pitch": {
+        "step": 4,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "m1.s0.e0": {
+      "id": "m1.s0.e0",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 0,
+      "x": 34.842,
+      "y": 5.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 34.692,
+        "y": 5.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 2,
+      "tick": 13440,
+      "durationTicks": 5040,
+      "label": "B 4, dotted quarter note, measure 2",
+      "eventId": "m1.s0.e0",
+      "pitch": {
+        "step": 6,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev17": {
+      "id": "ev17",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 1,
+      "x": 34.842,
+      "y": 18,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 34.692,
+        "y": 17.85,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 4.5,
+      "tick": 13440,
+      "durationTicks": 1680,
+      "label": "D 4, eighth note, measure 2",
+      "eventId": "ev17",
+      "pitch": {
+        "step": 1,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev18": {
+      "id": "ev18",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 1,
+      "x": 38.357,
+      "y": 16.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 38.207,
+        "y": 16.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 3,
+      "tick": 15120,
+      "durationTicks": 1680,
+      "label": "G 4, eighth note, measure 2",
+      "eventId": "ev18",
+      "pitch": {
+        "step": 4,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev19": {
+      "id": "ev19",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 1,
+      "x": 41.872,
+      "y": 17,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 41.722,
+        "y": 16.85,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 3.5,
+      "tick": 16800,
+      "durationTicks": 1680,
+      "label": "F 4, eighth note, measure 2",
+      "eventId": "ev19",
+      "pitch": {
+        "step": 3,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev13": {
+      "id": "ev13",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 0,
+      "x": 45.386,
+      "y": 5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 45.236,
+        "y": 4.85,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 1.5,
+      "tick": 18480,
+      "durationTicks": 840,
+      "label": "C 5, sixteenth note, measure 2",
+      "eventId": "ev13",
+      "pitch": {
+        "step": 0,
+        "alter": 0,
+        "octave": 5
+      }
+    },
+    "ev20": {
+      "id": "ev20",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 1,
+      "x": 45.386,
+      "y": 16.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 45.236,
+        "y": 16.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 3,
+      "tick": 18480,
+      "durationTicks": 1680,
+      "label": "G 4, eighth note, measure 2",
+      "eventId": "ev20",
+      "pitch": {
+        "step": 4,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev14": {
+      "id": "ev14",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 0,
+      "x": 47.884,
+      "y": 4.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 47.734,
+        "y": 4.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 1,
+      "tick": 19320,
+      "durationTicks": 840,
+      "label": "D 5, sixteenth note, measure 2",
+      "eventId": "ev14",
+      "pitch": {
+        "step": 1,
+        "alter": 0,
+        "octave": 5
+      }
+    },
+    "m1.s0.e3": {
+      "id": "m1.s0.e3",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 0,
+      "x": 50.381,
+      "y": 5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 50.231,
+        "y": 4.85,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 1.5,
+      "tick": 20160,
+      "durationTicks": 3360,
+      "label": "C 5, quarter note, measure 2",
+      "eventId": "m1.s0.e3",
+      "pitch": {
+        "step": 0,
+        "alter": 0,
+        "octave": 5
+      }
+    },
+    "ev21": {
+      "id": "ev21",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 1,
+      "x": 50.381,
+      "y": 18.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 50.231,
+        "y": 18.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 5,
+      "tick": 20160,
+      "durationTicks": 1680,
+      "label": "C 4, eighth note, measure 2",
+      "eventId": "ev21",
+      "pitch": {
+        "step": 0,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev22": {
+      "id": "ev22",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 1,
+      "x": 53.896,
+      "y": 16.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 53.746,
+        "y": 16.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 3,
+      "tick": 21840,
+      "durationTicks": 1680,
+      "label": "G 4, eighth note, measure 2",
+      "eventId": "ev22",
+      "pitch": {
+        "step": 4,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "m1.s0.e4": {
+      "id": "m1.s0.e4",
+      "kind": "rest",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 0,
+      "x": 57.41,
+      "y": 4.508,
+      "w": 1.08,
+      "h": 2.992,
+      "hitBox": {
+        "x": 57.26,
+        "y": 4.358,
+        "w": 1.38,
+        "h": 3.292
+      },
+      "staffPosition": 2,
+      "tick": 23520,
+      "durationTicks": 3360,
+      "label": "quarter rest, measure 2",
+      "eventId": "m1.s0.e4"
+    },
+    "ev23": {
+      "id": "ev23",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 1,
+      "x": 57.41,
+      "y": 17.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 57.26,
+        "y": 17.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 4,
+      "tick": 23520,
+      "durationTicks": 1680,
+      "label": "E 4, eighth note, measure 2",
+      "eventId": "ev23",
+      "pitch": {
+        "step": 2,
+        "alter": 0,
+        "octave": 4
+      }
+    },
+    "ev24": {
+      "id": "ev24",
+      "kind": "note",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "staff": 1,
+      "x": 60.925,
+      "y": 16.5,
+      "w": 1.18,
+      "h": 1,
+      "hitBox": {
+        "x": 60.775,
+        "y": 16.35,
+        "w": 1.48,
+        "h": 1.3
+      },
+      "staffPosition": 3,
+      "tick": 25200,
+      "durationTicks": 1680,
+      "label": "G 4, eighth note, measure 2",
+      "eventId": "ev24",
+      "pitch": {
+        "step": 4,
+        "alter": 0,
+        "octave": 4
+      }
+    }
+  },
+  "slots": [
+    {
+      "measureIndex": 0,
+      "staff": 0,
+      "voice": 0,
+      "tick": 0,
+      "x": 5.764,
+      "w": 14.059,
+      "eventId": "m0.s0.e0",
+      "elementIds": [
+        "m0.s0.e0"
+      ]
+    },
+    {
+      "measureIndex": 0,
+      "staff": 0,
+      "voice": 0,
+      "tick": 6720,
+      "x": 19.823,
+      "w": 7.03,
+      "eventId": "m0.s0.e1",
+      "elementIds": [
+        "m0.s0.e1"
+      ]
+    },
+    {
+      "measureIndex": 0,
+      "staff": 0,
+      "voice": 0,
+      "tick": 10080,
+      "x": 26.853,
+      "w": 7.03,
+      "eventId": "m0.s0.e2",
+      "elementIds": [
+        "m0.s0.e2"
+      ]
+    },
+    {
+      "measureIndex": 0,
+      "staff": 1,
+      "voice": 0,
+      "tick": 0,
+      "x": 5.764,
+      "w": 3.515,
+      "eventId": "ev4",
+      "elementIds": [
+        "ev4"
+      ]
+    },
+    {
+      "measureIndex": 0,
+      "staff": 1,
+      "voice": 0,
+      "tick": 1680,
+      "x": 9.279,
+      "w": 3.515,
+      "eventId": "ev5",
+      "elementIds": [
+        "ev5"
+      ]
+    },
+    {
+      "measureIndex": 0,
+      "staff": 1,
+      "voice": 0,
+      "tick": 3360,
+      "x": 12.794,
+      "w": 3.515,
+      "eventId": "ev6",
+      "elementIds": [
+        "ev6"
+      ]
+    },
+    {
+      "measureIndex": 0,
+      "staff": 1,
+      "voice": 0,
+      "tick": 5040,
+      "x": 16.308,
+      "w": 3.515,
+      "eventId": "ev7",
+      "elementIds": [
+        "ev7"
+      ]
+    },
+    {
+      "measureIndex": 0,
+      "staff": 1,
+      "voice": 0,
+      "tick": 6720,
+      "x": 19.823,
+      "w": 3.515,
+      "eventId": "ev8",
+      "elementIds": [
+        "ev8"
+      ]
+    },
+    {
+      "measureIndex": 0,
+      "staff": 1,
+      "voice": 0,
+      "tick": 8400,
+      "x": 23.338,
+      "w": 3.515,
+      "eventId": "ev9",
+      "elementIds": [
+        "ev9"
+      ]
+    },
+    {
+      "measureIndex": 0,
+      "staff": 1,
+      "voice": 0,
+      "tick": 10080,
+      "x": 26.853,
+      "w": 3.515,
+      "eventId": "ev10",
+      "elementIds": [
+        "ev10"
+      ]
+    },
+    {
+      "measureIndex": 0,
+      "staff": 1,
+      "voice": 0,
+      "tick": 11760,
+      "x": 30.367,
+      "w": 3.515,
+      "eventId": "ev11",
+      "elementIds": [
+        "ev11"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 0,
+      "voice": 0,
+      "tick": 13440,
+      "x": 34.842,
+      "w": 10.544,
+      "eventId": "m1.s0.e0",
+      "elementIds": [
+        "m1.s0.e0"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 0,
+      "voice": 0,
+      "tick": 18480,
+      "x": 45.386,
+      "w": 2.497,
+      "eventId": "ev13",
+      "elementIds": [
+        "ev13"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 0,
+      "voice": 0,
+      "tick": 19320,
+      "x": 47.884,
+      "w": 2.497,
+      "eventId": "ev14",
+      "elementIds": [
+        "ev14"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 0,
+      "voice": 0,
+      "tick": 20160,
+      "x": 50.381,
+      "w": 7.03,
+      "eventId": "m1.s0.e3",
+      "elementIds": [
+        "m1.s0.e3"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 0,
+      "voice": 0,
+      "tick": 23520,
+      "x": 57.41,
+      "w": 7.03,
+      "eventId": "m1.s0.e4",
+      "elementIds": [
+        "m1.s0.e4"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 1,
+      "voice": 0,
+      "tick": 13440,
+      "x": 34.842,
+      "w": 3.515,
+      "eventId": "ev17",
+      "elementIds": [
+        "ev17"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 1,
+      "voice": 0,
+      "tick": 15120,
+      "x": 38.357,
+      "w": 3.515,
+      "eventId": "ev18",
+      "elementIds": [
+        "ev18"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 1,
+      "voice": 0,
+      "tick": 16800,
+      "x": 41.872,
+      "w": 3.515,
+      "eventId": "ev19",
+      "elementIds": [
+        "ev19"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 1,
+      "voice": 0,
+      "tick": 18480,
+      "x": 45.386,
+      "w": 4.994,
+      "eventId": "ev20",
+      "elementIds": [
+        "ev20"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 1,
+      "voice": 0,
+      "tick": 20160,
+      "x": 50.381,
+      "w": 3.515,
+      "eventId": "ev21",
+      "elementIds": [
+        "ev21"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 1,
+      "voice": 0,
+      "tick": 21840,
+      "x": 53.896,
+      "w": 3.515,
+      "eventId": "ev22",
+      "elementIds": [
+        "ev22"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 1,
+      "voice": 0,
+      "tick": 23520,
+      "x": 57.41,
+      "w": 3.515,
+      "eventId": "ev23",
+      "elementIds": [
+        "ev23"
+      ]
+    },
+    {
+      "measureIndex": 1,
+      "staff": 1,
+      "voice": 0,
+      "tick": 25200,
+      "x": 60.925,
+      "w": 3.515,
+      "eventId": "ev24",
+      "elementIds": [
+        "ev24"
+      ]
+    }
+  ],
+  "measures": [
+    {
+      "index": 0,
+      "systemIndex": 0,
+      "x": 0,
+      "w": 34.442,
+      "contentX": 5.764,
+      "startTick": 0,
+      "capacityTicks": 13440,
+      "clef": {
+        "kind": "treble"
+      },
+      "key": {
+        "fifths": 0
+      },
+      "staves": [
+        {
+          "clef": {
+            "kind": "treble"
+          },
+          "key": {
+            "fifths": 0
+          }
+        },
+        {
+          "clef": {
+            "kind": "treble"
+          },
+          "key": {
+            "fifths": 0
+          }
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "systemIndex": 0,
+      "x": 34.442,
+      "w": 30.558,
+      "contentX": 34.842,
+      "startTick": 13440,
+      "capacityTicks": 13440,
+      "clef": {
+        "kind": "treble"
+      },
+      "key": {
+        "fifths": 0
+      },
+      "staves": [
+        {
+          "clef": {
+            "kind": "treble"
+          },
+          "key": {
+            "fifths": 0
+          }
+        },
+        {
+          "clef": {
+            "kind": "treble"
+          },
+          "key": {
+            "fifths": 0
+          }
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "mnx-unsupported",
+      "message": "Unsupported MNX: part name; not drawn."
+    }
+  ]
+}

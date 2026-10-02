@@ -27,7 +27,7 @@ Integration only — no isolated-function unit tests. Every test enters through 
 
 ~4 weeks total, useful at end of week 1. Phases 2/3 are independent, parallelizable.
 
-**Not on the roadmap** (deferred features, `README.md`): grand staff, cross-staff beaming, nested tuplets, grace notes, dynamics, articulations, lyrics, chord symbols, multi-page.
+**Not on the roadmap** (deferred features, `README.md`): 3+ staves per part, cross-staff beaming, nested tuplets, grace notes, dynamics, articulations, lyrics, chord symbols, multi-page.
 
 ## Per-feature LOC estimate (model + engine + react, excl. tests)
 
@@ -54,7 +54,7 @@ Integration only — no isolated-function unit tests. Every test enters through 
 
 ## Resolved decisions
 
-- **Grand staff**: deferred. No current exercise needs it; needed for cadence/SATB/bass-line dictation and wide piano voicings. MNX already represents it — a part's `staves` count > 1 (`mnx.md`'s "Unsupported MNX" already reads and rejects this field) — so no schema change is needed, engine-only cost (a vertical-system concept and a brace glyph it doesn't have).
+- **Grand staff**: done for one part with 2 staves (`engraving.md` "Grand staff"). MNX represents it as a part's `staves` count, so no schema change was needed. A 3rd+ staff stays unsupported.
 - **`divisions = 3360`**: kept. MNX expresses any tuplet exactly; the value is an internal-only unit, not serialized, so it stays cheap to revisit.
 - **Tempo**: MNX tempos are the default source of truth; `tickToSeconds(tick, tempo?)`/`secondsToTick(seconds, tempo?)` take an optional override argument instead of a separate clock — notation packages never run clocks/timers/rAF, the app owns time and passes position (`AGENTS.md`).
 - **`options.accidentals.insertAlteration` default = key-aware**: kept. F line in D major → F♯.
@@ -75,7 +75,7 @@ Integration only — no isolated-function unit tests. Every test enters through 
 - **`setRhythm` intent**: not planned. Rhythm-dictation apps rebuild MNX themselves using `point.tick` (`interaction.md`) rather than editing rhythm in place.
 - **Editor features**: drag-to-change-pitch, an on-canvas duration palette, free multi-voice entry, measure/meter/key/clef edits, copy/paste — out of scope, interaction targets ear-training exercises, not a sheet editor (`interaction.md` "Deferred editor features").
 - **Runtime MusicXML import/export**: import stays offline/build-time only (`tools/musicxml-to-mnx` → committed `.mnx.json`); no runtime import or export until a product flow needs it (`AGENTS.md`).
-- **Grand staff + cross-staff beaming**: deferred, depends on grand staff landing first (see "Resolved decisions").
+- **Cross-staff beaming, notes, tuplets and slurs**: deferred; the grand staff they depend on is done.
 - **One-line percussion staff**: deferred, no current exercise needs it.
 - **E4 (mid-score clef changes) + E5 (end-of-system courtesy clef/key/time)**: done (`engraving.md` "Clef changes", "Courtesy signs at a system break").
 - **Golden fixture for accidental stacking**: done.
@@ -85,7 +85,7 @@ Integration only — no isolated-function unit tests. Every test enters through 
 - **15 keys x 4 clefs corpus**: in progress; meant to catch the hand-written tenor octave irregularity in `src/layout/staff.ts`.
 - **Property tests**: cover 3 of 5 planned invariants, single-measure documents only.
 - **`apps/web` tests**: none.
-- **Grand staff**: structurally absent; normalize always yields one staff.
+- **Grand staff**: 2 staves per part at most; cross-staff elements are laid out on their own staff.
 - **Knuth-Plass line breaking**: not done; greedy only, measures indivisible.
-- **`applyIntent`/`elementIds` addressing**: only part 0, staff 1, first 2 sequences.
+- **`applyIntent` addressing**: one part (default 0), all its staves, the first 2 sequences per staff.
 - **`EditIntent`**: one variant (`setPitches`).

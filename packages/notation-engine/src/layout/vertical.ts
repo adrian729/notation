@@ -202,12 +202,12 @@ function voiceDirection(voice: 0 | 1, upVoice: 0 | 1): 1 | -1 {
 type ClefLookup = (el: TemporalElement) => ClefSpec;
 
 function clefLookup(normalized: NormalizedScore): ClefLookup {
-  const byMeasure = new Map<number, NormalizedMeasure>();
+  const byMeasure = new Map<string, NormalizedMeasure>();
   for (const staff of normalized.staves) {
-    for (const measure of staff.measures) byMeasure.set(measure.index, measure);
+    for (const measure of staff.measures) byMeasure.set(measureKey(staff.index, measure.index), measure);
   }
   return (el) => {
-    const measure = byMeasure.get(el.measureIndex);
+    const measure = byMeasure.get(measureKey(el.staffIndex, el.measureIndex));
     return measure ? clefAt(measure, el.measureTick) : { kind: 'treble' };
   };
 }

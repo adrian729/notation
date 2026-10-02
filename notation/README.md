@@ -37,6 +37,7 @@ In scope — full engraving, not a reduced subset:
 | Spacing/justification | Duration-proportional, system-width justified | Done |
 | Multi-measure | Any count, greedy system breaking | Done |
 | Multi-voice | 2 voices per staff | Done |
+| Grand staff | One part with 2 staves: brace, system line, barlines through both staves, per-staff clefs and voices; a 3rd+ staff is not laid out | Done |
 | Interaction | Hit-testing, slots, `applyIntent({type:'setPitches'})` — ear-training answer entry, not a sheet editor (editor features deferred, `interaction.md`) | Done for exercise use |
 | Playback position | Discrete highlight (`mode:'notes'`) + exported timeline; continuous cursor (`mode:'cursor'`, app-driven via `setPlaybackTick`) | Done |
 | Accessibility | aria-label per note, text alternative | Done |
@@ -46,8 +47,8 @@ Deferred — explicit, not accidental. Most are additive later, not a redesign, 
 
 | Deferred | Cost to add later |
 | --- | --- |
-| Grand staff / piano brace | **Deferred** — no current exercise needs it; needed for cadence/SATB/bass-line dictation and wide piano voicings if those exercises land. MNX already represents it (a part's `staves` count), so this is an engine-only cost: a vertical-system concept and a brace glyph, no schema change |
-| Cross-staff beaming | High — needs grand staff first |
+| 3+ staves per part | Medium — the grand staff's per-staff geometry generalizes; organ-style layout needs staff groups |
+| Cross-staff notes, beams, tuplets, slurs | Medium — the grand staff is in place; each element is laid out on its own staff today |
 | Nested/compound tuplets | Medium — no longer a schema/data-model change: MNX `tuplet` containers already nest natively (`engraving.md`), the engine just flattens them today (`mnx.md`). Purely an engine change: draw the nested brackets instead of combining the ratio |
 | Grace notes, ornaments, glissandi | Medium — needs a new "non-metrical attachment" concept |
 | Dynamics, articulations, pedal | Low-medium — glyphs already in the font subset headroom tier (`font.md`) |

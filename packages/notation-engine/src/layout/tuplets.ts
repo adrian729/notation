@@ -13,6 +13,7 @@ const HOOK_LENGTH = 0.5;
 export interface TupletRect {
   el: string;
   systemIndex: number;
+  staffIndex: number;
   x: number;
   y: number;
   w: number;
@@ -22,6 +23,7 @@ export interface TupletRect {
 export interface TupletNumeralGlyph {
   el: string;
   systemIndex: number;
+  staffIndex: number;
   x: number;
   y: number;
   name: string;
@@ -59,6 +61,7 @@ export function tuplets(
     if (placed.length === 0) continue;
 
     const systemIndex = placed[0]!.systemIndex;
+    const { staffIndex } = span;
     const side = resolveSide(span.display, placed);
     const first = placed[0]!;
     const last = placed[placed.length - 1]!;
@@ -76,6 +79,7 @@ export function tuplets(
       brackets.push({
         el: span.id,
         systemIndex,
+        staffIndex,
         x: Math.min(x0, x1),
         y: lineY - thickness / 2,
         w: Math.abs(x1 - x0),
@@ -83,10 +87,10 @@ export function tuplets(
       });
 
       if (!edgeAbutsBeam(span.elements, 'first', beamGroups)) {
-        brackets.push(hookRect(span.id, systemIndex, x0, lineY, side, thickness));
+        brackets.push(hookRect(span.id, systemIndex, staffIndex, x0, lineY, side, thickness));
       }
       if (!edgeAbutsBeam(span.elements, 'last', beamGroups)) {
-        brackets.push(hookRect(span.id, systemIndex, x1, lineY, side, thickness));
+        brackets.push(hookRect(span.id, systemIndex, staffIndex, x1, lineY, side, thickness));
       }
     } else {
       const beamId = coveringBeamId(span, beamGroups);
@@ -108,7 +112,7 @@ export function tuplets(
 
     let x = numeralMidX - width / 2;
     for (const name of names) {
-      numerals.push({ el: span.id, systemIndex, x, y: anchorY, name });
+      numerals.push({ el: span.id, systemIndex, staffIndex, x, y: anchorY, name });
       x += fonts.advanceWidth(name);
     }
   }
@@ -205,13 +209,14 @@ function noteheadCenterX(p: Placed): number {
 function hookRect(
   el: string,
   systemIndex: number,
+  staffIndex: number,
   x: number,
   lineY: number,
   side: 'above' | 'below',
   thickness: number,
 ): TupletRect {
   const y = side === 'above' ? lineY : lineY - HOOK_LENGTH;
-  return { el, systemIndex, x: x - thickness / 2, y, w: thickness, h: HOOK_LENGTH };
+  return { el, systemIndex, staffIndex, x: x - thickness / 2, y, w: thickness, h: HOOK_LENGTH };
 }
 
 function edgeAbutsBeam(

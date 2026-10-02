@@ -41,12 +41,12 @@ apps/web/                        # imports @polyhymnia/notation-react and @polyh
 
 Dependency direction: `mnx` and `notation-fonts` are leaves, and `music-theory` and `web-audio` come from npm (their own repos); `mnx-score` ← `mnx`, `music-theory`; `notation-engine` ← `mnx`, `mnx-score`, `music-theory`, `notation-fonts`; `notation-react` ← `notation-engine`, `mnx-score`, `notation-fonts`, `mnx`; `apps/web` (here) and the app (github.com/adrian729/polyhymnia-ear-training) consume the packages and map `performance()` events to `web-audio` `NoteEvent`s. The engine resolves glyphs through a font context built from `NotationFont` data (`font.md`), not private font copies. `notation-react` and `web-audio` never import each other.
 
-- `mnx` — a thin layer over MNX, nothing else: the vendored schema and its 52 official examples, generated `MnxDocument`/`Event`/`Note`/… types, `readMnx()` (version check), `Rational`, `noteValueLength`/`tupletRatio` (MNX note-value and tuplet math, also used by the engine), `assignIds`, scoped positional-id addressing (`element-ids.ts`: `elementIds(doc, scope?)` with `ElementScope {parts?, staves?, maxVoices?}`, default part 0 / staff 1 / 2 voices, ids outside the default scope prefixed `p{n}.`/`st{k}.`; `ElementIds` with `idAt`, `nodeOf`, `mint`, `registerExplicit`, `freeze`, `fork`, `diagnostics` — `mnx.md` "ID rule"), and edit application on the `./edit` entry (`edit/`: `applyIntent(doc, intent, part = 0)`, pure MNX → MNX, `interaction.md`; not re-exported from `.`). No custom score model, no builders in packages (`AGENTS.md`). No dependencies at all besides its own devDependencies (Ajv, `json-schema-to-typescript`, both build/test-time only).
+- `mnx` — a thin layer over MNX, nothing else: the vendored schema and its 52 official examples, generated `MnxDocument`/`Event`/`Note`/… types, `readMnx()` (version check), `Rational`, `noteValueLength`/`tupletRatio` (MNX note-value and tuplet math, also used by the engine), `assignIds`, scoped positional-id addressing (`element-ids.ts`: `elementIds(doc, scope?)` with `ElementScope {parts?, staves?, maxVoices?}`, default part 0 / staff 1 / 2 voices, ids outside the default scope prefixed `p{n}.`/`st{k}.`; `ElementIds` with `idAt`, `nodeOf`, `mint`, `registerExplicit`, `freeze`, `fork`, `diagnostics` — `mnx.md` "ID rule"), and edit application on the `./edit` entry (`edit/`: `applyIntent(doc, intent, part = 0)`, addressing every staff of that part, pure MNX → MNX, `interaction.md`; not re-exported from `.`). No custom score model, no builders in packages (`AGENTS.md`). No dependencies at all besides its own devDependencies (Ajv, `json-schema-to-typescript`, both build/test-time only).
 - `notation-engine` — the font context (`src/font/`, `resolveGlyph` over caller fonts then the style's default font), the layout pipeline (time, ids and pitch come from the `mnx-score` timeline; `normalize` reads only engraving data from MNX), `query/` (hit-testing, slots, preview, `positionAtTick`), plus `NotationOptions`. Auto-beaming policy (`beamGroups`, `beatGroupingFor`) is engine-internal, in `layout/beam-policy/`. The root entry exports only what consumers use (`layoutScore`, `positionAtTick`, `hitTest` + `HIT_STAFF_MARGIN`, `previewShapes`, `LayoutResult` and its shape types, `NotationOptions`, `ClefSpec`/`KeySpec`/`StaffPitch`/`TimeSpec`, `HitKind`/`HitOptions`/`HitResult`, `PreviewNote`); pipeline stages stay internal. Consumers import each symbol from its owning package; `notation-react` exports only React things. Its output, `LayoutResult`, is the renderer-agnostic contract: a future Vue (or any other) rendering package depends on `mnx` + `notation-engine` exactly as `notation-react` does, and reimplements only the rendering layer.
 - `web-audio` — sound from MIDI events: pure `NoteEvent`/`Clip` builders on `.`, Web Audio synth and player on `./webaudio`, sample player on `./sampler` (`audio.md`). No workspace dependencies; score events come from `mnx-score` `performance()` via the app.
 - `notation-react` — the React rendering layer. It has no presets export; the app's presets (`src/components/presets/` in github.com/adrian729/polyhymnia-ear-training) build plain MNX with the app-private `mnxBuild` helper (`interface.md`).
 - `music-theory` — pitch, interval, chord, scale and key theory; pure, no dependencies. Its `Pitch` is structurally equal to MNX's. It owns the pitch functions that used to live in `mnx` (`parsePitch`, `pitchToMidi`, `STEP_LETTERS`, `stepNumberOf`); the engine, mnx-score and the app import them from here.
-- `mnx-score` — the timeline over MNX, built once per document by `buildTimeline(doc, {scope?, divisions?})` (`divisions` defaults to `DEFAULT_DIVISIONS` = 3360). Owns musical time and ids: entries (note, chord, rest, full-measure rest, space; padding rests are synthetic entries `m{i}.v{ordinal}.pad{k}`) with ticks, durations, tuplet, and notes `{id, pitch, midi, tie}`; ties; measures with pickup and capacity; tempo and play-order segments; `activeAt`, `byId`, `writtenTickToSeconds`, `secondsToWrittenTick`; `positionTick(timeline, measureIndex, position)` turns an MNX in-measure position into ticks (malformed or out-of-range → diagnostic + clamp, never throws); a frozen read-only `ids` (`idAt`, `nodeOf`, `has`, `fork`); diagnostics (`mnx.md`). `performance(timeline, {tempo?})` returns `{events, durationSeconds, tickAtSeconds}` for audio. The engine joins its engraving data to entries by id and never re-parses pitch or time. The default scope (part 0, staff 1, 2 voices) is what layout draws; `scope: 'all'` covers every part, staff and voice, and ids inside the default scope are identical in both.
+- `mnx-score` — the timeline over MNX, built once per document by `buildTimeline(doc, {scope?, divisions?})` (`divisions` defaults to `DEFAULT_DIVISIONS` = 3360). Owns musical time and ids: entries (note, chord, rest, full-measure rest, space; padding rests are synthetic entries `m{i}.v{ordinal}.pad{k}`) with ticks, durations, tuplet, and notes `{id, pitch, midi, tie}`; ties; measures with pickup and capacity; tempo and play-order segments; `activeAt`, `byId`, `writtenTickToSeconds`, `secondsToWrittenTick`; `positionTick(timeline, measureIndex, position)` turns an MNX in-measure position into ticks (malformed or out-of-range → diagnostic + clamp, never throws); a frozen read-only `ids` (`idAt`, `nodeOf`, `has`, `fork`); diagnostics (`mnx.md`). `performance(timeline, {tempo?})` returns `{events, durationSeconds, tickAtSeconds}` for audio. The engine joins its engraving data to entries by id and never re-parses pitch or time. Layout draws the default scope (part 0, staff 1, 2 voices), widened to `staves: [1, 2]` when part 0 declares 2+ staves (the engine's `layout/timeline.ts`); `scope: 'all'` covers every part, staff and voice, and ids inside the default scope are identical in all of them.
 - `notation-fonts` — glyph tables per style, committed fonts and their metadata, and the font build/add/verify scripts (`font.md`).
 
 Enforcement: no lint script — the package manifests and tsconfigs are the enforcement. pnpm's strict `node_modules` means a package can only import what its `package.json` declares, so `mnx` (no runtime dependencies) cannot reach the engine (relative-path imports across packages are not blocked by pnpm; there are none, and review keeps it that way), and `notation-engine` (depends on `mnx` only) cannot reach React. Both `tsconfig.json`s exclude `"DOM"` from `lib`, so any DOM or React reference in either is a compile error on the day it's written.
@@ -96,11 +96,15 @@ interface LayoutResult {
   diagnostics: readonly Diagnostic[];   // mnx.md
 }
 interface Placements {
-  entries: Record<NoteId, { x: number; y: number; systemIndex: number }>;   // per timeline entry id, padding rests included
+  entries: Record<NoteId, { x: number; y: number; systemIndex: number; staff?: number }>;   // per timeline entry id, padding rests included
   measures: { systemIndex: number; x: number; w: number }[];                 // per measure index
 }
-interface SystemBox { index: number; x: number; y: number; w: number; h: number }   // sp, one row of the score
-interface GlyphRun { x: number; y: number; cp: number; cls: string; el?: NoteId }
+interface SystemBox {   // sp, one row of the score; h covers every staff of a grand staff
+  index: number; x: number; y: number; w: number; h: number;
+  staves?: { index: number; y: number; h: number }[];   // 2-staff parts only: each staff's top line and height
+}
+interface GlyphRun { x: number; y: number; cp: number; cls: string; el?: NoteId; font?: number; scale?: number }
+// `scale` (omitted when 1) multiplies the glyph's font size: the renderer draws it at 4 × scale sp per em.
 interface RectShape { x: number; y: number; w: number; h: number; rot?: number; cls: string; el?: NoteId }
 // `rot` is degrees, matching SVG's `rotate()` (`notation-react`'s `Notation.tsx` passes it straight
 // through) — not radians. Nothing emits it today: beams (the one shape that used to need rotation)
@@ -109,9 +113,10 @@ interface PathShape { d: string; cls: string; el?: NoteId }
 interface ElementBox {
   id: NoteId; kind: 'note'|'chord'|'rest';
   systemIndex: number; measureIndex: number; voice: 0|1;
+  staff?: number;   // 2-staff parts only: 0 = staff 1, 1 = staff 2
   x: number; y: number; w: number; h: number;
   hitBox: { x: number; y: number; w: number; h: number };
-  staffPosition: number; tick: number; durationTicks: number;
+  staffPosition: number; tick: number; durationTicks: number;   // staffPosition relative to its own staff
   label: string;    // "E flat 4, quarter note" — a11y + text-alternative source
   eventId: NoteId;   // this box's own id for a note/rest, the chord's shared id for a member notehead
 }
@@ -120,8 +125,9 @@ interface MeasureBox {
   x: number; w: number;        // the measure's own band, chrome included, end-of-system courtesy excluded
   contentX: number;             // left edge of the first element column's band — interaction.md's slot bands start here
   startTick: number; capacityTicks: number;
-  clef: ClefSpec; key: KeySpec;   // looked up per measure at hit-test time (interaction.md)
+  clef: ClefSpec; key: KeySpec;   // looked up per measure at hit-test time (interaction.md); staff 1's on a grand staff
   clefChanges?: { x: number; tick: number; clef: ClefSpec }[];   // mid-measure changes only, omitted when none
+  staves?: { clef: ClefSpec; key: KeySpec; clefChanges?: MeasureClefChange[] }[];   // 2-staff parts only, per staff
 }
 ```
 

@@ -13,6 +13,7 @@ export interface PreviewNote {
   x: number;
   pitch: MnxPitch;
   voice?: 0 | 1;
+  staff?: number;
 }
 
 function toStaffPitch(pitch: MnxPitch): StaffPitch {
@@ -47,8 +48,9 @@ export function previewShapes(
   if (!system) return { glyphs: [], rects: [] };
 
   const staffPitch = toStaffPitch(preview.pitch);
-  const staffPosition = staffPositionOf(staffPitch, clefAtX(measureBox, preview.x));
-  const y = system.y + staffPosition;
+  const staffPosition = staffPositionOf(staffPitch, clefAtX(measureBox, preview.x, preview.staff));
+  const top = system.staves?.[preview.staff ?? 0]?.y ?? system.y;
+  const y = top + staffPosition;
 
   const glyphs: GlyphRun[] = [];
   const rects: RectShape[] = [];
@@ -59,11 +61,11 @@ export function previewShapes(
   const width = fonts.advanceWidth(noteheadName);
   if (staffPosition < 0) {
     for (let pos = -1; pos >= staffPosition - 1e-9; pos -= 1) {
-      rects.push(ledgerRect(fonts, preview.x, system.y + pos, width));
+      rects.push(ledgerRect(fonts, preview.x, top + pos, width));
     }
   } else if (staffPosition > STAFF_HEIGHT) {
     for (let pos = STAFF_HEIGHT + 1; pos <= staffPosition + 1e-9; pos += 1) {
-      rects.push(ledgerRect(fonts, preview.x, system.y + pos, width));
+      rects.push(ledgerRect(fonts, preview.x, top + pos, width));
     }
   }
 

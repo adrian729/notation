@@ -1,7 +1,7 @@
 import type { FontContext } from '../font/context.js';
 import { DEFAULT_OPTIONS, type NotationOptions } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/mnx';
-import type { ClefChange, ClefSpec, KeySpec, NormalizedMeasure, NormalizedScore, TimeSpec } from './records.js';
+import type { ClefSpec, KeySpec, NormalizedMeasure, NormalizedScore, TimeSpec } from './records.js';
 import { clefChangeGlyph, clefGlyph, keySignature } from './staff.js';
 import type { TemporalScore } from './temporal.js';
 import type { VerticalElement, VerticalScore } from './vertical.js';
@@ -18,6 +18,11 @@ const MEASURE_LEAD = 0.4;
 const MIN_MEASURE_CONTENT = 4;
 export const COURTESY_LEAD = BARLINE_PAD;
 
+export interface StaffClef {
+  staffIndex: number;
+  clef: ClefSpec;
+}
+
 export interface HorizontalColumn {
   staffIndex: number;
   measureIndex: number;
@@ -31,11 +36,12 @@ export interface HorizontalColumn {
   idealWidth: number;
   width: number;
   stretch: number;
-  clef?: ClefSpec;
+  clefs?: readonly StaffClef[];
 }
 
 export interface MeasureChrome {
   showClef: boolean;
+  staffClefs: readonly boolean[];
   showKey: boolean;
   showTime: boolean;
   clefWidth: number;
@@ -45,6 +51,11 @@ export interface MeasureChrome {
   endBarlineWidth: number;
   leadWidth: number;
   cancelKey: KeySpec | null;
+}
+
+export interface CourtesyStaff {
+  clef: ClefSpec;
+  showClef: boolean;
 }
 
 export interface Courtesy {
@@ -58,6 +69,12 @@ export interface Courtesy {
   showTime: boolean;
   keyWidth: number;
   width: number;
+  staves: readonly CourtesyStaff[];
+}
+
+export interface HorizontalStaff {
+  clef: ClefSpec;
+  key: KeySpec;
 }
 
 export interface HorizontalMeasure {
@@ -68,6 +85,7 @@ export interface HorizontalMeasure {
   clef: ClefSpec;
   key: KeySpec;
   time: TimeSpec;
+  staves: readonly HorizontalStaff[];
   startTick: number;
   endTick: number;
   capacityTicks: number;
@@ -106,16 +124,21 @@ export function horizontal(
   };
 
   const measures: HorizontalMeasure[] = [];
-  let previous: NormalizedMeasure | undefined;
+  let previous: readonly NormalizedMeasure[] | undefined;
+  const stackAt = (position: number): readonly NormalizedMeasure[] | undefined => {
+    const stack = normalized.staves.map((s) => s.measures[position]);
+    return stack.every((m) => m !== undefined) ? (stack as NormalizedMeasure[]) : undefined;
+  };
 
   staff.measures.forEach((measure, position) => {
-    const next = staff.measures[position + 1];
+    const stack = stackAt(position) ?? [measure];
+    const next = stackAt(position + 1);
     const bounds = temporal.measures.find((m) => m.staffIndex === staff.index && m.index === measure.index);
     const startTick = bounds?.startTick ?? 0;
     const endTick = bounds?.endTick ?? startTick + measure.capacityTicks;
 
-    const elements = laidOut.elements.filter((e) => e.staffIndex === staff.index && e.measureIndex === measure.index);
-    const columns = buildColumns(elements, measure, fonts, {
+    const elements = laidOut.elements.filter((e) => e.measureIndex === measure.index && e.staffIndex < stack.length);
+    const columns = buildColumns(elements, stack, fonts, {
       staffIndex: staff.index,
       measureIndex: measure.index,
       startTick,
@@ -137,17 +160,18 @@ export function horizontal(
       clef: measure.clef,
       key: measure.key,
       time: measure.time,
+      staves: stack.map((m) => ({ clef: m.clef, key: m.key })),
       startTick,
       endTick,
       capacityTicks: measure.capacityTicks,
       columns,
       contentWidth,
-      startChrome: chromeOf(fonts, measure, previous, true, changes),
-      midChrome: chromeOf(fonts, measure, previous, false, changes),
-      courtesy: next ? courtesyOf(fonts, measure, next, changes) : null,
+      startChrome: chromeOf(fonts, stack, previous, true, changes),
+      midChrome: chromeOf(fonts, stack, previous, false, changes),
+      courtesy: next ? courtesyOf(fonts, stack, next, changes) : null,
       systemBreak: measure.systemBreak,
     });
-    previous = measure;
+    previous = stack;
   });
 
   return { measures, diagnostics };
@@ -166,7 +190,7 @@ interface ColumnContext {
 
 function buildColumns(
   elements: readonly VerticalElement[],
-  measure: NormalizedMeasure,
+  stack: readonly NormalizedMeasure[],
   fonts: FontContext,
   ctx: ColumnContext,
 ): HorizontalColumn[] {
@@ -204,33 +228,45 @@ function buildColumns(
     };
   });
 
-  const clefBefore = new Map<number, ClefChange>();
-  for (const change of measure.clefChanges) {
-    const index = elementColumns.findIndex((column) => column.measureTick >= change.tick);
-    if (index >= 0) clefBefore.set(index, change);
-  }
+  const clefBefore = new Map<number, { tick: number; clefs: StaffClef[] }>();
+  stack.forEach((measure, staffIndex) => {
+    for (const change of measure.clefChanges) {
+      const index = elementColumns.findIndex(
+        (column) => column.measureTick >= change.tick && column.elements.some((e) => e.staffIndex === staffIndex),
+      );
+      if (index < 0) continue;
+      const entry = clefBefore.get(index) ?? { tick: change.tick, clefs: [] };
+      entry.tick = Math.min(entry.tick, change.tick);
+      entry.clefs.push({ staffIndex, clef: change.clef });
+      clefBefore.set(index, entry);
+    }
+  });
   const columns: HorizontalColumn[] = [];
   elementColumns.forEach((column, i) => {
     const change = clefBefore.get(i);
-    if (change) columns.push(clefColumn(fonts, change.clef, change.tick, ROD_PADDING, ctx));
+    if (change) columns.push(clefColumn(fonts, change.clefs, change.tick, ROD_PADDING, ctx));
     columns.push(column);
   });
-  if (ctx.trailingClefs && measure.trailingClef) {
-    columns.push(clefColumn(fonts, measure.trailingClef, ctx.endTick - ctx.startTick, 0, ctx));
+  const trailing: StaffClef[] = [];
+  stack.forEach((measure, staffIndex) => {
+    if (measure.trailingClef) trailing.push({ staffIndex, clef: measure.trailingClef });
+  });
+  if (ctx.trailingClefs && trailing.length > 0) {
+    columns.push(clefColumn(fonts, trailing, ctx.endTick - ctx.startTick, 0, ctx));
   }
   return columns;
 }
 
 function clefColumn(
   fonts: FontContext,
-  clef: ClefSpec,
+  clefs: readonly StaffClef[],
   measureTick: number,
   gap: number,
   ctx: ColumnContext,
 ): HorizontalColumn {
-  const glyphWidth = fonts.advanceWidth(clefChangeGlyph(clef));
+  const glyphWidth = Math.max(...clefs.map((c) => fonts.advanceWidth(clefChangeGlyph(c.clef))));
   return {
-    staffIndex: ctx.staffIndex,
+    staffIndex: clefs[0]!.staffIndex,
     measureIndex: ctx.measureIndex,
     tick: ctx.startTick + measureTick,
     measureTick,
@@ -242,31 +278,40 @@ function clefColumn(
     idealWidth: 0,
     width: glyphWidth + gap,
     stretch: 0,
-    clef,
+    clefs,
   };
 }
 
 function chromeOf(
   fonts: FontContext,
-  measure: NormalizedMeasure,
-  previous: NormalizedMeasure | undefined,
+  stack: readonly NormalizedMeasure[],
+  previousStack: readonly NormalizedMeasure[] | undefined,
   atSystemStart: boolean,
   changes: ChangeOptions,
 ): MeasureChrome {
+  const measure = stack[0]!;
+  const previous = previousStack?.[0];
   const keyChanged = !previous || measure.key.fifths !== previous.key.fifths;
   const timeChanged = !previous || !timeEquals(measure.time, previous.time);
   const afterCourtesy = atSystemStart && previous !== undefined && (keyChanged || timeChanged);
 
-  const clefAtBarline = changes.clefAtBarline === 'after' && previous?.trailingClef !== undefined;
-  const showClef = atSystemStart || !previous || clefAtBarline;
+  const staffClefs = stack.map((_, s) => {
+    const clefAtBarline = changes.clefAtBarline === 'after' && previousStack?.[s]?.trailingClef !== undefined;
+    return atSystemStart || !previous || clefAtBarline;
+  });
+  const showClef = staffClefs.some(Boolean);
   const showKey = afterCourtesy ? measure.key.fifths !== 0 : (atSystemStart && measure.key.fifths !== 0) || keyChanged;
   const showTime = timeChanged && (!afterCourtesy || changes.restateTimeAfterCourtesy);
   const cancelKey =
     keyChanged && previous && !afterCourtesy ? cancellation(previous.key, measure.key, changes.cancelNaturals) : null;
 
   const widths = {
-    clefWidth: showClef ? fonts.advanceWidth(clefGlyph(measure.clef)) + CHROME_GAP : 0,
-    keyWidth: showKey || cancelKey ? keyWidthOf(fonts, measure.key, measure.clef, cancelKey, showKey) : 0,
+    clefWidth: showClef
+      ? Math.max(...stack.filter((_, s) => staffClefs[s]).map((m) => fonts.advanceWidth(clefGlyph(m.clef)))) +
+        CHROME_GAP
+      : 0,
+    keyWidth:
+      showKey || cancelKey ? Math.max(...stack.map((m) => keyWidthOf(fonts, m.key, m.clef, cancelKey, showKey))) : 0,
     timeWidth: showTime ? timeWidthOf(fonts, measure.time) : 0,
     startBarlineWidth: measure.barlineStart === 'repeat-start' ? repeatStartWidth(fonts) : 0,
   };
@@ -275,6 +320,7 @@ function chromeOf(
 
   return {
     showClef,
+    staffClefs,
     showKey,
     showTime,
     ...widths,
@@ -286,17 +332,23 @@ function chromeOf(
 
 function courtesyOf(
   fonts: FontContext,
-  measure: NormalizedMeasure,
-  next: NormalizedMeasure,
+  stack: readonly NormalizedMeasure[],
+  nextStack: readonly NormalizedMeasure[],
   changes: ChangeOptions,
 ): Courtesy | null {
-  const showClef = changes.clefAtBarline === 'after' && measure.trailingClef !== undefined;
+  const measure = stack[0]!;
+  const next = nextStack[0]!;
+  const staffClefs = stack.map((m) => changes.clefAtBarline === 'after' && m.trailingClef !== undefined);
+  const showClef = staffClefs.some(Boolean);
   const showKey = next.key.fifths !== measure.key.fifths;
   const showTime = !timeEquals(next.time, measure.time);
   if (!showClef && !showKey && !showTime) return null;
-  const clefWidth = showClef ? fonts.advanceWidth(clefChangeGlyph(next.clef)) + CHROME_GAP : 0;
+  const clefWidth = showClef
+    ? Math.max(...nextStack.filter((_, s) => staffClefs[s]).map((m) => fonts.advanceWidth(clefChangeGlyph(m.clef)))) +
+      CHROME_GAP
+    : 0;
   const cancelKey = showKey ? cancellation(measure.key, next.key, changes.cancelNaturals) : null;
-  const keyWidth = showKey ? keyWidthOf(fonts, next.key, next.clef, cancelKey, true) : 0;
+  const keyWidth = showKey ? Math.max(...nextStack.map((m) => keyWidthOf(fonts, m.key, m.clef, cancelKey, true))) : 0;
   const timeWidth = showTime ? timeWidthOf(fonts, next.time) : 0;
   return {
     key: next.key,
@@ -309,6 +361,7 @@ function courtesyOf(
     showTime,
     keyWidth,
     width: COURTESY_LEAD + clefWidth + keyWidth + timeWidth,
+    staves: nextStack.map((m, s) => ({ clef: m.clef, showClef: staffClefs[s]! })),
   };
 }
 
@@ -433,6 +486,6 @@ export function measureWidth(measure: HorizontalMeasure, atSystemStart: boolean,
   return chromeWidth(chrome) + measure.contentWidth + chrome.endBarlineWidth + courtesy;
 }
 
-export function isClefColumn<T extends HorizontalColumn>(column: T): column is T & { clef: ClefSpec } {
-  return column.clef !== undefined;
+export function isClefColumn<T extends HorizontalColumn>(column: T): column is T & { clefs: readonly StaffClef[] } {
+  return column.clefs !== undefined;
 }

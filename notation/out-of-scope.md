@@ -1,6 +1,6 @@
 # Out of scope
 
-Companion to `README.md`'s in-scope/deferred tables, written after auditing the full corpus against [Wikipedia's list of musical symbols](https://en.wikipedia.org/wiki/List_of_musical_symbols). `README.md`'s deferred table already names most of the big-ticket items (grand staff, ornaments, dynamics, lyrics, percussion, tablature, mensural notation, page layout) with a cost estimate each. This file exists for two narrower reasons the audit surfaced:
+Companion to `README.md`'s in-scope/deferred tables, written after auditing the full corpus against [Wikipedia's list of musical symbols](https://en.wikipedia.org/wiki/List_of_musical_symbols). `README.md`'s deferred table already names most of the big-ticket items (3+ staves per part, ornaments, dynamics, lyrics, percussion, tablature, mensural notation, page layout) with a cost estimate each. This file exists for two narrower reasons the audit surfaced:
 
 1. Items that don't fit neatly into any existing deferred row, so they'd otherwise be silently missing rather than tracked.
 2. A place to say plainly that some symbols are excluded not because they're expensive, but because they're outside an ear-training app's domain — worth stating explicitly, since the longer-term goal is a genuinely general, separated notation interface (`architecture.md`'s package split and `sideEffects:false` already anticipate extraction), not just what today's app needs.

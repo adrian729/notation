@@ -14,6 +14,7 @@ const EPS = 1e-9;
 export interface BeamPolygon {
   el: string;
   systemIndex: number;
+  staffIndex: number;
   points: readonly [number, number][];
 }
 
@@ -45,9 +46,9 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
   const thickness = e.beamThickness;
   const stack = e.beamThickness + e.beamSpacing;
   const stemW = e.stemThickness;
-  const twoVoiceMeasures = new Set<number>();
+  const twoVoiceMeasures = new Set<string>();
   for (const p of placedById.values()) {
-    if (p.el.voice === 1) twoVoiceMeasures.add(p.el.measureIndex);
+    if (p.el.voice === 1) twoVoiceMeasures.add(`${p.el.staffIndex}:${p.el.measureIndex}`);
   }
 
   const polygons: BeamPolygon[] = [];
@@ -92,7 +93,7 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
       const stemLen = dir === 1 ? attach(p) - innerY : innerY - attach(p);
       if (stemLen < MIN_STEM) shift = Math.max(shift, MIN_STEM - stemLen);
 
-      if (!twoVoiceMeasures.has(group.measureIndex)) {
+      if (!twoVoiceMeasures.has(`${group.staffIndex}:${group.measureIndex}`)) {
         const primaryY = beamYAt(x(p));
         const reach = dir === 1 ? primaryY - MIDDLE_LINE : MIDDLE_LINE - primaryY;
         if (reach > EPS) shift = Math.max(shift, reach);
@@ -107,7 +108,8 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
     }
 
     const xEnd = x1 + stemW;
-    polygons.push(rectPolygon(group.id, first.systemIndex, x0, beamYAt(x0), xEnd, beamYAt(xEnd), thickness, dir));
+    const at = { systemIndex: first.systemIndex, staffIndex: group.staffIndex };
+    polygons.push(rectPolygon(group.id, at, x0, beamYAt(x0), xEnd, beamYAt(xEnd), thickness, dir));
 
     for (const seg of group.segments) {
       const iFirst = noteOrder.findIndex((p) => p.el.id === seg.first);
@@ -119,16 +121,7 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
         const sx0 = x(noteOrder[iFirst]!);
         const sx1 = x(noteOrder[iLast]!) + stemW;
         polygons.push(
-          rectPolygon(
-            group.id,
-            first.systemIndex,
-            sx0,
-            beamYAt(sx0) + offset,
-            sx1,
-            beamYAt(sx1) + offset,
-            thickness,
-            dir,
-          ),
+          rectPolygon(group.id, at, sx0, beamYAt(sx0) + offset, sx1, beamYAt(sx1) + offset, thickness, dir),
         );
         continue;
       }
@@ -148,7 +141,7 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
       polygons.push(
         rectPolygon(
           group.id,
-          first.systemIndex,
+          at,
           Math.min(nearX, farX),
           seg.hook === 'left' ? farY : nearY,
           Math.max(nearX, farX),
@@ -184,7 +177,7 @@ function clamp(value: number, min: number, max: number): number {
 
 function rectPolygon(
   el: string,
-  systemIndex: number,
+  at: { systemIndex: number; staffIndex: number },
   x0: number,
   y0: number,
   x1: number,
@@ -195,7 +188,7 @@ function rectPolygon(
   const away = -dir * thickness;
   return {
     el,
-    systemIndex,
+    ...at,
     points: [
       [x0, y0],
       [x1, y1],

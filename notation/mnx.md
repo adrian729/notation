@@ -10,7 +10,7 @@ Two places read the raw MNX document, split by concern. `@polyhymnia/mnx-score` 
 
 ## Supported subset
 
-Reading `parts[0]` only, `staff 1` only, up to 2 sequences (voices) per measure:
+Reading `parts[0]` only, staves 1–2 (staff 2 only when the part declares `staves: 2` or more), up to 2 sequences (voices) per staff per measure:
 
 | MNX construct | Engine mapping |
 | --- | --- |
@@ -19,8 +19,9 @@ Reading `parts[0]` only, `staff 1` only, up to 2 sequences (voices) per measure:
 | `global.measures[i].barline.type` | `barlineEnd`: `regular`→`single`, `double`→`double`, `dashed`→`dashed`, `final`→`final`, `noBarline`→`none`. Anything else drawn as `single` + `mnx-unsupported` |
 | `global.measures[i].repeatStart` / `.repeatEnd` | `barlineStart: 'repeat-start'` / `barlineEnd: 'repeat-end'`. `repeatEnd.times !== 2` still draws a plain end-repeat + `mnx-unsupported` |
 | `global.measures[i].tempos[]` | `TempoEvent { tick, bpm, beatUnit? }` — `location.fraction` → an offset from the measure start, added to the running tick total; `value` → `beatUnit` (defaults to a quarter when the value's base isn't supported) |
-| `parts[0].measures[i].clefs[]` | `{ sign, staffPosition, octave? }` → `ClefSpec`. `staffPosition` 0 = the staff's middle line: G/−2 = treble, F/2 = bass, C/0 = alto, C/2 = tenor. `octave: 1 \| -1` → `octaveShift`. Any other G/F/C sign/position combination falls back to the nearest of treble/bass/alto by sign, + `mnx-unsupported`. A `sign` outside `G`/`F`/`C`/`P` has no fallback — the previous clef is kept, + `mnx-unsupported`. `position` goes through `mnx-score`'s `positionTick` (unreadable → `invalid-position`, that clef is dropped; past the measure's end → `invalid-position`, clamped): a clef at 0 sets the measure's start clef, a later one is drawn mid-measure before the first element at or after it, and one with no element at or after it takes effect at the next barline (`engraving.md` "Clef changes") |
-| `sequences[]` (`staff: 1`, up to 2) | Voice 0 = first sequence, voice 1 = second. A 3rd+ sequence is dropped, diagnostic `too-many-voices` |
+| `parts[0].staves` | `2` or more → a grand staff: staves 1 and 2 are laid out (`engraving.md` "Grand staff"); each has its own clefs, voices and beams, key and time are shared. The timeline is built with `scope: { staves: [1, 2] }`, so staff-1 ids are unchanged and staff-2 ids carry the `st2.` prefix. `3` or more → staves 1–2 + `mnx-unsupported` |
+| `parts[0].measures[i].clefs[]` | `{ staff?, sign, staffPosition, octave? }` → `ClefSpec` of that staff (default 1). `staffPosition` 0 = the staff's middle line: G/−2 = treble, F/2 = bass, C/0 = alto, C/2 = tenor. `octave: 1 \| -1` → `octaveShift`. Any other G/F/C sign/position combination falls back to the nearest of treble/bass/alto by sign, + `mnx-unsupported`. A `sign` outside `G`/`F`/`C`/`P` has no fallback — the previous clef is kept, + `mnx-unsupported`. `position` goes through `mnx-score`'s `positionTick` (unreadable → `invalid-position`, that clef is dropped; past the measure's end → `invalid-position`, clamped): a clef at 0 sets the measure's start clef, a later one is drawn mid-measure before the first element at or after it, and one with no element at or after it takes effect at the next barline (`engraving.md` "Clef changes") |
+| `sequences[]` (`staff`, up to 2 per staff) | Voice 0 = a staff's first sequence, voice 1 = its second. A 3rd+ sequence on a staff is dropped, diagnostic `too-many-voices` |
 | `event` with one `notes` entry | note |
 | `event` with `notes.length > 1` | chord — one `ElementNote` per member |
 | `event.rest` | rest; `rest.staffPosition` → the rest's forced staff line/space |
@@ -45,8 +46,8 @@ Note values: `breve`, `whole`, `half`, `quarter`, `eighth`, `16th`, `32nd`, `64t
 
 `AGENTS.md`: unsupported MNX renders what's possible plus an `mnx-unsupported` diagnostic, never throws. Constructs the engine recognizes but does not lay out — each reported once per measure (or once per document, for whole-document constructs), via `Reader.unsupported()` (`layout/normalize-reader.ts`'s `createReader`):
 
-- Multiple parts (only `parts[0]` is laid out), a part with `staves > 1` (only staff 1), a part's `transposition`/`kit` (percussion kits aren't laid out)
-- A 3rd+ sequence in a measure (`too-many-voices`, listed separately below since it isn't gated through `unsupported()`); a sequence on `staff !== 1`
+- Multiple parts (only `parts[0]` is laid out), a part with `staves > 2` (only staves 1–2), a part's `transposition`/`kit` (percussion kits aren't laid out)
+- A 3rd+ sequence in a measure (`too-many-voices`, listed separately below since it isn't gated through `unsupported()`); a sequence or clef on a staff the part doesn't declare (`staff` above `parts[0].staves`, or below 1)
 - Percussion clefs and other unrecognized clef sign/position pairs (fall back to the nearest of treble/bass/alto); a clef octave outside `-1..1`
 - Grace notes, multi-note tremolo (its time is left blank via a `space`), lyrics, dynamics, ottavas, arpeggios/non-arpeggios, staff configs, measure repeats
 - `slur.lineType` other than `'solid'` (drawn solid); `slur.sideEnd` differing from `slur.side` (the start side is used for the whole curve)
@@ -54,7 +55,7 @@ Note values: `breve`, `whole`, `half`, `quarter`, `eighth`, `16th`, `32nd`, `64t
 - `ending`, `jump`, `segno`, `fine` (honored for playback order via the timeline's play-order segments, but not drawn), `fermata` (global or per-event), multimeasure rests
 - A measure's `number` override (ignored — measures are numbered positionally)
 - `note.written`/`note.perform` (sounding pitch is drawn instead; perform hints are ignored)
-- Cross-staff notes/events/tuplets (laid out on staff 1 regardless)
+- Cross-staff notes/events/tuplets (laid out on their sequence's staff); cross-staff beams, ties and slurs (not drawn)
 - Any `event.markings` key besides `breath`/`caesura`/`id`/the internal `_c`/`_x` reserved names
 - An accidental `alter` outside `-2..2` (clamped, drawn with the clamped value); a key signature's `fifths` outside `-7..7` (clamped, drawn with the clamped value)
 - A tie's `targetType` other than `nextNote`/absent (`crossVoice`, `arpeggio`, `crossJump` — not drawn)
@@ -86,6 +87,7 @@ Either way, the result is one `NormalizedBeam` per beamed run:
 interface BeamSegment { level: number; first: NoteId; last: NoteId; hook?: 'left' | 'right'; }
 interface NormalizedBeam {
   id: string;
+  staffIndex: number; // 0 = staff 1, 1 = staff 2
   measureIndex: number;
   voice: 0 | 1;
   elements: readonly NoteId[]; // every element in the group's span, including a rest it crosses
@@ -95,7 +97,7 @@ interface NormalizedBeam {
 
 `elements` holds every id from the first to the last referenced event, in order — a rest an explicit beam spans stays in the span (MNX allows this; auto-beaming never beams over a rest, so this only happens for explicit `beams`). `segments` covers levels beyond the primary (eighth) beam: when the MNX `beams[].beams` nesting is present, its levels and `direction`s (or the derived direction, when a nested single-event group omits `direction`) are read directly; when it's absent, the engine derives them from each element's written duration — a maximal run of elements at the same level becomes one segment, a run of one becomes a hook (`left`/`right`, pointing at the group's own end when the singleton is first/last, otherwise `right` when its onset begins an even-numbered level unit since the group's start and `left` when it's the second of that pair — engraving.md "Beaming").
 
-**Validation** is one rule (`phase3-rhythm.md` "SCOPE ADJUSTMENTS"): a `beams[]` entry that references an unknown event id, an event in a different measure or voice, a note/chord whose written value is a quarter or longer, or has fewer than two real notes, is dropped — flags are drawn, diagnostic `beam-invalid` — including a beam crossing a barline (D11 called this out specifically; the general rule already covers it, since the referenced events resolve to different measures). An event already claimed by an earlier beam in the same measure is likewise dropped from any later one that reuses it. A repeated id in the same `beams[].events` list is deduplicated before the two-note check, and any member at or past the voice's own measure capacity (what `temporal.ts` would truncate as `measure-overfull`) is dropped first too, so a beam can never reference an event layout never produces.
+**Validation** is one rule (`phase3-rhythm.md` "SCOPE ADJUSTMENTS"): a `beams[]` entry that references an unknown event id, an event in a different measure or voice, a note/chord whose written value is a quarter or longer, or has fewer than two real notes, is dropped — flags are drawn, diagnostic `beam-invalid` — including a beam crossing a barline (D11 called this out specifically; the general rule already covers it, since the referenced events resolve to different measures). An event already claimed by an earlier beam in the same measure is likewise dropped from any later one that reuses it. A beam whose events sit on different staves is dropped too, with `mnx-unsupported` instead (cross-staff beaming is unsupported). A repeated id in the same `beams[].events` list is deduplicated before the two-note check, and any member at or past the voice's own measure capacity (what `temporal.ts` would truncate as `measure-overfull`) is dropped first too, so a beam can never reference an event layout never produces.
 
 Beam id = the MNX `beams[].id` when given, otherwise `{firstElementId}.beam`, minted into a per-layout fork of the frozen timeline ids (`timeline.ids.fork()`), so re-layouts of the same document give the same beam ids and a beam id never receives a `~2` suffix. A beam id that collides with an id already in use is reported as `id-collision` (it used to be dropped silently).
 

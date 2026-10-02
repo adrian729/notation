@@ -48,6 +48,7 @@ export interface BeamSegment {
 
 export interface NormalizedBeam {
   id: string;
+  staffIndex: number;
   measureIndex: number;
   voice: 0 | 1;
   elements: readonly NoteId[];
