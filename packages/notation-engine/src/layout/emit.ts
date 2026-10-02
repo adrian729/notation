@@ -2,19 +2,10 @@ import type { Diagnostic } from '@polyhymnia/mnx';
 import type { Timeline } from '@polyhymnia/mnx-score';
 import type { EngravingDefaults } from '@polyhymnia/notation-fonts';
 import type { FontContext } from '../font/context.js';
-import {
-  describePitch,
-  type Duration,
-  type DurationBase,
-  type NoteId,
-  type NoteValueSpec,
-  type TempoMap,
-  type TimeSpec,
-} from './records.js';
+import { describePitch, type Duration, type DurationBase, type NoteId, type TimeSpec } from './records.js';
 import type { BeamsResult } from './beams.js';
 import type { CurvesResult } from './curves.js';
 import type { TupletsResult } from './tuplets.js';
-import { buildTimeMap, type MeasureTime, type Placement } from '../query/timemap.js';
 import { buildMeasureBox, contentBounds } from '../query/measures.js';
 import { measureSlots } from '../query/slots.js';
 import { digitsWidth, layOutKeyGlyphs } from './horizontal.js';
@@ -50,6 +41,21 @@ export interface EmitInput {
   beams: BeamsResult;
   tuplets: TupletsResult;
   curves: CurvesResult;
+}
+
+interface MeasureTime {
+  index: number;
+  startTick: number;
+  endTick: number;
+  systemIndex: number;
+  x: number;
+  w: number;
+}
+
+interface Placement {
+  systemIndex: number;
+  x: number;
+  y: number;
 }
 
 export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
@@ -151,16 +157,6 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
   const height =
     topMargin + Math.max(1, systems.length) * STAFF_HEIGHT + Math.max(0, systems.length - 1) * systemGap + bottomMargin;
 
-  const timemap = buildTimeMap({
-    divisions: input.timeline.divisions,
-    tempo: tempoMapOf(input.timeline),
-    elements: input.temporal.elements.filter((e) => e.staffIndex === 0),
-    placement,
-    measures: measureTimes,
-    systems,
-    playOrder: input.timeline.playOrder,
-  });
-
   const fontNames = tagFonts(glyphs, fonts);
 
   return {
@@ -173,28 +169,11 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
     elements,
     slots,
     measures,
-    timemap,
     timeline: input.timeline,
     placements: placementsOf(placement, measureTimes),
     diagnostics: input.diagnostics,
     ...(fontNames ? { fonts: fontNames } : {}),
   };
-}
-
-function tempoMapOf(timeline: Timeline): TempoMap {
-  return timeline.tempo
-    .filter((segment, i) => !(i === 0 && isDefaultTempo(segment)))
-    .map((segment) => ({
-      tick: segment.tick,
-      bpm: segment.bpm,
-      beatUnit: { base: segment.beatUnit.base, dots: segment.beatUnit.dots } as NoteValueSpec,
-    }));
-}
-
-function isDefaultTempo(segment: Timeline['tempo'][number]): boolean {
-  return (
-    segment.tick === 0 && segment.bpm === 120 && segment.beatUnit.base === 'quarter' && segment.beatUnit.dots === 0
-  );
 }
 
 function placementsOf(

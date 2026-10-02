@@ -287,7 +287,7 @@ describe('rests', () => {
     expect(box.durationTicks).toBe(15120);
     expect(box.label).toBe('whole-bar rest, measure 1');
 
-    const measureBox = layout.timemap.measures[0]!;
+    const measureBox = layout.placements.measures[0]!;
     const centre = rests[0]!.x + 1.132 / 2;
     expect(centre).toBeGreaterThan(measureBox.x);
     expect(centre).toBeLessThan(measureBox.x + measureBox.w);
@@ -761,102 +761,6 @@ describe('diagnostics', () => {
     expect(() => layoutModern(undefined as never)).not.toThrow();
     expect(() => layoutModern({} as never)).not.toThrow();
     expect(layoutModern({} as never).systems).toEqual([]);
-  });
-});
-
-describe('timemap', () => {
-  it('mirrors ElementBox addressing and defaults to 120bpm', () => {
-    const layout = layoutModern(mnx({}, measure(chord(['C4', 'E4'], 'h'), note('G4', 'h'))));
-    const tm = layout.timemap;
-
-    expect(tm.divisions).toBe(3360);
-    expect(tm.entries).toHaveLength(2);
-    expect(tm.entries[0]!.ids).toHaveLength(2);
-    expect(tm.entries[0]!.midiNotes).toEqual([60, 64]);
-    expect(tm.entries[1]!.midi).toBe(67);
-    for (const entry of tm.entries) {
-      for (const id of entry.ids) expect(layout.elements[id]).toBeDefined();
-    }
-    expect(tm.tickToSeconds(6720)).toBeCloseTo(1, 6);
-    expect(tm.secondsToTick(1)).toBeCloseTo(6720, 6);
-    expect(tm.activeAt(0)).toEqual(tm.entries[0]!.ids);
-    expect(tm.byId(tm.entries[1]!.ids[0]!)).toBe(tm.entries[1]);
-    const position = tm.positionAtTick(0)!;
-    expect(position.systemIndex).toBe(0);
-    expect(position.x).toBeCloseTo(tm.entries[0]!.x, 6);
-    expect(position.yBottom - position.yTop).toBe(4);
-  });
-
-  it('highlights the tie continuation on its own written span, not the tie head', () => {
-    const layout = layoutModern(fixture('tie-merge'));
-    const tm = layout.timemap;
-
-    expect(tm.activeAt(6720)).toEqual(['c-start']);
-    expect(tm.activeAt(13440)).toEqual(['c-stop']);
-    expect(tm.byId('c-start')!.durationTicks).toBe(13440);
-  });
-
-  it('carries both voices, with entries and active ids at a shared tick', () => {
-    const layout = layoutModern(
-      mnx(
-        {},
-        voices(
-          [n('C5', 'h', 'v0a'), n('C5', 'h', 'v0b')],
-          [n('E4', 'q', 'v1a'), n('F4', 'q', 'v1b'), n('G4', 'h', 'v1c')],
-        ),
-      ),
-    );
-    const tm = layout.timemap;
-    const atZero = tm.entries.filter((e) => e.tick === 0);
-
-    expect(atZero.map((e) => e.voice)).toEqual([0, 1]);
-    expect(atZero.map((e) => e.ids)).toEqual([['v0a'], ['v1a']]);
-    expect(tm.entries.filter((e) => e.voice === 1)).toHaveLength(3);
-    expect([...tm.activeAt(0)].sort()).toEqual(['v0a', 'v1a']);
-    expect([...tm.activeAt(3360)].sort()).toEqual(['v0a', 'v1b']);
-    expect([...tm.activeAt(6720)].sort()).toEqual(['v0b', 'v1c']);
-    expect(tm.positionAtTick(3360)!.x).toBeCloseTo(box(layout, 'v1b').x, 6);
-  });
-
-  it('merges a tie within one voice while the other voice moves', () => {
-    const layout = layoutModern(
-      mnx(
-        {},
-        voices([n('C5', 'h', 't0'), n('C5', 'h', 't1')], [n('E4', 'q', 'm0'), n('F4', 'q', 'm1'), n('G4', 'h', 'm2')]),
-      ),
-    );
-    const tied = layoutModern(
-      mnx(
-        {},
-        voices(
-          [note('C5', 'h', {}, { id: 't0', ties: [{ target: 't1' }] }), n('C5', 'h', 't1')],
-          [n('E4', 'q', 'm0'), n('F4', 'q', 'm1'), n('G4', 'h', 'm2')],
-        ),
-      ),
-    );
-
-    expect(layout.timemap.entries.filter((e) => e.voice === 0)).toHaveLength(2);
-    const merged = tied.timemap.entries.filter((e) => e.voice === 0);
-    expect(merged).toHaveLength(1);
-    expect(merged[0]!.durationTicks).toBe(13440);
-    expect(tied.timemap.entries.filter((e) => e.voice === 1)).toHaveLength(3);
-  });
-
-  it('follows a custom tempo map', () => {
-    expect(layoutModern(fixture('tempo')).timemap.tickToSeconds(3360)).toBeCloseTo(1, 6);
-  });
-
-  it('accepts a constant-tempo override on the seconds conversions, default unchanged', () => {
-    const tm = layoutModern(fixture('tempo')).timemap;
-
-    expect(tm.tickToSeconds(6720)).toBeCloseTo(2, 6);
-    expect(tm.secondsToTick(2)).toBeCloseTo(6720, 6);
-    expect(tm.tickToSeconds(6720, { bpm: 120 })).toBeCloseTo(1, 6);
-    expect(tm.secondsToTick(1, { bpm: 120 })).toBeCloseTo(6720, 6);
-    expect(tm.tickToSeconds(6720, { bpm: 240 })).toBeCloseTo(0.5, 6);
-    expect(tm.secondsToTick(0.5, { bpm: 240 })).toBeCloseTo(6720, 6);
-    expect(tm.tickToSeconds(6720)).toBeCloseTo(2, 6);
-    expect(tm.secondsToTick(2)).toBeCloseTo(6720, 6);
   });
 });
 
