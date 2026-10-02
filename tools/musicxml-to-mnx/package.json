@@ -17,8 +17,6 @@
   },
   "dependencies": {
     "@polyhymnia/mnx": "workspace:*",
-    "@polyhymnia/notation-engine": "workspace:*",
-    "mnxconverter": "1.2.0",
     "ajv": "8.20.0",
     "musicxml-to-mnx": "0.1.2"
   },

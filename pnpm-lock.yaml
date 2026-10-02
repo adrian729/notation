@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-patchedDependencies:
-  mnxconverter@1.2.0: 7e394d9b072bbc342f20ac10f40cd8ddea2a5ee6f5f04ee92be91d46e3bf6019
-
 importers:
 
   .:
@@ -293,15 +290,9 @@ importers:
       '@polyhymnia/mnx':
         specifier: workspace:*
         version: link:../../packages/mnx
-      '@polyhymnia/notation-engine':
-        specifier: workspace:*
-        version: link:../../packages/notation-engine
       ajv:
         specifier: 8.20.0
         version: 8.20.0
-      mnxconverter:
-        specifier: 1.2.0
-        version: 1.2.0(patch_hash=7e394d9b072bbc342f20ac10f40cd8ddea2a5ee6f5f04ee92be91d46e3bf6019)
       musicxml-to-mnx:
         specifier: 0.1.2
         version: 0.1.2
@@ -1951,10 +1942,6 @@ packages:
   '@vitest/utils@3.2.7':
     resolution: {integrity: sha512-x6BDOd7dyo3PFLY3I9/HJ25X/6OurhGXk2/B9gOZNPF7XDVjeBK4k01lQE5uvDpbuheErh91qYuE1E2OEjK3Rw==}
 
-  '@xmldom/xmldom@0.9.12':
-    resolution: {integrity: sha512-5AXjrcMClTryPe9LgZrygpB1lj7s0S9E0+W+AHaVKAVyHanafK86iPSvG5xHVSp/jC+VH1UXu0TAEmY279xH7A==}
-    engines: {node: '>=14.6'}
-
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
     engines: {node: '>= 0.6'}
@@ -2445,9 +2432,6 @@ packages:
   forwarded@0.2.0:
     resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
     engines: {node: '>= 0.6'}
-
-  fraction.js@4.3.7:
-    resolution: {integrity: sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==}
 
   fresh@2.0.0:
     resolution: {integrity: sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A==}
@@ -2981,10 +2965,6 @@ packages:
 
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
-
-  mnxconverter@1.2.0:
-    resolution: {integrity: sha512-e5YyJf2XXOxgMehVQhD1ADrSuiHIvTQ/tPX6WZGA0JgLMdobgS3YpGrgQJiCi2DUDGcvjeDYYrpwn1+y5fU0/w==}
-    engines: {node: '>=12.0'}
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
@@ -3807,10 +3787,6 @@ packages:
 
   xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
-
-  xpath@0.0.34:
-    resolution: {integrity: sha512-FxF6+rkr1rNSQrhUNYrAFJpRXNzlDoMxeXN5qI84939ylEv3qqPFKa85Oxr6tDaJKqwW6KKyo2v26TSv3k6LeA==}
-    engines: {node: '>=0.6.0'}
 
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
@@ -5414,8 +5390,6 @@ snapshots:
       loupe: 3.2.1
       tinyrainbow: 2.0.0
 
-  '@xmldom/xmldom@0.9.12': {}
-
   accepts@2.0.0:
     dependencies:
       mime-types: 3.0.2
@@ -5908,8 +5882,6 @@ snapshots:
 
   forwarded@0.2.0: {}
 
-  fraction.js@4.3.7: {}
-
   fresh@2.0.0: {}
 
   fs-extra@11.4.1:
@@ -6330,12 +6302,6 @@ snapshots:
       brace-expansion: 5.0.12
 
   minimist@1.2.8: {}
-
-  mnxconverter@1.2.0(patch_hash=7e394d9b072bbc342f20ac10f40cd8ddea2a5ee6f5f04ee92be91d46e3bf6019):
-    dependencies:
-      '@xmldom/xmldom': 0.9.12
-      fraction.js: 4.3.7
-      xpath: 0.0.34
 
   ms@2.1.3: {}
 
@@ -7148,8 +7114,6 @@ snapshots:
   xml-name-validator@5.0.0: {}
 
   xmlchars@2.2.0: {}
-
-  xpath@0.0.34: {}
 
   yallist@3.1.1: {}
 
