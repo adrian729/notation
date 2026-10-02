@@ -3,7 +3,7 @@ import type { Playback, Player } from '@polyhymnia/audio/webaudio';
 import type { NoteEvent } from '@polyhymnia/audio';
 import { midiOf, type PitchLike } from '@polyhymnia/music-theory';
 import type { NoteId } from '@polyhymnia/mnx';
-import type { TimeMap } from '@polyhymnia/notation-engine';
+import type { Timeline } from '@polyhymnia/mnx-score';
 
 export interface Sound {
   playEvents(events: readonly NoteEvent[], lead?: number): Playback;
@@ -27,9 +27,8 @@ export function unlockSound(): () => void {
   return unlockAudio(createAudioContext());
 }
 
-export function midiOfId(timeMap: TimeMap | undefined, id: NoteId, pitch?: PitchLike | null): number | undefined {
-  const entry = timeMap?.byId(id);
-  const midi = entry?.midiNotes?.[entry.ids.indexOf(id)] ?? entry?.midi;
+export function midiOfId(timeline: Timeline | undefined, id: NoteId, pitch?: PitchLike | null): number | undefined {
+  const midi = timeline?.byId(id)?.notes.find((n) => n.id === id)?.midi;
   if (midi !== undefined) return midi;
   return pitch ? midiOf(pitch) : undefined;
 }

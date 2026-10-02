@@ -63,7 +63,7 @@ export function ErrorDetection() {
     (intent: NotationIntent) => {
       if (intent.type !== 'activate' || intent.target.kind !== 'element') return;
       const id = intent.target.id;
-      sound.playNote(midiOfId(handleRef.current?.getTimeMap(), id, intent.target.pitch), 0.35);
+      sound.playNote(midiOfId(handleRef.current?.getTimeline(), id, intent.target.pitch), 0.35);
       setSelection((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
       setChecked(false);
     },
