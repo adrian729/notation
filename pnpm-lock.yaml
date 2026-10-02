@@ -29,6 +29,9 @@ importers:
       '@polyhymnia/mnx':
         specifier: workspace:*
         version: link:../../packages/mnx
+      '@polyhymnia/mnx-score':
+        specifier: workspace:*
+        version: link:../../packages/mnx-score
       '@polyhymnia/music-theory':
         specifier: workspace:*
         version: link:../../packages/music-theory
@@ -102,6 +105,9 @@ importers:
       '@polyhymnia/mnx':
         specifier: workspace:*
         version: link:../../packages/mnx
+      '@polyhymnia/mnx-score':
+        specifier: workspace:*
+        version: link:../../packages/mnx-score
       '@polyhymnia/music-theory':
         specifier: workspace:*
         version: link:../../packages/music-theory
