@@ -28,7 +28,11 @@ interface GlyphStyleState {
   setChanges: (changes: ChangeOptions) => void;
 }
 
-const DEFAULT_CHANGES: ChangeOptions = { clefAtBarline: 'before', restateTimeAfterCourtesy: true };
+const DEFAULT_CHANGES: ChangeOptions = {
+  clefAtBarline: 'before',
+  restateTimeAfterCourtesy: true,
+  cancelNaturals: 'always',
+};
 
 const GlyphStyleContext = createContext<GlyphStyleState>({
   style: DEFAULT_STYLE,
@@ -112,6 +116,14 @@ export function ChangesToggle() {
           onChange={(e) => setChanges({ ...changes, restateTimeAfterCourtesy: e.target.checked })}
         />{' '}
         Repeat the time signature after a courtesy
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          checked={changes.cancelNaturals === 'same-type-only'}
+          onChange={(e) => setChanges({ ...changes, cancelNaturals: e.target.checked ? 'same-type-only' : 'always' })}
+        />{' '}
+        Skip naturals on a sharps↔flats key change
       </label>
     </div>
   );

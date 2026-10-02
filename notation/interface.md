@@ -72,6 +72,7 @@ interface NotationOptions {
   changes?: {
     clefAtBarline?: 'before' | 'after';        // engraving.md "Clef changes", default 'before': small clef before the barline; 'after': full-size clef after it
     restateTimeAfterCourtesy?: boolean;        // engraving.md "Courtesy signs", default true: the new system repeats a time signature already shown as courtesy
+    cancelNaturals?: 'always' | 'same-type-only'; // engraving.md "Key signatures", default 'always'; 'same-type-only' skips naturals on a sharps↔flats change
   };
   widthSp?: number;                          // system width, engraving.md
   maxLastSystemFill?: number;                // default 0.65, engraving.md

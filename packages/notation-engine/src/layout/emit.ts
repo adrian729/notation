@@ -216,7 +216,13 @@ function emitChrome(measure: PositionedMeasure, staffTop: number, glyphs: GlyphR
 function emitCourtesy(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], fonts: FontContext): void {
   const courtesy = measure.showCourtesy ? measure.courtesy : null;
   if (!courtesy) return;
-  const x = measure.x + measure.width + COURTESY_LEAD;
+  const clefX = measure.x + measure.width + COURTESY_LEAD;
+  if (courtesy.showClef) {
+    glyphs.push(
+      glyphRun(fonts, clefChangeGlyph(courtesy.clef), clefX, staffTop + clefGlyphY(courtesy.clef), 'courtesy-clef'),
+    );
+  }
+  const x = clefX + courtesy.clefWidth;
   if (courtesy.showKey) {
     const key = layOutKeyGlyphs(fonts, courtesy.key, courtesy.clef, courtesy.cancelKey, true, x);
     for (const acc of key.glyphs) {

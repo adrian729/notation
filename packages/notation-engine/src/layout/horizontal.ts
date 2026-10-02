@@ -12,6 +12,7 @@ const ROD_PADDING = 0.4;
 export const EPS_STRETCH = 0.05;
 export const CHROME_GAP = 0.6;
 const KEY_GAP = 0.1;
+const CANCEL_GAP = 0.5;
 export const BARLINE_PAD = 0.4;
 const MEASURE_LEAD = 0.4;
 const MIN_MEASURE_CONTENT = 4;
@@ -49,6 +50,8 @@ export interface MeasureChrome {
 export interface Courtesy {
   key: KeySpec;
   clef: ClefSpec;
+  showClef: boolean;
+  clefWidth: number;
   cancelKey: KeySpec | null;
   showKey: boolean;
   time: TimeSpec;
@@ -99,6 +102,7 @@ export function horizontal(
     clefAtBarline: options?.changes?.clefAtBarline ?? DEFAULT_OPTIONS.changes.clefAtBarline,
     restateTimeAfterCourtesy:
       options?.changes?.restateTimeAfterCourtesy ?? DEFAULT_OPTIONS.changes.restateTimeAfterCourtesy,
+    cancelNaturals: options?.changes?.cancelNaturals ?? DEFAULT_OPTIONS.changes.cancelNaturals,
   };
 
   const measures: HorizontalMeasure[] = [];
@@ -140,7 +144,7 @@ export function horizontal(
       contentWidth,
       startChrome: chromeOf(fonts, measure, previous, true, changes),
       midChrome: chromeOf(fonts, measure, previous, false, changes),
-      courtesy: next ? courtesyOf(fonts, measure, next) : null,
+      courtesy: next ? courtesyOf(fonts, measure, next, changes) : null,
       systemBreak: measure.systemBreak,
     });
     previous = measure;
@@ -257,7 +261,8 @@ function chromeOf(
   const showClef = atSystemStart || !previous || clefAtBarline;
   const showKey = afterCourtesy ? measure.key.fifths !== 0 : (atSystemStart && measure.key.fifths !== 0) || keyChanged;
   const showTime = timeChanged && (!afterCourtesy || changes.restateTimeAfterCourtesy);
-  const cancelKey = keyChanged && previous && !afterCourtesy ? cancellation(previous.key, measure.key) : null;
+  const cancelKey =
+    keyChanged && previous && !afterCourtesy ? cancellation(previous.key, measure.key, changes.cancelNaturals) : null;
 
   const widths = {
     clefWidth: showClef ? fonts.advanceWidth(clefGlyph(measure.clef)) + CHROME_GAP : 0,
@@ -279,22 +284,31 @@ function chromeOf(
   };
 }
 
-function courtesyOf(fonts: FontContext, measure: NormalizedMeasure, next: NormalizedMeasure): Courtesy | null {
+function courtesyOf(
+  fonts: FontContext,
+  measure: NormalizedMeasure,
+  next: NormalizedMeasure,
+  changes: ChangeOptions,
+): Courtesy | null {
+  const showClef = changes.clefAtBarline === 'after' && measure.trailingClef !== undefined;
   const showKey = next.key.fifths !== measure.key.fifths;
   const showTime = !timeEquals(next.time, measure.time);
-  if (!showKey && !showTime) return null;
-  const cancelKey = showKey ? cancellation(measure.key, next.key) : null;
+  if (!showClef && !showKey && !showTime) return null;
+  const clefWidth = showClef ? fonts.advanceWidth(clefChangeGlyph(next.clef)) + CHROME_GAP : 0;
+  const cancelKey = showKey ? cancellation(measure.key, next.key, changes.cancelNaturals) : null;
   const keyWidth = showKey ? keyWidthOf(fonts, next.key, next.clef, cancelKey, true) : 0;
   const timeWidth = showTime ? timeWidthOf(fonts, next.time) : 0;
   return {
     key: next.key,
     clef: next.clef,
+    showClef,
+    clefWidth,
     cancelKey,
     showKey,
     time: next.time,
     showTime,
     keyWidth,
-    width: COURTESY_LEAD + keyWidth + timeWidth,
+    width: COURTESY_LEAD + clefWidth + keyWidth + timeWidth,
   };
 }
 
@@ -302,8 +316,9 @@ function timeEquals(a: TimeSpec, b: TimeSpec): boolean {
   return a.beats === b.beats && a.beatType === b.beatType && (a.symbol ?? 'normal') === (b.symbol ?? 'normal');
 }
 
-function cancellation(from: KeySpec, to: KeySpec): KeySpec | null {
+function cancellation(from: KeySpec, to: KeySpec, mode: ChangeOptions['cancelNaturals']): KeySpec | null {
   const sameSide = Math.sign(from.fifths) === Math.sign(to.fifths);
+  if (mode === 'same-type-only' && !sameSide && to.fifths !== 0) return null;
   const count = sameSide ? Math.abs(from.fifths) - Math.abs(to.fifths) : Math.abs(from.fifths);
   if (count <= 0) return null;
   return { fifths: from.fifths };
@@ -338,7 +353,11 @@ export function layOutKeyGlyphs(
   const accidentals = showKey ? keySignature(key, clef) : [];
   const glyphs: KeyGlyph[] = [];
   let x = x0;
-  for (const acc of [...naturals, ...accidentals]) {
+  naturals.forEach((acc, i) => {
+    glyphs.push({ glyph: acc.glyph, x, y: acc.y });
+    x += fonts.advanceWidth(acc.glyph) + (i === naturals.length - 1 && accidentals.length > 0 ? CANCEL_GAP : KEY_GAP);
+  });
+  for (const acc of accidentals) {
     glyphs.push({ glyph: acc.glyph, x, y: acc.y });
     x += fonts.advanceWidth(acc.glyph) + KEY_GAP;
   }

@@ -463,8 +463,17 @@ describe('systems', () => {
         time: glyphsOf(layout, 'time-signature-numerator').length,
         courtesy: glyphsOf(layout, 'courtesy-time-numerator').length,
         small: glyphsOf(layout, 'clef-change').length,
+        courtesyClef: glyphsOf(layout, 'courtesy-clef').length,
       }),
-      { time: 1, courtesy: 1, small: 0 },
+      { time: 1, courtesy: 1, small: 0, courtesyClef: 1 },
+    ],
+    [
+      'cancelNaturals same-type-only drops naturals on a sharps-to-flats change',
+      fixture('chrome-changes'),
+      { changes: { cancelNaturals: 'same-type-only' } },
+      (layout: LayoutResult) =>
+        glyphsOf(layout, 'key-accidental').filter((g) => g.cp === cp('accidentalNatural')).length,
+      0,
     ],
   ])('lays out clef and courtesy changes: %s', (_name, doc, options, pick, expected) => {
     expect(pick(layoutModern(doc, options as NotationOptions))).toEqual(expected);
