@@ -6,6 +6,6 @@ Upstream: https://github.com/steinbergmedia/bravura
 Licence: SIL Open Font License 1.1 (see OFL.txt in this directory).
 
 Modifications:
-- subsetted to 134 glyphs, the glyph tables of @polyhymnia/notation-fonts (src/styles.ts);
+- subsetted to 164 glyphs, the glyph tables of @polyhymnia/notation-fonts (src/styles.ts);
 - renamed to "PolyhymniaMensural": the licence reserves the font name "Bravura", and a subset does not preserve Functional Equivalence, so per OFL-FAQ 2.6 the Reserved Font Name may not be kept on the modified font.
 - converted to WOFF2.

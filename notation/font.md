@@ -16,7 +16,7 @@ Font choice is data, not lock-in: Leland/Petaluma are SMuFL-compliant at the sam
 
 ## License obligation
 
-OFL-FAQ 2.6: subsetting a web font is modification; a modified font "would not normally allow the use of RFNs." Our 64-glyph subset does not preserve Functional Equivalence (the full character inventory), so:
+OFL-FAQ 2.6: subsetting a web font is modification; a modified font "would not normally allow the use of RFNs." Our 94-glyph subset does not preserve Functional Equivalence (the full character inventory), so:
 
 - The subsetted font ships under a **renamed family** — CFF `FontName`/`FullName`/`FamilyName` + name IDs 1/4/6/16 rewritten to `PolyhymniaNotation` at build time. `pyftsubset --name-IDs=''` empties the `name` table but leaves the CFF top-dict names (`Bravura`) unchanged — the rename needs an explicit build step or this is a silent compliance bug.
 - Ship `OFL.txt` + copyright/authorship notice + upstream pointer alongside.
@@ -24,7 +24,7 @@ OFL-FAQ 2.6: subsetting a web font is modification; a modified font "would not n
 
 Our reading of the FAQ, not legal advice — flagged in `roadmap.md` open questions.
 
-## Glyph set — 64 glyphs, full scope
+## Glyph set — 94 glyphs, full scope
 
 Staff lines, ledger lines, barlines (the lines themselves) and stems are **not glyphs** — drawn as `<rect>`, thickness from `engravingDefaults` (`architecture.md`); they need exact-length stretching (justification), which a glyph can't do. Beams are likewise not a glyph, but a `<path>` parallelogram (`architecture.md`'s `PathShape`) rather than a rect, since they slope. Repeat-barline dots ARE a glyph (below) — a fixed shape, no stretching needed.
 
@@ -42,7 +42,13 @@ Staff lines, ledger lines, barlines (the lines themselves) and stems are **not g
 | Tuplet digits + colon | E880–E88A | 11 |
 | Repeat barline | E044 repeatDot | 1 |
 | Breath marks | E4CE breathMarkComma, E4D1 caesura | 2 |
-| **Total** | | **64** |
+| Brace (optional) | E000 brace | 1 |
+| Articulations | E4A0–E4A7 accent, staccato, tenuto, staccatissimo; E4AC/E4AD marcato; E4B6–E4B9 stress, unstress (above/below) | 14 |
+| Articulations (optional) | E4AA/E4AB staccatissimoStroke, ED40/ED41 softAccent | 4 |
+| Fermatas | E4C0 fermataAbove, E4C1 fermataBelow | 2 |
+| Dynamics | E520–E526 p, m, f, r, s, z, n | 7 |
+| Grace slashes (optional) | E564 graceNoteSlashStemUp, E565 graceNoteSlashStemDown | 2 |
+| **Total** | | **94** |
 
 `augmentationDot` is `U+E1E7` — not `U+E4E5` (that's `restQuarter`, part of the rest block).
 
@@ -55,12 +61,13 @@ The three clef-change glyphs are in the subset but not yet drawn: mid-score clef
 | 9 | 3,128 B | Phase-1 minimum: clefs, 3 noteheads, 3 accidentals, dot |
 | 57 | 9,156 B | Full scope minus `repeatDot` (measured before that glyph was added to the subset) |
 | 61 | 9,448 B | Full scope minus the 3 clef-change glyphs — measured at the Phase 0 build, before they were added |
-| 64 | 10,136 B | Full scope incl. the 3 clef-change glyphs — current build |
+| 64 | 10,136 B | Full scope incl. the 3 clef-change glyphs |
+| 94 | 12,116 B | + brace, articulations, fermatas, dynamics, grace slashes — current build |
 | 88 | 10,984 B | + articulations, fermatas, dynamics, keyboard pedal marks (E650 block), brace, X-notehead — headroom for deferred features |
 
-Metadata (advance widths, bboxes, anchors) filtered to the 64-glyph set: 7,452 B raw / **1,945 B gzipped**. Full `Bravura.json` is 1,256,995 B — unfiltered metadata costs >100× more than the font.
+Metadata (advance widths, bboxes, anchors) filtered to the 94-glyph set: 10,536 B raw / **2,634 B gzipped**. Full `Bravura.json` is 1,256,995 B — unfiltered metadata costs >100× more than the font.
 
-**Total wire cost, full scope (64 glyphs): ~12 KB** (10,136 B font + 1,945 B gz metadata). `vexflow-core` alone is 328.7 KB before fonts, for comparison.
+**Total wire cost, full scope (94 glyphs): ~15 KB** (12,116 B font + 2,634 B gz metadata). `vexflow-core` alone is 328.7 KB before fonts, for comparison.
 
 ## Runtime
 
@@ -79,7 +86,12 @@ Fallback output is opt-in by need: `LayoutResult.fonts` (font names) and `GlyphR
 - A glyph gets its own `font-family` only when its font differs from the primary one.
 - Caller fonts get `@font-face` from `fontFaceCss` in a hoisted `<style>`. The default fonts' `@font-face` stays in `styles/notation.css`, next to the woff2 files `font:sync` copies into `notation-react/styles/`.
 
-Proof fonts, added with `font:add`: `polyhymnia-muse` (Leland 0.80, OTF with metadata, renamed for the OFL Reserved Font Name) and `polyhymnia-rism` (Leipzig TTF, no metadata, metrics measured from the outlines). The Leland render is pinned by the golden `packages/notation-engine/test/__golden__/font-leland.json`.
+Proof fonts, added with `font:add`: `polyhymnia-muse` (Leland 0.80, OTF with metadata, renamed for the OFL Reserved Font Name) and `polyhymnia-rism` (Leipzig TTF, no metadata, metrics measured from the outlines). The Leland render is pinned by the golden `packages/notation-engine/test/__golden__/font-leland.json`. After a glyph-table change, re-add both:
+
+```sh
+pnpm --filter @polyhymnia/notation-fonts font:add vendor/leland/Leland.otf --family PolyhymniaMuse --name polyhymnia-muse --metadata vendor/leland/leland_metadata.json --source-url https://github.com/MuseScoreFonts/Leland/releases/tag/v0.80
+pnpm --filter @polyhymnia/notation-fonts font:add vendor/leipzig-ttf/Leipzig.ttf --family PolyhymniaRism --name polyhymnia-rism --source-url https://github.com/rism-digital/leipzig/tree/a8838c6fe6bf3aaf4bfb5d831436b4f7594dbf9c
+```
 
 ## Build
 

@@ -133,8 +133,9 @@ describe('temporal', () => {
 });
 
 describe('font metrics come from the metadata JSON', () => {
-  it('maps the 61-glyph subset to codepoints, augmentationDot included', () => {
-    expect(Object.keys(modernStyle.core)).toHaveLength(61);
+  it('maps the core subset to codepoints, augmentationDot included', () => {
+    expect(modernStyle.optional.brace).toBe(0xe000);
+    expect(modernStyle.core.articStaccatoAbove).toBe(0xe4a2);
     expect(modernStyle.core.augmentationDot).toBe(0xe1e7);
     expect(modernStyle.core.restQuarter).toBe(0xe4e5);
     expect(modernStyle.core.gClef).toBe(0xe050);
