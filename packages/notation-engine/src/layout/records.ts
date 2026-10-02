@@ -85,6 +85,11 @@ export interface ClefSpec {
   octaveShift?: -1 | 0 | 1;
 }
 
+export interface ClefChange {
+  tick: number;
+  clef: ClefSpec;
+}
+
 export interface KeySpec {
   fifths: number;
 }
@@ -144,6 +149,8 @@ export interface NoteEngraving {
 export interface NormalizedMeasure {
   index: number;
   clef: ClefSpec;
+  clefChanges: readonly ClefChange[];
+  trailingClef?: ClefSpec;
   key: KeySpec;
   time: TimeSpec;
   pickup: boolean;

@@ -22,7 +22,7 @@ Integration only — no isolated-function unit tests. Every test enters through 
 | 1 — Answer-entry primitives — **done** | Data model, `Rational`, single measure/voice, noteheads/accidentals/ledger/stems/flags/rests/dots. Fixed-width spacing (no justify yet). Rescoped from click-to-insert to exercise primitives (`AGENTS.md`, `interaction.md`): `hitTest` + slots + `applyIntent({type:'setPitches'})`, targeting ear-training answer entry, not a sheet editor. Golden-file tests. | Reveal any 1–4 note chord/interval; resolve a slot/element hit and answer a dictation exercise. | 3–4 days |
 | 2 — Real scores | Key/time signatures, barlines, multi-measure, spring/rod spacing + justify, greedy breaking. Timemap export, `mode:'notes'`. | 8-measure melody in any key lays out and highlights note-by-note against the audio engine. | 4–5 days |
 | 3 — Rhythm | Beat grouping, beam geometry + secondaries + hooks, single-level tuplets, `mode:'cursor'` (done; app drives it via `setPlaybackTick`, no animation in the package). | Rhythmic dictation displays. | 4–5 days |
-| 4 — Polish — **mostly done** | Ties (barline + system-break) — done, slurs — done, cautionary accidentals — done, 2 voices — done, accidental stacking — done. Mid-score clef changes (E4: font glyphs done, layout pending) and end-of-system courtesy clef/key/time (E5) not done yet — see "Deferred / TODO". | Full test corpus renders correctly, both themes, 3 sizes. | 4–5 days |
+| 4 — Polish — **mostly done** | Ties (barline + system-break) — done, slurs — done, cautionary accidentals — done, 2 voices — done, accidental stacking — done. Mid-score clef changes, mid-measure included (E4) — done, end-of-system courtesy clef/key/time (E5) — done. | Full test corpus renders correctly, both themes, 3 sizes. | 4–5 days |
 | 5 — Extraction-ready | Public surfaces + README, `sideEffects:false`, exported CSS theme. `applyIntent` done (`setPitches`); undo deferred — a generic history of doc states + group fences + selection restore, not per-intent inverses (see "Deferred / TODO"). `npm pack` smoke test into a throwaway app, Playwright visual baseline. | `npm pack` → install into an empty app → renders. | 2 days |
 
 ~4 weeks total, useful at end of week 1. Phases 2/3 are independent, parallelizable.
@@ -77,7 +77,7 @@ Integration only — no isolated-function unit tests. Every test enters through 
 - **Runtime MusicXML import/export**: import stays offline/build-time only (`tools/musicxml-to-mnx` → committed `.mnx.json`); no runtime import or export until a product flow needs it (`AGENTS.md`).
 - **Grand staff + cross-staff beaming**: deferred, depends on grand staff landing first (see "Resolved decisions").
 - **One-line percussion staff**: deferred, no current exercise needs it.
-- **E4 (mid-score clef changes) + E5 (end-of-system courtesy clef/key/time)**: pending. Font glyphs for E4 (`gClefChange`/`cClefChange`/`fClefChange`, `font.md`) exist; layout doesn't use them yet.
+- **E4 (mid-score clef changes) + E5 (end-of-system courtesy clef/key/time)**: done (`engraving.md` "Clef changes", "Courtesy signs at a system break").
 - **Golden fixture for accidental stacking**: done.
 - **abcjs/VexFlow side-by-side quality harness**: not built (see "Open questions").
 - **Dev gallery route with size/theme toggle and golden fixtures wired in**: missing.

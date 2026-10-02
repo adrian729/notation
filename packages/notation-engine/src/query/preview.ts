@@ -6,6 +6,7 @@ import { glyphRun, tagFonts } from '../layout/emit.js';
 import type { Alter, StaffPitch, StepNumber } from '../layout/records.js';
 import { STAFF_HEIGHT, accidentalGlyph, staffPositionOf } from '../layout/staff.js';
 import type { GlyphRun, LayoutResult, RectShape } from '../layout/types.js';
+import { clefAtX } from './measures.js';
 
 export interface PreviewNote {
   measureIndex: number;
@@ -46,7 +47,7 @@ export function previewShapes(
   if (!system) return { glyphs: [], rects: [] };
 
   const staffPitch = toStaffPitch(preview.pitch);
-  const staffPosition = staffPositionOf(staffPitch, measureBox.clef);
+  const staffPosition = staffPositionOf(staffPitch, clefAtX(measureBox, preview.x));
   const y = system.y + staffPosition;
 
   const glyphs: GlyphRun[] = [];

@@ -91,6 +91,13 @@ export interface MeasureBox {
   capacityTicks: number;
   clef: ClefSpec;
   key: KeySpec;
+  clefChanges?: readonly MeasureClefChange[];
+}
+
+export interface MeasureClefChange {
+  x: number;
+  tick: number;
+  clef: ClefSpec;
 }
 
 export interface EntryPlacement {

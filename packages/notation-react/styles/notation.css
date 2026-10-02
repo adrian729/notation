@@ -51,9 +51,11 @@
 
 /* Non-note signage in lapis. Accidentals and dots go blue too — they belong to the
    pitch, not to the notehead. Clefs, noteheads, stems, flags and beams stay ink. */
-.pn-notation[data-pn-style='mensural'] :is(
+.pn-notation[data-pn-style='mensural']
+  :is(
     [data-pn='barline'],
     [data-pn='key-accidental'],
+    [data-pn='courtesy-key'],
     [data-pn='accidental'],
     [data-pn='dot'],
     [data-pn='rest'],

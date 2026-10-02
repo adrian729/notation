@@ -11,6 +11,7 @@ export type {
   GlyphRun,
   LayoutResult,
   MeasureBox,
+  MeasureClefChange,
   MeasurePlacement,
   PathShape,
   Placements,

@@ -12,7 +12,7 @@ import type {
   StaffPitch,
 } from './records.js';
 import { accidentalOf, type AccidentalScore } from './accidentals.js';
-import { MIDDLE_LINE, staffPositionOf } from './staff.js';
+import { MIDDLE_LINE, clefAt, staffPositionOf } from './staff.js';
 import { elementsByStaffMeasureKey, indexElementsByStaffMeasure } from './temporal.js';
 import type { TemporalElement, TemporalScore } from './temporal.js';
 
@@ -199,12 +199,17 @@ function voiceDirection(voice: 0 | 1, upVoice: 0 | 1): 1 | -1 {
   return voice === upVoice ? 1 : -1;
 }
 
-function buildClefByMeasure(normalized: NormalizedScore): Map<number, ClefSpec> {
-  const clefByMeasure = new Map<number, ClefSpec>();
+type ClefLookup = (el: TemporalElement) => ClefSpec;
+
+function clefLookup(normalized: NormalizedScore): ClefLookup {
+  const byMeasure = new Map<number, NormalizedMeasure>();
   for (const staff of normalized.staves) {
-    for (const measure of staff.measures) clefByMeasure.set(measure.index, measure.clef);
+    for (const measure of staff.measures) byMeasure.set(measure.index, measure);
   }
-  return clefByMeasure;
+  return (el) => {
+    const measure = byMeasure.get(el.measureIndex);
+    return measure ? clefAt(measure, el.measureTick) : { kind: 'treble' };
+  };
 }
 
 function computeUpVoice(
@@ -212,13 +217,13 @@ function computeUpVoice(
   score: TemporalScore,
   twoVoice: ReadonlySet<string>,
 ): Map<string, 0 | 1> {
-  const clefByMeasure = buildClefByMeasure(normalized);
+  const clefOf = clefLookup(normalized);
   const totals = new Map<string, [number, number, number, number]>();
   for (const el of score.elements) {
     if (el.kind === 'rest') continue;
     const key = measureKey(el.staffIndex, el.measureIndex);
     if (!twoVoice.has(key)) continue;
-    const clef = clefByMeasure.get(el.measureIndex) ?? { kind: 'treble' as const };
+    const clef = clefOf(el);
     const entry = totals.get(key) ?? [0, 0, 0, 0];
     for (const note of el.notes) {
       const pos = staffPositionOf(note.pitch, clef);
@@ -254,7 +259,7 @@ function beamDirectionsByElement(
   upVoice: ReadonlyMap<string, 0 | 1>,
   diagnostics: Diagnostic[],
 ): Map<NoteId, BeamMembership> {
-  const clefByMeasure = buildClefByMeasure(normalized);
+  const clefOf = clefLookup(normalized);
   const byId = new Map<NoteId, TemporalElement>();
   for (const el of score.elements) byId.set(el.id, el);
 
@@ -283,11 +288,11 @@ function beamDirectionsByElement(
     } else if (twoVoice.has(measureKey(notes[0]!.staffIndex, beam.measureIndex))) {
       dir = voiceDirection(beam.voice, upVoice.get(measureKey(notes[0]!.staffIndex, beam.measureIndex)) ?? 0);
     } else {
-      const clef = clefByMeasure.get(beam.measureIndex) ?? { kind: 'treble' as const };
       let furthest = 0;
       let below = false;
       let above = false;
       for (const el of notes) {
+        const clef = clefOf(el);
         for (const note of el.notes) {
           const pos = staffPositionOf(note.pitch, clef);
           const dist = Math.abs(pos - MIDDLE_LINE);
@@ -351,9 +356,10 @@ function layOut(
   const notes = row.notes;
   const glyph = styled.policy.noteheads[duration.base];
   const width = fonts.advanceWidth(glyph);
+  const clef = clefAt(measure, row.measureTick);
   const heads = notes.map((note) => ({
     note,
-    staffPosition: staffPositionOf(note.pitch, measure.clef),
+    staffPosition: staffPositionOf(note.pitch, clef),
   }));
 
   const dir = beamInfo

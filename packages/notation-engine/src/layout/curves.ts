@@ -2,6 +2,7 @@ import type { Diagnostic } from '@polyhymnia/mnx';
 import type { EngravingDefaults } from '@polyhymnia/notation-fonts';
 import type { FontContext } from '../font/context.js';
 import type { BeamsResult } from './beams.js';
+import { isClefColumn } from './horizontal.js';
 import type { JustifiedScore, JustifiedSystem } from './justify.js';
 import type { NormalizedSlur, NoteId, NormalizedTie } from './records.js';
 import { MIDDLE_LINE, STAFF_HEIGHT } from './staff.js';
@@ -243,15 +244,19 @@ function spansBetween(from: PlacedNote, to: PlacedNote, justified: JustifiedScor
   ];
 }
 
-function lastColumnX(system: JustifiedSystem): number {
+function systemEndX(system: JustifiedSystem): number {
   const measure = system.measures[system.measures.length - 1];
-  const column = measure?.columns[measure.columns.length - 1];
-  return column ? column.x : system.width;
+  return measure ? measure.x + measure.width : system.width;
+}
+
+function lastColumnX(system: JustifiedSystem): number {
+  const columns = system.measures[system.measures.length - 1]?.columns ?? [];
+  const column = [...columns].reverse().find((c) => !isClefColumn(c));
+  return column ? column.x : systemEndX(system);
 }
 
 function firstColumnX(system: JustifiedSystem): number {
-  const measure = system.measures[0];
-  const column = measure?.columns[0];
+  const column = system.measures[0]?.columns.find((c) => !isClefColumn(c));
   return column ? column.x : 0;
 }
 
@@ -274,7 +279,7 @@ function curveSpan(span: CurveSpan, endpointYOf: (note: PlacedNote) => number): 
     case 'start': {
       const { from, system } = span;
       const x0 = rightEdge(from) + GAP;
-      const x3 = Math.max(x0 + MIN_SPAN, Math.min(system.width, lastColumnX(system) + SYSTEM_END_MARGIN));
+      const x3 = Math.max(x0 + MIN_SPAN, Math.min(systemEndX(system), lastColumnX(system) + SYSTEM_END_MARGIN));
       const y = endpointYOf(from);
       return { systemIndex: from.systemIndex, x0, x3, y0: y, y3: y, lo: from.x, hi: x3 };
     }

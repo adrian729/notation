@@ -166,7 +166,7 @@ if slack < 0: push the last measure to the next system
 
 **Last system: natural width, not justified** (optional stretch to `maxLastSystemFill`, default 0.65). Full-justifying a 2-measure final system produces the "two notes stranded at opposite ends" look.
 
-**System breaking:** greedy — accumulate measures until the next exceeds `widthSp`, accounting for clef/key restatement cost at each new system. `NormalizedMeasure.systemBreak: true` forces a break — set by `normalize.ts` from MNX `scores[0].pages[].systems[].measure` (a system starting at measure `k` forces a break after `k−1`, mnx.md); no `pages`/`systems` at all falls back to this greedy algorithm entirely. Global (Knuth-Plass) optimization deferred — scores are 1–8 measures, not worth it; stage signature unchanged if added later.
+**System breaking:** greedy with one lookahead — accumulate measures until the next exceeds `widthSp`, accounting for clef/key restatement cost at each new system. Before a measure is added it must also fit as the system's last measure, including its end-of-system courtesy when the next measure changes key or time ("Courtesy signs at a system break", below); if it fits only without the courtesy, the system closes before it. A system always holds at least one measure: a lone overflowing measure keeps its courtesy and the line overflows. A forced break gives the measure before it its courtesy too. `NormalizedMeasure.systemBreak: true` forces a break — set by `normalize.ts` from MNX `scores[0].pages[].systems[].measure` (a system starting at measure `k` forces a break after `k−1`, mnx.md); no `pages`/`systems` at all falls back to this greedy algorithm entirely. Global (Knuth-Plass) optimization deferred — scores are 1–8 measures, not worth it; stage signature unchanged if added later.
 
 ## Key signatures
 
@@ -183,7 +183,7 @@ Octave placement (clef-dependent, one irregularity):
 
 Implementation: treble pattern as canonical array, derive others by `topLineStep` offset, tenor sharps as an explicit override. 15 keys × 4 clefs = 60 cases in `test/key-clef-corpus.test.ts`, asserted against independent staff-position tables.
 
-Key change: emit naturals for accidentals present in the outgoing key and absent in the incoming, before the new key's accidentals.
+Key change: emit naturals for accidentals present in the outgoing key and absent in the incoming, before the new key's accidentals, in the clef in force where they're drawn. At a system break the naturals appear only in the end-of-system courtesy ("Courtesy signs at a system break", below); the new system restates the key without them.
 
 ## Time signatures
 
@@ -201,7 +201,20 @@ Numeric (default): digit glyphs (timeSig0–9, E080–E089, `font.md`) compose l
    denominator width) + fixed padding, same padding convention as clef/key chrome.
 ```
 
-Mid-score change: restated at the new measure, same barline-adjacent placement as a key change (Key signatures, above); previous signature isn't repeated.
+Mid-score change: restated at the new measure, same barline-adjacent placement as a key change (Key signatures, above); previous signature isn't repeated. At a system break it is drawn only as the end-of-system courtesy, not again at the new system's start.
+
+## Clef changes
+
+- **System start:** the full-size clef (`cls: 'clef'`), as for the first measure.
+- **At a barline, mid-system:** the change-size glyph (`gClefChange`/`fClefChange`/`cClefChange`, `cls: 'clef-change'`) before the barline, at the end of the previous measure; the new measure takes it as its start clef. It counts once, in that measure's content width. The same small clef ends a system before a break (the courtesy clef). An octave clef uses its full-size glyph: SMuFL has no octave change clefs.
+- **Mid-measure** (`position.fraction` > 0, resolved by `mnx-score`'s `positionTick`): a small clef column right before the first element at or after the clef's tick, in any voice. The column's rod is the glyph width; it has no spring, no stretch and zero span, and the previous column's spring spans past it to the next element column. Several clefs before the same element collapse to the last one.
+- **No element at or after the clef's tick:** treated as a change at the next barline.
+
+Every element uses the clef in force at its own tick: staff positions, the two-voice up-voice choice, and beam direction (each beamed note with its own clef).
+
+## Courtesy signs at a system break
+
+When measure i+1 starts a new system and changes key or time, measure i gets trailing courtesy chrome after its end barline: cancellation naturals, the new key (in the clef in force after the barline), then the new time (`cls: 'courtesy-key'`, `'courtesy-time'`). The courtesy clef is the small change clef already drawn before the barline (Clef changes, above). The courtesy's width is added to the system's natural width but never stretched; staff lines run on to the system's end over it, while the measure's own band (`MeasureBox.w`, placements) and broken ties/slurs stop at the barline. The next system starts with the full-size clef and the key restated without naturals, and does not repeat the time signature.
 
 ## Accidentals
 

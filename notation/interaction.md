@@ -40,9 +40,9 @@ interface Slot extends SlotRef {
 }
 ```
 
-Generation, per measure/voice: one slot per column's element at that voice (`query/slots.ts`) — no grid subdivision. A whole-bar (`fullMeasure`) rest gets one slot spanning the whole measure's content band (`MeasureBox.contentX` to the measure's right edge) instead of a column band; its `eventId` is the same id `isFullMeasureRest` checks in `mnx`, so a dictation `setPitches` against it correctly no-ops with `intent-target-unsupported` (below) rather than editing something that isn't a real event. Non-whole-bar slots tile the measure column-to-column: each column's band runs from its own x to the next column's x (or the measure's content-right edge for the last column), so bands are contiguous with no gaps or overlaps.
+Generation, per measure/voice: one slot per column's element at that voice (`query/slots.ts`) — no grid subdivision. A whole-bar (`fullMeasure`) rest gets one slot spanning the whole measure's content band (`MeasureBox.contentX` to the measure's right edge) instead of a column band; its `eventId` is the same id `isFullMeasureRest` checks in `mnx`, so a dictation `setPitches` against it correctly no-ops with `intent-target-unsupported` (below) rather than editing something that isn't a real event. Non-whole-bar slots tile the measure column-to-column: each column's band runs from its own x to the next column's x (or the measure's content-right edge for the last column), so bands are contiguous with no gaps or overlaps. Clef-change columns get no slot: the band before one runs on to the next element column.
 
-`staffPosition = round(y*2)/2`. `pitch` = invert the pitch→y formula (`architecture.md`) + current key signature's alteration for that step, expressed as an MNX pitch — clicking the F line in D major yields F♯, not F♮ (`opts.insertAlteration: 'key' | 'natural'` switches this; `'natural'` always yields `alter: 0`).
+`staffPosition = round(y*2)/2`. `pitch` = invert the pitch→y formula (`architecture.md`) in the clef in force (a `slot`'s at its tick, a `point`'s at its x — `MeasureBox.clefChanges`) + current key signature's alteration for that step, expressed as an MNX pitch — clicking the F line in D major yields F♯, not F♮ (`opts.insertAlteration: 'key' | 'natural'` switches this; `'natural'` always yields `alter: 0`).
 
 ## `MeasureBox` and preview
 
@@ -52,17 +52,18 @@ interface MeasureBox {
   x: number; w: number; contentX: number;
   startTick: number; capacityTicks: number;
   clef: ClefSpec; key: KeySpec;
+  clefChanges?: readonly { x: number; tick: number; clef: ClefSpec }[];
 }
 ```
 
-`LayoutResult.measures` carries one `MeasureBox` per `PositionedMeasure` (built by `query/measures.ts`'s `buildMeasureBox`), so `hitTest` and `previewShapes` can look up a measure's clef/key at call time without re-running layout. `contentX` is the first column's `xStart` (the content band's left edge, chrome excluded); an empty measure with no columns falls back to the content-right edge, giving it a zero-width band.
+`LayoutResult.measures` carries one `MeasureBox` per `PositionedMeasure` (built by `query/measures.ts`'s `buildMeasureBox`), so `hitTest` and `previewShapes` can look up a measure's clef/key at call time without re-running layout. `contentX` is the first element column's `xStart` (the content band's left edge, chrome excluded); an empty measure with no element columns falls back to the content-right edge, giving it a zero-width band. `clef` is the clef at the measure start; `clefChanges`, present only when the measure has mid-measure clef changes, lists each change's glyph x, absolute tick and clef. `w` stops at the end barline: an end-of-system courtesy after it belongs to no measure.
 
 ```ts
 interface PreviewNote { measureIndex: number; x: number; pitch: Pitch; voice?: 0|1 }
 function previewShapes(layout: LayoutResult, preview: PreviewNote): { glyphs: readonly GlyphRun[]; rects: readonly RectShape[] };
 ```
 
-Pure, no layout re-run: looks up `preview.measureIndex`'s `MeasureBox` (clef/key) and its system (y), places one notehead glyph (`cls: 'preview-notehead'`, no `el` — not an element), ledger-line rects (`cls: 'preview-ledger'`) as needed, and an accidental glyph (`cls: 'preview-accidental'`) only when `preview.pitch`'s alteration differs from the key's alteration for that step. Used for a drag ghost or an insert-mode cursor once those land; nothing in the renderer calls it yet.
+Pure, no layout re-run: looks up `preview.measureIndex`'s `MeasureBox` (the clef in force at `preview.x`, key) and its system (y), places one notehead glyph (`cls: 'preview-notehead'`, no `el` — not an element), ledger-line rects (`cls: 'preview-ledger'`) as needed, and an accidental glyph (`cls: 'preview-accidental'`) only when `preview.pitch`'s alteration differs from the key's alteration for that step. Used for a drag ghost or an insert-mode cursor once those land; nothing in the renderer calls it yet.
 
 ## Intents
 

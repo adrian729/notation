@@ -11,6 +11,7 @@ const EXAMPLES = fileURLToPath(new URL('../../mnx/schema/examples/', import.meta
 const fixtureNames = [
   'breath',
   'chrome-changes',
+  'courtesy-system-break',
   'golden-accidentals-stacking',
   'golden-beams-16ths',
   'golden-beams-6-8-vs-3-4',
@@ -35,7 +36,7 @@ const fixtureNames = [
   'tempo',
 ];
 
-const SELECTED_EXAMPLES = ['beams-secondary-beam-breaks'];
+const SELECTED_EXAMPLES = ['beams-secondary-beam-breaks', 'clef-changes'];
 
 function loadFixture(name: string): MnxDocument {
   return JSON.parse(readFileSync(`${FIXTURES}${name}.json`, 'utf8')) as MnxDocument;

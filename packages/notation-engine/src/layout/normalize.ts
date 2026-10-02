@@ -12,13 +12,14 @@ import type {
   Sequence,
   Slur,
 } from '@polyhymnia/mnx';
-import type { Timeline, TimelineEntry, TimelineNote } from '@polyhymnia/mnx-score';
+import { positionTick, type Timeline, type TimelineEntry, type TimelineNote } from '@polyhymnia/mnx-score';
 import { stepNumberOf } from '@polyhymnia/music-theory';
 import type { NotationOptions } from '../options.js';
 import {
   DEFAULT_TIME,
   type AccidentalPolicy,
   type Alter,
+  type ClefChange,
   type ClefSpec,
   type KeySpec,
   type NormalizedMeasure,
@@ -31,13 +32,13 @@ import {
 import { asArray, asObject, createReader, sequenceKey, type Reader, type SlurNote } from './normalize-reader.js';
 import {
   barlineEndOf,
-  isMidMeasure,
   reportGlobalConstructs,
   reportPartConstructs,
   resolveClef,
   resolveKey,
 } from './normalize-measure.js';
 import { resolveBeams } from './normalize-beams.js';
+import { clefEquals, lastClef } from './staff.js';
 import { timelineFor } from './timeline.js';
 
 const DEFAULT_CLEF: ClefSpec = { kind: 'treble' };
@@ -96,9 +97,9 @@ export function normalize(
   const globals = asArray(asObject(source.global)?.measures);
   const partMeasures = asArray(part.measures);
 
+  const elementTicks = elementTicksByMeasure(timeline);
   let currentClef = DEFAULT_CLEF;
   let currentKey = DEFAULT_KEY;
-  let pendingClef: ClefSpec | undefined;
   let firstClef: ClefSpec | undefined;
   let firstKey: KeySpec | undefined;
   let firstTime: TimeSpec | undefined;
@@ -111,40 +112,21 @@ export function normalize(
 
     if (g.key !== undefined) currentKey = resolveKey(g.key, currentKey, index, reader);
 
-    if (pendingClef) currentClef = pendingClef;
-    pendingClef = undefined;
-    for (const positioned of asArray(pm.clefs)) {
-      const entry = asObject(positioned);
-      if (!entry) continue;
-      const staff = typeof entry.staff === 'number' ? entry.staff : 1;
-      if (staff !== 1) {
-        reader.unsupported(`clef on staff ${staff}`, index, 'ignored');
-        continue;
-      }
-      if (asObject(entry.position)?.graceIndex !== undefined) {
-        reader.unsupported('graceIndex in a clef position', index, 'grace positioning ignored');
-      }
-      const clef = resolveClef(entry.clef, index, reader);
-      if (!clef) continue;
-      if (isMidMeasure(entry.position)) {
-        reader.unsupported('mid-measure clef', index, 'applied from the next measure');
-        pendingClef = clef;
-      } else {
-        currentClef = clef;
-      }
-    }
+    const clefs = readClefs(asArray(pm.clefs), index, currentClef, elementTicks.get(index) ?? [], timeline, reader);
+    currentClef = clefs.carried;
 
     reportGlobalConstructs(g, index, reader);
     reportPartConstructs(pm, index, reader);
     readSequences(asArray(pm.sequences), index, reader);
 
-    firstClef ??= currentClef;
+    firstClef ??= clefs.start;
     firstKey ??= currentKey;
     firstTime ??= time;
 
     return {
       index,
-      clef: currentClef,
+      clef: clefs.start,
+      clefChanges: clefs.changes,
       key: currentKey,
       time,
       pickup: timed?.pickup ?? false,
@@ -155,6 +137,7 @@ export function normalize(
     } satisfies NormalizedMeasure;
   });
 
+  assignTrailingClefs(measures, currentClef);
   resolveSlurs(reader);
   applySystemBreaks(source, globals, measures, reader);
   const beams = resolveBeams(source, partMeasures, measures, timeline, beamIds, reader, options);
@@ -179,6 +162,83 @@ export function normalize(
     slurs: reader.resolvedSlurs,
     diagnostics,
   };
+}
+
+interface MeasureClefs {
+  start: ClefSpec;
+  changes: ClefChange[];
+  carried: ClefSpec;
+}
+
+function elementTicksByMeasure(timeline: Timeline): Map<number, number[]> {
+  const byMeasure = new Map<number, number[]>();
+  for (const entry of timeline.entries) {
+    if (entry.kind === 'space') continue;
+    const ticks = byMeasure.get(entry.measureIndex) ?? [];
+    ticks.push(entry.measureTick);
+    byMeasure.set(entry.measureIndex, ticks);
+  }
+  for (const ticks of byMeasure.values()) ticks.sort((a, b) => a - b);
+  return byMeasure;
+}
+
+function readClefs(
+  entries: readonly unknown[],
+  measureIndex: number,
+  previous: ClefSpec,
+  elementTicks: readonly number[],
+  timeline: Timeline,
+  reader: Reader,
+): MeasureClefs {
+  let start = previous;
+  const positioned: ClefChange[] = [];
+  for (const raw of entries) {
+    const entry = asObject(raw);
+    if (!entry) continue;
+    const staff = typeof entry.staff === 'number' ? entry.staff : 1;
+    if (staff !== 1) {
+      reader.unsupported(`clef on staff ${staff}`, measureIndex, 'ignored');
+      continue;
+    }
+    if (asObject(entry.position)?.graceIndex !== undefined) {
+      reader.unsupported('graceIndex in a clef position', measureIndex, 'grace positioning ignored');
+    }
+    const clef = resolveClef(entry.clef, measureIndex, reader);
+    if (!clef) continue;
+    const tick = entry.position === undefined ? 0 : clefTick(timeline, measureIndex, entry.position, reader);
+    if (tick === 0) start = clef;
+    else positioned.push({ tick, clef });
+  }
+  positioned.sort((a, b) => a.tick - b.tick);
+
+  const byAnchor = new Map<number, ClefChange>();
+  let deferred: ClefSpec | undefined;
+  for (const change of positioned) {
+    const anchor = elementTicks.find((tick) => tick >= change.tick);
+    if (anchor === undefined) deferred = change.clef;
+    else byAnchor.set(anchor, change);
+  }
+  const changes: ClefChange[] = [];
+  let inForce = start;
+  for (const change of byAnchor.values()) {
+    if (clefEquals(change.clef, inForce)) continue;
+    changes.push(change);
+    inForce = change.clef;
+  }
+  return { start, changes, carried: deferred ?? inForce };
+}
+
+function clefTick(timeline: Timeline, measureIndex: number, position: unknown, reader: Reader): number {
+  const { measureTick, diagnostic } = positionTick(timeline, measureIndex, position);
+  if (diagnostic) reader.diagnostics.push(diagnostic);
+  return measureTick;
+}
+
+function assignTrailingClefs(measures: NormalizedMeasure[], finalClef: ClefSpec): void {
+  measures.forEach((measure, i) => {
+    const next = measures[i + 1]?.clef ?? finalClef;
+    if (!clefEquals(next, lastClef(measure))) measure.trailingClef = next;
+  });
 }
 
 function idOf(source: MnxDocument): string {

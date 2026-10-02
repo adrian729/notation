@@ -338,6 +338,28 @@ describe('systems', () => {
     expect(glyphsOf(layout, 'clef')).toHaveLength(layout.systems.length);
   });
 
+  it('keeps the end-of-system courtesy key and time inside widthSp', () => {
+    const doc = mnx(
+      {},
+      ...Array.from({ length: 8 }, (_, i) =>
+        withGlobal(
+          { key: { fifths: i % 2 ? 6 : -6 }, time: { count: i % 2 ? 3 : 2, unit: 4 } },
+          measure(note('C4', 'q'), note('D4', 'q'), ...(i % 2 ? [note('E4', 'q')] : [])),
+        ),
+      ),
+    );
+    const layout = layoutModern(doc, { widthSp: 40 });
+    const courtesyGlyphs = layout.glyphs.filter((g) => g.cls === 'courtesy-key' || g.cls === 'courtesy-time');
+
+    expect(layout.systems.length).toBeGreaterThan(2);
+    for (const system of layout.systems) {
+      expect(system.w).toBeLessThanOrEqual(40 + 1e-6);
+      const last = layout.measures.filter((m) => m.systemIndex === system.index).at(-1)!;
+      const after = courtesyGlyphs.filter((g) => g.y > system.y - 4 && g.y < system.y + 8 && g.x > last.x + last.w);
+      expect(after.length > 0).toBe(system.index < layout.systems.length - 1);
+    }
+  });
+
   it('honours the systems of the score layout', () => {
     const layout = layoutModern(fixture('system-break'));
     expect(layout.systems).toHaveLength(2);

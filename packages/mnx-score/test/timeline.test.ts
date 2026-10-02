@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { MnxDocument } from '@polyhymnia/mnx';
-import { buildTimeline, performance, type Timeline } from '../src/index.js';
+import { buildTimeline, performance, positionTick, type Timeline } from '../src/index.js';
 
 type Json = Record<string, unknown>;
 
@@ -225,6 +225,24 @@ describe('buildTimeline', () => {
     ]);
     expect(timeline.diagnostics[4]!.message).toMatch(/tempo beat unit/);
     expect(timeline.diagnostics[7]!.message).toMatch(/grace notes/);
+  });
+});
+
+describe('positionTick', () => {
+  const timeline = buildTimeline(
+    score([3, 4], [[[seq([n('C', 4, {}, 'half'), n('D')])], [seq([n('E', 4, {}, 'half'), n('F')])]]]),
+  );
+
+  it.each([
+    ['a fraction inside the measure', 1, { fraction: [1, 4] }, 3 * Q + Q, Q, undefined],
+    ['no position', 1, undefined, 3 * Q, 0, undefined],
+    ['a malformed fraction', 1, { fraction: [1, 0] }, 3 * Q, 0, 'invalid-position'],
+    ['a fraction past the end', 0, { fraction: [5, 4] }, 3 * Q, 3 * Q, 'invalid-position'],
+    ['a missing measure', 7, { fraction: [1, 4] }, 0, 0, 'invalid-position'],
+  ])('resolves %s, clamping and reporting instead of throwing', (_name, measure, position, tick, measureTick, code) => {
+    const result = positionTick(timeline, measure, position);
+    expect({ tick: result.tick, measureTick: result.measureTick }).toEqual({ tick, measureTick });
+    expect(result.diagnostic?.code).toBe(code);
   });
 });
 

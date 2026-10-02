@@ -1,6 +1,6 @@
 import { DEFAULT_OPTIONS, type NotationOptions } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/mnx';
-import { chromeWidth, measureWidth, type HorizontalColumn } from './horizontal.js';
+import { chromeWidth, isClefColumn, measureWidth, type HorizontalColumn } from './horizontal.js';
 import type { BreakScore, SystemMeasure } from './break.js';
 
 export interface PositionedColumn extends HorizontalColumn {
@@ -34,7 +34,7 @@ export function justify(broken: BreakScore, options?: NotationOptions): Justifie
   const systems: JustifiedSystem[] = [];
   for (const system of broken.systems) {
     const isLast = system.index === broken.systems.length - 1;
-    const natural = system.measures.reduce((sum, m, i) => sum + measureWidth(m, i === 0), 0);
+    const natural = system.measures.reduce((sum, m, i) => sum + measureWidth(m, i === 0, m.showCourtesy), 0);
     const target = isLast ? Math.max(natural, Math.min(widthSp, maxLastFill * widthSp)) : Math.max(natural, widthSp);
     const slack = Math.max(0, target - natural);
     const totalStretch = system.measures.reduce((sum, m) => sum + m.columns.reduce((s, c) => s + c.stretch, 0), 0);
@@ -44,15 +44,18 @@ export function justify(broken: BreakScore, options?: NotationOptions): Justifie
     for (const measure of system.measures) {
       const measureX = x;
       x += chromeWidth(measure.chrome);
+      if (!measure.columns.some((column) => !isClefColumn(column))) {
+        x += measure.contentWidth - measure.columns.reduce((sum, column) => sum + column.width, 0);
+      }
       const columns = measure.columns.map((column): PositionedColumn => {
         const positioned = { ...column, xStart: x, x: x + column.leftWidth };
         const extra = totalStretch > 0 ? (slack * column.stretch) / totalStretch : 0;
         x += column.width + extra;
         return positioned;
       });
-      if (measure.columns.length === 0) x += measure.contentWidth;
       x += measure.chrome.endBarlineWidth;
       measures.push({ ...measure, columns, x: measureX, width: x - measureX });
+      if (measure.showCourtesy) x += measure.courtesy?.width ?? 0;
     }
 
     systems.push({ index: system.index, measures, width: x, naturalWidth: natural });

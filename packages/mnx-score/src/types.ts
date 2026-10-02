@@ -132,6 +132,12 @@ export interface Timeline {
   secondsToWrittenTick(seconds: number, tempo?: TempoOverride): number;
 }
 
+export interface PositionTick {
+  tick: number;
+  measureTick: number;
+  diagnostic?: Diagnostic;
+}
+
 export interface PerformanceOptions {
   tempo?: TempoOverride;
 }

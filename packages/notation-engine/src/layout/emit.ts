@@ -8,9 +8,9 @@ import type { CurvesResult } from './curves.js';
 import type { TupletsResult } from './tuplets.js';
 import { buildMeasureBox, contentBounds } from '../query/measures.js';
 import { measureSlots } from '../query/slots.js';
-import { digitsWidth, layOutKeyGlyphs } from './horizontal.js';
+import { COURTESY_LEAD, digitsWidth, layOutKeyGlyphs } from './horizontal.js';
 import type { JustifiedScore, PositionedMeasure } from './justify.js';
-import { STAFF_HEIGHT, STAFF_LINES, clefGlyph, clefGlyphY } from './staff.js';
+import { STAFF_HEIGHT, STAFF_LINES, clefChangeGlyph, clefGlyph, clefGlyphY } from './staff.js';
 import type { TemporalScore } from './temporal.js';
 import type {
   Box,
@@ -88,6 +88,7 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
     for (const measure of system.measures) {
       emitChrome(measure, staffTop, glyphs, fonts);
       emitBarlines(measure, staffTop, glyphs, rects, fonts);
+      emitCourtesy(measure, staffTop, glyphs, fonts);
       measureTimes.push({
         index: measure.index,
         startTick: measure.startTick,
@@ -103,6 +104,12 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
 
       const { contentRight } = bounds;
       measure.columns.forEach((column, i) => {
+        if (column.clef) {
+          glyphs.push(
+            glyphRun(fonts, clefChangeGlyph(column.clef), column.x, staffTop + clefGlyphY(column.clef), 'clef-change'),
+          );
+          return;
+        }
         const next = measure.columns[i + 1];
         const columnRight = next ? next.xStart : contentRight;
         for (const element of column.elements) {
@@ -206,14 +213,36 @@ function emitChrome(measure: PositionedMeasure, staffTop: number, glyphs: GlyphR
   if (measure.chrome.showTime) emitTimeSignature(measure.time, x, staffTop, glyphs, fonts);
 }
 
-function emitTimeSignature(time: TimeSpec, x: number, staffTop: number, glyphs: GlyphRun[], fonts: FontContext): void {
+function emitCourtesy(measure: PositionedMeasure, staffTop: number, glyphs: GlyphRun[], fonts: FontContext): void {
+  const courtesy = measure.showCourtesy ? measure.courtesy : null;
+  if (!courtesy) return;
+  const x = measure.x + measure.width + COURTESY_LEAD;
+  if (courtesy.showKey) {
+    const key = layOutKeyGlyphs(fonts, courtesy.key, courtesy.clef, courtesy.cancelKey, true, x);
+    for (const acc of key.glyphs) {
+      glyphs.push(glyphRun(fonts, acc.glyph, acc.x, staffTop + acc.y, 'courtesy-key'));
+    }
+  }
+  if (courtesy.showTime) {
+    emitTimeSignature(courtesy.time, x + courtesy.keyWidth, staffTop, glyphs, fonts, 'courtesy-time');
+  }
+}
+
+function emitTimeSignature(
+  time: TimeSpec,
+  x: number,
+  staffTop: number,
+  glyphs: GlyphRun[],
+  fonts: FontContext,
+  cls?: string,
+): void {
   // Mensural C and O prolation is not drawable yet, and cannot be fixed here: the
   // pinned MNX schema types time.symbol as 'common' | 'cut' only, so no document
   // can carry a prolation sign. The outlines exist in the mensural subset — this
   // needs a schema decision before an engine change, not an engine change now.
   if (time.symbol === 'common' || time.symbol === 'cut') {
     const name = time.symbol === 'cut' ? 'timeSigCutCommon' : 'timeSigCommon';
-    glyphs.push(glyphRun(fonts, name, x, staffTop + 2, 'time-signature'));
+    glyphs.push(glyphRun(fonts, name, x, staffTop + 2, cls ?? 'time-signature'));
     return;
   }
   const numerator = String(Math.max(0, Math.round(time.beats)));
@@ -223,8 +252,8 @@ function emitTimeSignature(time: TimeSpec, x: number, staffTop: number, glyphs: 
 
   // Numerator and denominator get separate classes so they can be coloured apart:
   // two hues of similar lightness are hard to tell apart at this size.
-  emitDigits(numerator, centre, staffTop + 1, 'time-signature-numerator', glyphs, fonts);
-  emitDigits(denominator, centre, staffTop + 3, 'time-signature-denominator', glyphs, fonts);
+  emitDigits(numerator, centre, staffTop + 1, cls ?? 'time-signature-numerator', glyphs, fonts);
+  emitDigits(denominator, centre, staffTop + 3, cls ?? 'time-signature-denominator', glyphs, fonts);
 }
 
 function emitDigits(

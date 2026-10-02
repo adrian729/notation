@@ -46,7 +46,7 @@ Dependency direction: `mnx` and `notation-fonts` are leaves, and `music-theory` 
 - `web-audio` — sound from MIDI events: pure `NoteEvent`/`Clip` builders on `.`, Web Audio synth and player on `./webaudio`, sample player on `./sampler` (`audio.md`). No workspace dependencies; score events come from `mnx-score` `performance()` via the app.
 - `notation-react` — the React rendering layer. It has no presets export; the app's presets (`src/components/presets/` in github.com/adrian729/polyhymnia-ear-training) build plain MNX with the app-private `mnxBuild` helper (`interface.md`).
 - `music-theory` — pitch, interval, chord, scale and key theory; pure, no dependencies. Its `Pitch` is structurally equal to MNX's. It owns the pitch functions that used to live in `mnx` (`parsePitch`, `pitchToMidi`, `STEP_LETTERS`, `stepNumberOf`); the engine, mnx-score and the app import them from here.
-- `mnx-score` — the timeline over MNX, built once per document by `buildTimeline(doc, {scope?, divisions?})` (`divisions` defaults to `DEFAULT_DIVISIONS` = 3360). Owns musical time and ids: entries (note, chord, rest, full-measure rest, space; padding rests are synthetic entries `m{i}.v{ordinal}.pad{k}`) with ticks, durations, tuplet, and notes `{id, pitch, midi, tie}`; ties; measures with pickup and capacity; tempo and play-order segments; `activeAt`, `byId`, `writtenTickToSeconds`, `secondsToWrittenTick`; a frozen read-only `ids` (`idAt`, `nodeOf`, `has`, `fork`); diagnostics (`mnx.md`). `performance(timeline, {tempo?})` returns `{events, durationSeconds, tickAtSeconds}` for audio. The engine joins its engraving data to entries by id and never re-parses pitch or time. The default scope (part 0, staff 1, 2 voices) is what layout draws; `scope: 'all'` covers every part, staff and voice, and ids inside the default scope are identical in both.
+- `mnx-score` — the timeline over MNX, built once per document by `buildTimeline(doc, {scope?, divisions?})` (`divisions` defaults to `DEFAULT_DIVISIONS` = 3360). Owns musical time and ids: entries (note, chord, rest, full-measure rest, space; padding rests are synthetic entries `m{i}.v{ordinal}.pad{k}`) with ticks, durations, tuplet, and notes `{id, pitch, midi, tie}`; ties; measures with pickup and capacity; tempo and play-order segments; `activeAt`, `byId`, `writtenTickToSeconds`, `secondsToWrittenTick`; `positionTick(timeline, measureIndex, position)` turns an MNX in-measure position into ticks (malformed or out-of-range → diagnostic + clamp, never throws); a frozen read-only `ids` (`idAt`, `nodeOf`, `has`, `fork`); diagnostics (`mnx.md`). `performance(timeline, {tempo?})` returns `{events, durationSeconds, tickAtSeconds}` for audio. The engine joins its engraving data to entries by id and never re-parses pitch or time. The default scope (part 0, staff 1, 2 voices) is what layout draws; `scope: 'all'` covers every part, staff and voice, and ids inside the default scope are identical in both.
 - `notation-fonts` — glyph tables per style, committed fonts and their metadata, and the font build/add/verify scripts (`font.md`).
 
 Enforcement: no lint script — the package manifests and tsconfigs are the enforcement. pnpm's strict `node_modules` means a package can only import what its `package.json` declares, so `mnx` (no runtime dependencies) cannot reach the engine (relative-path imports across packages are not blocked by pnpm; there are none, and review keeps it that way), and `notation-engine` (depends on `mnx` only) cannot reach React. Both `tsconfig.json`s exclude `"DOM"` from `lib`, so any DOM or React reference in either is a compile error on the day it's written.
@@ -117,10 +117,11 @@ interface ElementBox {
 }
 interface MeasureBox {
   index: number; systemIndex: number;
-  x: number; w: number;        // the measure's own band, chrome included
+  x: number; w: number;        // the measure's own band, chrome included, end-of-system courtesy excluded
   contentX: number;             // left edge of the first column's band — interaction.md's slot bands start here
   startTick: number; capacityTicks: number;
   clef: ClefSpec; key: KeySpec;   // looked up per measure at hit-test time (interaction.md)
+  clefChanges?: { x: number; tick: number; clef: ClefSpec }[];   // mid-measure changes only, omitted when none
 }
 ```
 
@@ -145,7 +146,7 @@ Beams are a 4-point `PathShape` (`cls: 'beam'`, `el` = the beam's own id — `mn
 
 Octave clefs: swap glyph, shift `topLineStep` ±7.
 
-Clef change: restated at the new measure, same barline-adjacent placement as a key/time change (`engraving.md`).
+Clef change: a small change clef before the barline, or mid-measure before the first element at its tick; full size only at a system start (`engraving.md` "Clef changes").
 
 **Non-glyph elements** (`<rect>`/`<path>`), thickness from `engravingDefaults` (Bravura 1.482, measured — never hardcoded, loaded from the metadata JSON):
 

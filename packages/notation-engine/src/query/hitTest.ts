@@ -1,7 +1,8 @@
 import type { Pitch as MnxPitch } from '@polyhymnia/mnx';
-import { toMnxPitch, type NoteId, type StepNumber } from '../layout/records.js';
+import { toMnxPitch, type ClefSpec, type NoteId, type StepNumber } from '../layout/records.js';
 import { STAFF_HEIGHT, keyAlterOf, stepIndexAt } from '../layout/staff.js';
 import type { Box, ElementBox, LayoutResult, MeasureBox, Slot, SystemBox } from '../layout/types.js';
+import { clefAtTick, clefAtX } from './measures.js';
 
 export type HitKind = 'element' | 'slot' | 'point';
 
@@ -36,8 +37,13 @@ const DEFAULT_KINDS: readonly HitKind[] = ['element', 'slot', 'point'];
 const DEFAULT_RADIUS = 0.5;
 export const HIT_STAFF_MARGIN = 4;
 
-function pitchAt(staffPosition: number, measureBox: MeasureBox, insertAlteration: 'key' | 'natural'): MnxPitch {
-  const stepIdx = stepIndexAt(staffPosition, measureBox.clef);
+function pitchAt(
+  staffPosition: number,
+  measureBox: MeasureBox,
+  clef: ClefSpec,
+  insertAlteration: 'key' | 'natural',
+): MnxPitch {
+  const stepIdx = stepIndexAt(staffPosition, clef);
   const step = (((stepIdx % 7) + 7) % 7) as StepNumber;
   const octave = Math.floor(stepIdx / 7);
   const alter = insertAlteration === 'natural' ? 0 : keyAlterOf(measureBox.key, step);
@@ -110,7 +116,7 @@ function hitSlot(
   );
   if (!slot) return null;
   const staffPosition = Math.round((p.y - systemY) * 2) / 2;
-  const pitch = pitchAt(staffPosition, measureBox, insertAlteration);
+  const pitch = pitchAt(staffPosition, measureBox, clefAtTick(measureBox, slot.tick), insertAlteration);
   return { kind: 'slot', slot, staffPosition, pitch };
 }
 
@@ -123,7 +129,7 @@ function hitPoint(
   insertAlteration: 'key' | 'natural',
 ): HitResult {
   const staffPosition = Math.round((p.y - systemY) * 2) / 2;
-  const pitch = pitchAt(staffPosition, measureBox, insertAlteration);
+  const pitch = pitchAt(staffPosition, measureBox, clefAtX(measureBox, p.x), insertAlteration);
   const slotHere = layout.slots.find((s) => s.measureIndex === measureBox.index && p.x >= s.x && p.x < s.x + s.w);
   const tick = slotHere ? slotHere.tick - measureBox.startTick : 0;
   return { kind: 'point', measureIndex: measureBox.index, systemIndex, x: p.x, tick, staffPosition, pitch };

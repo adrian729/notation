@@ -20,7 +20,7 @@ In scope — full engraving, not a reduced subset:
 
 | Feature | Detail | Status |
 | --- | --- | --- |
-| Clefs | Treble, bass, alto, tenor; octave variants; mid-score changes | Mid-score change: font glyphs done, layout pending (E4, `roadmap.md`); rest done |
+| Clefs | Treble, bass, alto, tenor; octave variants; mid-score changes, mid-measure included | Done |
 | Key signatures | All 15, correct ordering/octave placement per clef, naturals on change | Done |
 | Time signatures | Any n/d, common/cut, mid-score changes | Done |
 | Durations | Breve–64th, 0–2 augmentation dots | Done |

@@ -5,7 +5,7 @@ import {
   STEP_LETTERS,
   stepNumberOf,
 } from '@polyhymnia/music-theory';
-import { stepIndex, type ClefSpec, type KeySpec, type StaffPitch } from './records.js';
+import { stepIndex, type ClefChange, type ClefSpec, type KeySpec, type StaffPitch } from './records.js';
 
 export const STAFF_LINES = 5;
 export const STAFF_HEIGHT = STAFF_LINES - 1;
@@ -47,6 +47,31 @@ export function clefGlyph(clef: ClefSpec): string {
     default:
       return 'cClef';
   }
+}
+
+export function clefChangeGlyph(clef: ClefSpec): string {
+  if ((clef.octaveShift ?? 0) !== 0) return clefGlyph(clef);
+  switch (clef.kind) {
+    case 'treble':
+      return 'gClefChange';
+    case 'bass':
+      return 'fClefChange';
+    default:
+      return 'cClefChange';
+  }
+}
+
+export function clefAt(measure: { clef: ClefSpec; clefChanges: readonly ClefChange[] }, measureTick: number): ClefSpec {
+  let clef = measure.clef;
+  for (const change of measure.clefChanges) {
+    if (change.tick > measureTick) break;
+    clef = change.clef;
+  }
+  return clef;
+}
+
+export function lastClef(measure: { clef: ClefSpec; clefChanges: readonly ClefChange[] }): ClefSpec {
+  return measure.clefChanges[measure.clefChanges.length - 1]?.clef ?? measure.clef;
 }
 
 export function clefGlyphY(clef: ClefSpec): number {

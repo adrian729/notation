@@ -49,11 +49,6 @@ export function resolveClef(value: unknown, measureIndex: number, reader: Reader
   return { kind };
 }
 
-export function isMidMeasure(position: unknown): boolean {
-  const fraction = asArray(asObject(position)?.fraction);
-  return typeof fraction[0] === 'number' && fraction[0] > 0;
-}
-
 export function resolveKey(value: unknown, fallback: KeySpec, measureIndex: number, reader: Reader): KeySpec {
   const fifths = asObject(value)?.fifths;
   if (typeof fifths !== 'number' || !Number.isFinite(fifths)) {

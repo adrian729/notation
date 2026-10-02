@@ -52,7 +52,7 @@ Staff lines, ledger lines, barlines (the lines themselves) and stems are **not g
 
 `augmentationDot` is `U+E1E7` — not `U+E4E5` (that's `restQuarter`, part of the rest block).
 
-The three clef-change glyphs are in the subset but not yet drawn: mid-score clef changes are layout-pending (`roadmap.md` E4).
+The three clef-change glyphs draw clef changes at a barline and mid-measure (`engraving.md` "Clef changes"); octave clefs keep their full-size glyph.
 
 ## Sizes — measured, fontTools/pyftsubset, Bravura 1.482
 

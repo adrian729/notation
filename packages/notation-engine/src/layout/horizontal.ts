@@ -1,8 +1,8 @@
 import type { FontContext } from '../font/context.js';
 import { DEFAULT_OPTIONS, type NotationOptions } from '../options.js';
 import type { Diagnostic } from '@polyhymnia/mnx';
-import type { ClefSpec, KeySpec, NormalizedMeasure, NormalizedScore, TimeSpec } from './records.js';
-import { clefEquals, clefGlyph, keySignature } from './staff.js';
+import type { ClefChange, ClefSpec, KeySpec, NormalizedMeasure, NormalizedScore, TimeSpec } from './records.js';
+import { clefChangeGlyph, clefGlyph, keySignature } from './staff.js';
 import type { TemporalScore } from './temporal.js';
 import type { VerticalElement, VerticalScore } from './vertical.js';
 
@@ -13,6 +13,7 @@ const KEY_GAP = 0.1;
 export const BARLINE_PAD = 0.4;
 const MEASURE_LEAD = 0.4;
 const MIN_MEASURE_CONTENT = 4;
+export const COURTESY_LEAD = BARLINE_PAD;
 
 export interface HorizontalColumn {
   staffIndex: number;
@@ -27,6 +28,7 @@ export interface HorizontalColumn {
   idealWidth: number;
   width: number;
   stretch: number;
+  clef?: ClefSpec;
 }
 
 export interface MeasureChrome {
@@ -40,6 +42,17 @@ export interface MeasureChrome {
   endBarlineWidth: number;
   leadWidth: number;
   cancelKey: KeySpec | null;
+}
+
+export interface Courtesy {
+  key: KeySpec;
+  clef: ClefSpec;
+  cancelKey: KeySpec | null;
+  showKey: boolean;
+  time: TimeSpec;
+  showTime: boolean;
+  keyWidth: number;
+  width: number;
 }
 
 export interface HorizontalMeasure {
@@ -57,6 +70,7 @@ export interface HorizontalMeasure {
   contentWidth: number;
   startChrome: MeasureChrome;
   midChrome: MeasureChrome;
+  courtesy: Courtesy | null;
   systemBreak: boolean;
 }
 
@@ -83,21 +97,25 @@ export function horizontal(
   const measures: HorizontalMeasure[] = [];
   let previous: NormalizedMeasure | undefined;
 
-  for (const measure of staff.measures) {
+  staff.measures.forEach((measure, position) => {
+    const next = staff.measures[position + 1];
     const bounds = temporal.measures.find((m) => m.staffIndex === staff.index && m.index === measure.index);
     const startTick = bounds?.startTick ?? 0;
     const endTick = bounds?.endTick ?? startTick + measure.capacityTicks;
 
     const elements = laidOut.elements.filter((e) => e.staffIndex === staff.index && e.measureIndex === measure.index);
-    const columns = buildColumns(elements, {
+    const columns = buildColumns(elements, measure, fonts, {
       staffIndex: staff.index,
       measureIndex: measure.index,
+      startTick,
       endTick,
       divisions,
       base,
       k,
     });
-    const contentWidth = columns.reduce((sum, c) => sum + c.width, 0) || MIN_MEASURE_CONTENT;
+    const elementWidth = columns.reduce((sum, c) => (isClefColumn(c) ? sum : sum + c.width), 0);
+    const clefWidth = columns.reduce((sum, c) => (isClefColumn(c) ? sum + c.width : sum), 0);
+    const contentWidth = (elementWidth || MIN_MEASURE_CONTENT) + clefWidth;
 
     measures.push({
       index: measure.index,
@@ -114,10 +132,11 @@ export function horizontal(
       contentWidth,
       startChrome: chromeOf(fonts, measure, previous, true),
       midChrome: chromeOf(fonts, measure, previous, false),
+      courtesy: next ? courtesyOf(fonts, measure, next) : null,
       systemBreak: measure.systemBreak,
     });
     previous = measure;
-  }
+  });
 
   return { measures, diagnostics };
 }
@@ -125,13 +144,19 @@ export function horizontal(
 interface ColumnContext {
   staffIndex: number;
   measureIndex: number;
+  startTick: number;
   endTick: number;
   divisions: number;
   base: number;
   k: number;
 }
 
-function buildColumns(elements: readonly VerticalElement[], ctx: ColumnContext): HorizontalColumn[] {
+function buildColumns(
+  elements: readonly VerticalElement[],
+  measure: NormalizedMeasure,
+  fonts: FontContext,
+  ctx: ColumnContext,
+): HorizontalColumn[] {
   const byTick = new Map<number, VerticalElement[]>();
   for (const el of elements) {
     const bucket = byTick.get(el.tick);
@@ -140,7 +165,7 @@ function buildColumns(elements: readonly VerticalElement[], ctx: ColumnContext):
   }
   const ticks = [...byTick.keys()].sort((a, b) => a - b);
 
-  return ticks.map((tick, i) => {
+  const elementColumns = ticks.map((tick, i): HorizontalColumn => {
     const members = byTick.get(tick)!;
     const next = ticks[i + 1] ?? ctx.endTick;
     const spanTicks = Math.max(1, next - tick);
@@ -163,8 +188,49 @@ function buildColumns(elements: readonly VerticalElement[], ctx: ColumnContext):
       idealWidth,
       width: Math.max(rodWidth, springWidth),
       stretch: idealWidth + EPS_STRETCH,
-    } satisfies HorizontalColumn;
+    };
   });
+
+  const clefBefore = new Map<number, ClefChange>();
+  for (const change of measure.clefChanges) {
+    const index = elementColumns.findIndex((column) => column.measureTick >= change.tick);
+    if (index >= 0) clefBefore.set(index, change);
+  }
+  const columns: HorizontalColumn[] = [];
+  elementColumns.forEach((column, i) => {
+    const change = clefBefore.get(i);
+    if (change) columns.push(clefColumn(fonts, change.clef, change.tick, ROD_PADDING, ctx));
+    columns.push(column);
+  });
+  if (measure.trailingClef) {
+    columns.push(clefColumn(fonts, measure.trailingClef, ctx.endTick - ctx.startTick, 0, ctx));
+  }
+  return columns;
+}
+
+function clefColumn(
+  fonts: FontContext,
+  clef: ClefSpec,
+  measureTick: number,
+  gap: number,
+  ctx: ColumnContext,
+): HorizontalColumn {
+  const glyphWidth = fonts.advanceWidth(clefChangeGlyph(clef));
+  return {
+    staffIndex: ctx.staffIndex,
+    measureIndex: ctx.measureIndex,
+    tick: ctx.startTick + measureTick,
+    measureTick,
+    spanTicks: 0,
+    elements: [],
+    leftWidth: 0,
+    rightWidth: glyphWidth,
+    rodWidth: glyphWidth + gap,
+    idealWidth: 0,
+    width: glyphWidth + gap,
+    stretch: 0,
+    clef,
+  };
 }
 
 function chromeOf(
@@ -173,18 +239,18 @@ function chromeOf(
   previous: NormalizedMeasure | undefined,
   atSystemStart: boolean,
 ): MeasureChrome {
-  const clefChanged = !previous || !clefEquals(measure.clef, previous.clef);
   const keyChanged = !previous || measure.key.fifths !== previous.key.fifths;
   const timeChanged = !previous || !timeEquals(measure.time, previous.time);
+  const afterCourtesy = atSystemStart && previous !== undefined && (keyChanged || timeChanged);
 
-  const showClef = atSystemStart || clefChanged;
-  const showKey = (atSystemStart && measure.key.fifths !== 0) || keyChanged;
-  const showTime = timeChanged;
-  const cancelKey = keyChanged && previous ? cancellation(previous.key, measure.key) : null;
+  const showClef = atSystemStart || !previous;
+  const showKey = afterCourtesy ? measure.key.fifths !== 0 : (atSystemStart && measure.key.fifths !== 0) || keyChanged;
+  const showTime = timeChanged && !afterCourtesy;
+  const cancelKey = keyChanged && previous && !afterCourtesy ? cancellation(previous.key, measure.key) : null;
 
   const widths = {
     clefWidth: showClef ? fonts.advanceWidth(clefGlyph(measure.clef)) + CHROME_GAP : 0,
-    keyWidth: showKey || cancelKey ? keyWidth(fonts, measure, cancelKey, showKey) : 0,
+    keyWidth: showKey || cancelKey ? keyWidthOf(fonts, measure.key, measure.clef, cancelKey, showKey) : 0,
     timeWidth: showTime ? timeWidthOf(fonts, measure.time) : 0,
     startBarlineWidth: measure.barlineStart === 'repeat-start' ? repeatStartWidth(fonts) : 0,
   };
@@ -202,6 +268,25 @@ function chromeOf(
   };
 }
 
+function courtesyOf(fonts: FontContext, measure: NormalizedMeasure, next: NormalizedMeasure): Courtesy | null {
+  const showKey = next.key.fifths !== measure.key.fifths;
+  const showTime = !timeEquals(next.time, measure.time);
+  if (!showKey && !showTime) return null;
+  const cancelKey = showKey ? cancellation(measure.key, next.key) : null;
+  const keyWidth = showKey ? keyWidthOf(fonts, next.key, next.clef, cancelKey, true) : 0;
+  const timeWidth = showTime ? timeWidthOf(fonts, next.time) : 0;
+  return {
+    key: next.key,
+    clef: next.clef,
+    cancelKey,
+    showKey,
+    time: next.time,
+    showTime,
+    keyWidth,
+    width: COURTESY_LEAD + keyWidth + timeWidth,
+  };
+}
+
 function timeEquals(a: TimeSpec, b: TimeSpec): boolean {
   return a.beats === b.beats && a.beatType === b.beatType && (a.symbol ?? 'normal') === (b.symbol ?? 'normal');
 }
@@ -213,8 +298,14 @@ function cancellation(from: KeySpec, to: KeySpec): KeySpec | null {
   return { fifths: from.fifths };
 }
 
-function keyWidth(fonts: FontContext, measure: NormalizedMeasure, cancelKey: KeySpec | null, showKey: boolean): number {
-  const { width } = layOutKeyGlyphs(fonts, measure.key, measure.clef, cancelKey, showKey, 0);
+function keyWidthOf(
+  fonts: FontContext,
+  key: KeySpec,
+  clef: ClefSpec,
+  cancelKey: KeySpec | null,
+  showKey: boolean,
+): number {
+  const { width } = layOutKeyGlyphs(fonts, key, clef, cancelKey, showKey, 0);
   return width > 0 ? width + CHROME_GAP : 0;
 }
 
@@ -306,7 +397,12 @@ export function chromeWidth(chrome: MeasureChrome): number {
   return chrome.startBarlineWidth + chrome.clefWidth + chrome.keyWidth + chrome.timeWidth + chrome.leadWidth;
 }
 
-export function measureWidth(measure: HorizontalMeasure, atSystemStart: boolean): number {
+export function measureWidth(measure: HorizontalMeasure, atSystemStart: boolean, followedByBreak = false): number {
   const chrome = atSystemStart ? measure.startChrome : measure.midChrome;
-  return chromeWidth(chrome) + measure.contentWidth + chrome.endBarlineWidth;
+  const courtesy = followedByBreak ? (measure.courtesy?.width ?? 0) : 0;
+  return chromeWidth(chrome) + measure.contentWidth + chrome.endBarlineWidth + courtesy;
+}
+
+export function isClefColumn(column: HorizontalColumn): boolean {
+  return column.clef !== undefined;
 }

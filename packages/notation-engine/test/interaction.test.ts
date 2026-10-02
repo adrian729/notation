@@ -6,7 +6,7 @@ import { layoutScore } from '../src/layout/index.js';
 import { hitTest } from '../src/query/hitTest.js';
 import { previewShapes } from '../src/query/preview.js';
 import type { ElementBox, LayoutResult } from '../src/layout/types.js';
-import { ALTO, BASS, measure, mnx, note, rest, tuplet, voices } from './mnx.js';
+import { ALTO, BASS, TREBLE, measure, mnx, note, rest, tuplet, voices, withPart } from './mnx.js';
 
 function boxes(layout: LayoutResult): ElementBox[] {
   return Object.values(layout.elements);
@@ -42,6 +42,26 @@ describe('pitch derivation', () => {
     expect(hit?.kind).toBe('point');
     expect(hit?.pitch).toBeTruthy();
     expect(hit && hit.kind === 'point' ? hit.tick : null).toBe(0);
+  });
+
+  it('reads pitches in the clef in force on each side of a mid-measure clef change', () => {
+    const doc = mnx(
+      {},
+      withPart(
+        { clefs: [{ clef: TREBLE }, { clef: BASS, position: { fraction: [1, 2] } }] },
+        measure(rest('q'), rest('q'), rest('q'), rest('q')),
+      ),
+    );
+    const layout = layoutScore(doc);
+    const middle = layout.systems[0]!.y + 2;
+    const [change] = layout.measures[0]!.clefChanges!;
+    const slots = layout.slots.slice().sort((a, b) => a.x - b.x);
+    const pitchAt = (x: number, kind: 'slot' | 'point') => hitTest(layout, { x, y: middle }, { kinds: [kind] })?.pitch;
+
+    expect(change!.clef.kind).toBe('bass');
+    expect(pitchAt(slots[1]!.x + slots[1]!.w - 0.01, 'slot')).toEqual({ step: 'B', octave: 4 });
+    expect(pitchAt(slots[2]!.x, 'slot')).toEqual({ step: 'D', octave: 3 });
+    expect(pitchAt(change!.x + 0.01, 'point')).toEqual({ step: 'D', octave: 3 });
   });
 });
 

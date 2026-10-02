@@ -1,5 +1,6 @@
 export { buildTimeline, DEFAULT_DIVISIONS } from './timeline.js';
 export { performance } from './performance.js';
+export { positionTick } from './position.js';
 export type {
   BeatUnit,
   EntryKind,
@@ -7,6 +8,7 @@ export type {
   PerformanceEvent,
   PerformanceOptions,
   PlaySegment,
+  PositionTick,
   TempoOverride,
   TempoSegment,
   TieFlags,

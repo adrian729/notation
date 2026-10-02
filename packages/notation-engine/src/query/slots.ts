@@ -1,3 +1,4 @@
+import { isClefColumn } from '../layout/horizontal.js';
 import type { PositionedMeasure } from '../layout/justify.js';
 import type { NoteId } from '../layout/records.js';
 import type { Slot } from '../layout/types.js';
@@ -10,7 +11,7 @@ function elementIdsOf(element: VerticalElement): readonly NoteId[] {
 
 export function measureSlots(measure: PositionedMeasure, { contentX, contentRight }: ContentBounds): readonly Slot[] {
   const slots: Slot[] = [];
-  const columns = measure.columns;
+  const columns = measure.columns.filter((column) => !isClefColumn(column));
 
   for (let i = 0; i < columns.length; i += 1) {
     const column = columns[i]!;
