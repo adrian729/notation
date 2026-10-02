@@ -76,8 +76,6 @@ describe('ties', () => {
       ['n2', 'continue'],
       ['n3', 'stop'],
     ]);
-    const entry = layoutScore(fixture('mapping')).timemap.byId('n1')!;
-    expect(entry.durationTicks).toBe(3 * 3360);
   });
 
   it('diagnoses a tie whose target is not a laid-out note', () => {

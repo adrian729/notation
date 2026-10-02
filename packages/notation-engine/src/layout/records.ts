@@ -95,14 +95,6 @@ export interface TimeSpec {
   symbol?: 'common' | 'cut';
 }
 
-export interface TempoEvent {
-  tick: number;
-  bpm: number;
-  beatUnit?: NoteValueSpec;
-}
-
-export type TempoMap = readonly TempoEvent[];
-
 export const DEFAULT_TIME: TimeSpec = { beats: 4, beatType: 4 };
 
 export function toMnxPitch(p: StaffPitch): Pitch {

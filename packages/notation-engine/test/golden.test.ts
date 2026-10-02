@@ -55,16 +55,7 @@ function round(value: unknown): unknown {
 }
 
 function golden(layout: LayoutResult): string {
-  const { timemap, timeline: _timeline, placements: _placements, ...rest } = layout;
-  const serializable = {
-    ...rest,
-    timemap: {
-      divisions: timemap.divisions,
-      entries: timemap.entries,
-      measures: timemap.measures,
-      tempo: timemap.tempo,
-    },
-  };
+  const { timeline: _timeline, placements: _placements, ...serializable } = layout;
   return `${JSON.stringify(round(serializable), null, 2)}\n`;
 }
 

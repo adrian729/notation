@@ -1,7 +1,6 @@
 import type { Diagnostic } from '@polyhymnia/mnx';
 import type { Timeline } from '@polyhymnia/mnx-score';
 import type { ClefSpec, KeySpec, NoteId, StaffPitch } from './records.js';
-import type { TimeMap } from '../query/timemap.js';
 
 export interface ViewBox {
   x: number;
@@ -121,7 +120,6 @@ export interface LayoutResult {
   elements: Readonly<Record<NoteId, ElementBox>>;
   slots: readonly Slot[];
   measures: readonly MeasureBox[];
-  timemap: TimeMap;
   timeline: Timeline;
   placements: Placements;
   diagnostics: readonly Diagnostic[];
