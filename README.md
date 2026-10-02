@@ -9,18 +9,18 @@
 </p>
 
 <p align="center">
-  <a href="https://adrian729.github.io/app/"><b>Open the app</b></a> &nbsp;·&nbsp;
+  <a href="https://adrian729.github.io/polyhymnia-ear-training/"><b>Open the app</b></a> &nbsp;·&nbsp;
   <a href="notation/README.md">Notation renderer design</a>
 </p>
 
-MNX music notation for the browser: a from-scratch engraver that reads [MNX](https://w3c-cg.github.io/mnx/), the emerging W3C score format, renders it to SVG glyphs with no server and no general-purpose score model, and supports answer entry and playback highlighting. It powers the [Polyhymnia ear-training app](https://github.com/adrian729/app).
+MNX music notation for the browser: a from-scratch engraver that reads [MNX](https://w3c-cg.github.io/mnx/), the emerging W3C score format, renders it to SVG glyphs with no server and no general-purpose score model, and supports answer entry and playback highlighting. It powers the [Polyhymnia ear-training app](https://github.com/adrian729/polyhymnia-ear-training).
 
 ## Repositories
 
 | Repository | Contents |
 |---|---|
 | [`notation`](https://github.com/adrian729/notation) (this one) | The MNX notation packages below and the notation playground. |
-| [`app`](https://github.com/adrian729/app) | The ear-training app: interval and chord exercises built on these packages. |
+| [`polyhymnia-ear-training`](https://github.com/adrian729/polyhymnia-ear-training) | The ear-training app: interval and chord exercises built on these packages. |
 | [`music-theory`](https://github.com/adrian729/music-theory) | `@polyhymnia/music-theory` |
 | [`web-audio`](https://github.com/adrian729/web-audio) | `@polyhymnia/web-audio` |
 | [`musicxml-to-mnx`](https://github.com/adrian729/musicxml-to-mnx) | `@polyhymnia/musicxml-to-mnx`, the offline MusicXML → MNX converter. |
@@ -55,7 +55,7 @@ pnpm dev         # notation playground (apps/web)
 ## Documentation
 
 - [`notation/README.md`](notation/README.md) — renderer design: public React API, supported MNX subset, layout pipeline, engraving rules, interaction, playback, roadmap.
-- [`docs/`](docs/) — music font research and the package-split plan. Exercise specs and ear-training research live in the [app repo](https://github.com/adrian729/app/tree/main/docs).
+- [`docs/`](docs/) — music font research and the package-split plan. Exercise specs and ear-training research live in the [app repo](https://github.com/adrian729/polyhymnia-ear-training/tree/main/docs).
 
 ## License
 
