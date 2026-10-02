@@ -99,15 +99,21 @@ describe('<Notation>', () => {
     expect(container.querySelector('[data-pn="clef"]')!.textContent!.codePointAt(0)).toBe(TREBLE_CLEF);
   });
 
-  it('scales a glyph with GlyphRun.scale, such as the brace of a two-staff part', () => {
+  it('scales a glyph with GlyphRun.scale and stretches it with scaleY, such as the brace of a two-staff part', () => {
     const base = simpleScore();
     const doc: MnxDocument = { ...base, parts: [{ ...base.parts[0]!, staves: 2 }] };
     const brace = layoutScore(doc).glyphs.find((g) => g.cls === 'brace')!;
     const { container } = render(<Notation score={doc} />);
 
     expect(brace.scale).toBeGreaterThan(1);
-    expect(container.querySelector('[data-pn="brace"]')!.getAttribute('font-size')).toBe(String(4 * brace.scale!));
+    expect(brace.scaleY).toBeGreaterThan(1);
+    const el = container.querySelector('[data-pn="brace"]')!;
+    expect(el.getAttribute('font-size')).toBe(String(4 * brace.scale!));
+    expect(el.getAttribute('transform')).toBe(
+      `translate(${brace.x} ${brace.y}) scale(1 ${brace.scaleY}) translate(${-brace.x} ${-brace.y})`,
+    );
     expect(container.querySelector('[data-pn="notehead"]')!.hasAttribute('font-size')).toBe(false);
+    expect(container.querySelector('[data-pn="notehead"]')!.hasAttribute('transform')).toBe(false);
   });
 
   it('wraps each element in a <g> labelled from ElementBox.label', () => {

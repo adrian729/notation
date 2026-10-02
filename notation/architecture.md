@@ -103,8 +103,9 @@ interface SystemBox {   // sp, one row of the score; h covers every staff of a g
   index: number; x: number; y: number; w: number; h: number;
   staves?: { index: number; y: number; h: number }[];   // 2-staff parts only: each staff's top line and height
 }
-interface GlyphRun { x: number; y: number; cp: number; cls: string; el?: NoteId; font?: number; scale?: number }
+interface GlyphRun { x: number; y: number; cp: number; cls: string; el?: NoteId; font?: number; scale?: number; scaleY?: number }
 // `scale` (omitted when 1) multiplies the glyph's font size: the renderer draws it at 4 × scale sp per em.
+// `scaleY` (omitted when 1) additionally stretches it vertically about its own origin (x, y), as for the brace.
 interface RectShape { x: number; y: number; w: number; h: number; rot?: number; cls: string; el?: NoteId }
 // `rot` is degrees, matching SVG's `rotate()` (`notation-react`'s `Notation.tsx` passes it straight
 // through) — not radians. Nothing emits it today: beams (the one shape that used to need rotation)

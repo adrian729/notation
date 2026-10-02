@@ -31,8 +31,9 @@ const TOP_MARGIN = 4;
 const BOTTOM_MARGIN = 4;
 const SIDE_MARGIN = 1;
 const SYSTEM_GAP = 8;
-const STAFF_GAP = 6;
-const BRACE_GAP = 0.3;
+const STAFF_GAP = 6.5;
+const BRACE_GAP = 0.35;
+const BRACE_WIDTH = 0.9;
 const CONTENT_PAD = 0.5;
 
 export interface EmitInput {
@@ -64,6 +65,7 @@ interface Placement {
 
 interface Brace {
   scale: number;
+  scaleY: number;
   glyphWidth: number;
   bottom: number;
   width: number;
@@ -225,9 +227,11 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
 function braceOf(fonts: FontContext, systemHeight: number): Brace {
   const bbox = fonts.bbox('brace');
   const natural = bbox.bBoxNE[1] - bbox.bBoxSW[1];
-  const scale = natural > 0 ? systemHeight / natural : 1;
-  const glyphWidth = Math.max(bbox.bBoxNE[0], fonts.advanceWidth('brace')) * scale;
-  return { scale, glyphWidth, bottom: bbox.bBoxSW[1] * scale, width: glyphWidth + BRACE_GAP };
+  const naturalWidth = Math.max(bbox.bBoxNE[0], fonts.advanceWidth('brace'));
+  const scale = naturalWidth > 0 ? BRACE_WIDTH / naturalWidth : 1;
+  const scaleY = natural > 0 ? systemHeight / (natural * scale) : 1;
+  const glyphWidth = naturalWidth * scale;
+  return { scale, scaleY, glyphWidth, bottom: bbox.bBoxSW[1] * scale * scaleY, width: glyphWidth + BRACE_GAP };
 }
 
 function emitSystemStart(
@@ -242,7 +246,7 @@ function emitSystemStart(
   rects.push({ x: 0, y: systemTop, w: thickness, h: systemHeight, cls: 'barline' });
   const x = -BRACE_GAP - brace.glyphWidth;
   const y = systemTop + systemHeight + brace.bottom;
-  glyphs.push({ ...glyphRun(fonts, 'brace', x, y, 'brace'), scale: brace.scale });
+  glyphs.push({ ...glyphRun(fonts, 'brace', x, y, 'brace'), scale: brace.scale, scaleY: brace.scaleY });
 }
 
 function placementsOf(

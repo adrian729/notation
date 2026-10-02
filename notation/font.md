@@ -54,7 +54,7 @@ Staff lines, ledger lines, barlines (the lines themselves) and stems are **not g
 
 The three clef-change glyphs draw clef changes at a barline and mid-measure (`engraving.md` "Clef changes"); octave clefs keep their full-size glyph.
 
-`brace` joins a grand staff's two staves (`engraving.md` "Grand staff"): one glyph per system, scaled uniformly through `GlyphRun.scale` so its height matches the system's. A font without it falls back to the style's default font, like any optional glyph.
+`brace` joins a grand staff's two staves (`engraving.md` "Grand staff"): one glyph per system, stretched through `GlyphRun.scale` (width) and `GlyphRun.scaleY` (extra vertical factor) so its height matches the system's while it stays narrow. A font without it falls back to the style's default font, like any optional glyph.
 
 ## Sizes — measured, fontTools/pyftsubset, Bravura 1.482
 

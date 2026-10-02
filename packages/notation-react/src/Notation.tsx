@@ -408,6 +408,11 @@ function Glyph({
       x={glyph.x}
       y={glyph.y}
       fontSize={glyph.scale !== undefined ? GLYPH_FONT_SIZE * glyph.scale : undefined}
+      transform={
+        glyph.scaleY !== undefined
+          ? `translate(${glyph.x} ${glyph.y}) scale(1 ${glyph.scaleY}) translate(${-glyph.x} ${-glyph.y})`
+          : undefined
+      }
       fontFamily={family !== undefined && family !== primary ? family : undefined}
       data-pn={glyph.cls}
       data-pn-el={glyph.el}

@@ -32,6 +32,7 @@ export interface GlyphRun {
   el?: NoteId;
   font?: number;
   scale?: number;
+  scaleY?: number;
 }
 
 export interface RectShape {

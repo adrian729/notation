@@ -329,8 +329,8 @@ A part with `staves: 2` (or more — only staves 1 and 2 are laid out, + `mnx-un
 
 - **Per staff**: its own clef, clef changes and courtesy clef, up to 2 voices (stem rules above apply per staff), beams, tuplets, accidental state, ties and slurs. Key and time are shared and drawn on both staves. A slur's obstacles come from its own staff only.
 - **Horizontal**: one set of columns per measure for both staves, so simultaneous notes line up. Chrome widths (clef, key, time, courtesy) are the maximum over the staves; a clef column holds every staff's clef change anchored before the same element column.
-- **Vertical**: staff 2 sits `max(6, staff 1's content below + staff 2's content above)` sp below staff 1's bottom line; each staff's content margins are measured separately. `SystemBox.h` covers both staves, and `SystemBox.staves` gives each staff's top line.
-- **System start**: a thin system line at x = 0 joins the staves, and a `brace` glyph sits 0.3 sp left of it, scaled (`GlyphRun.scale`) to the system's height. The left margin widens by the brace's width.
+- **Vertical**: staff 2 sits `max(6.5, staff 1's content below + staff 2's content above)` sp below staff 1's bottom line; each staff's content margins are measured separately. `SystemBox.h` covers both staves, and `SystemBox.staves` gives each staff's top line.
+- **System start**: a thin system line at x = 0 joins the staves, and a `brace` glyph sits 0.35 sp left of it (MuseScore's `akkoladeBarDistance`). The brace is stretched vertically to the system's height but stays narrow: `GlyphRun.scale` sets its width to 0.9 sp (what MuseScore's two-staff brace measures) and `GlyphRun.scaleY` multiplies the vertical size on top. The left margin widens by the brace's width plus the gap.
 - **Cross-staff** notes, events and tuplets are laid out on their sequence's staff; cross-staff beams, ties and slurs are not drawn (`mnx-unsupported`).
 
 ## Implementation notes
