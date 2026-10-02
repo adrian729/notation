@@ -7,7 +7,6 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: /^@polyhymnia\/mnx$/, replacement: `${packages}mnx/src/index.ts` },
-      { find: /^@polyhymnia\/music-theory$/, replacement: `${packages}music-theory/src/index.ts` },
     ],
   },
 });

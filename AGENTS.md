@@ -1,27 +1,14 @@
 # Modules
-- Each package (`mnx`, `music-theory`, `mnx-score`, `notation-fonts`, `notation-engine`, `notation-react`, `web-audio`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-fonts` is the font workspace package (glyph tables, committed fonts, build/add/verify scripts); `font:sync` copies only the two default woff2 into `notation-react/styles/`.
-- Dependency direction only: `mnx`, `music-theory`, `notation-fonts` and `web-audio` are leaves; `mnx-score` ← `mnx`, `music-theory`; `notation-engine` ← `mnx`, `mnx-score`, `music-theory`, `notation-fonts`; `notation-react` ← `notation-engine`, `mnx-score`, `notation-fonts`, `mnx`; tools use `mnx` only (no engine). Never import upward or sideways.
+- Each package (`mnx`, `mnx-score`, `notation-fonts`, `notation-engine`, `notation-react`) is an isolated module published as its own npm package. `notation-fonts` is the font workspace package (glyph tables, committed fonts, build/add/verify scripts); `font:sync` copies only the two default woff2 into `notation-react/styles/`.
+- `@polyhymnia/music-theory` and `@polyhymnia/web-audio` live in their own repos (github.com/adrian729/music-theory, github.com/adrian729/web-audio) and come from npm; change them there, never copy their code here. The MusicXML converter (github.com/adrian729/musicxml-to-mnx) and the ear-training app (github.com/adrian729/app) are separate repos too.
+- Dependency direction only: `mnx` and `notation-fonts` are leaves; `mnx-score` ← `mnx`, `music-theory`; `notation-engine` ← `mnx`, `mnx-score`, `music-theory`, `notation-fonts`; `notation-react` ← `notation-engine`, `mnx-score`, `notation-fonts`, `mnx`. Never import upward or sideways.
 - Cross-package imports go through the package name and entry points declared in its `package.json` `exports`, never relative paths or deep `src/` paths. Every cross-package import must be declared in that package's `package.json`.
 - `mnx` and `notation-engine`: no DOM, no React, no Node APIs (`lib` excludes DOM). Renderer-specific code lives only in a renderer package (`notation-react`, future others).
 - New concern that doesn't fit an existing package's role → new package, not a folder inside another.
-- `apps/*` consume packages only through their public exports; no app code inside packages.
+- Pitch, interval, chord, scale and key logic comes only from `@polyhymnia/music-theory`; never re-implement it here.
 
-# App
-- `apps/app` (`@polyhymnia/app`) is the ear-training product SPA: Vite + React 19 + TypeScript, Tailwind CSS v4 (`@tailwindcss/vite`, CSS-first, no `tailwind.config.js`), shadcn/ui, TanStack Router (file-based, `routeTree.gen.ts` committed).
-- shadcn components live in `apps/app/src/components/ui`, generated via the shadcn CLI (`--cwd apps/app`), not hand-written.
-- Class merging uses the npm `cn` package, never `clsx`/`tailwind-merge`. `src/lib/utils.ts` builds one configured `cn` via `createCn` from `cn/config`, extending `theme.text` with the semantic type scale; import `cn` from `@/lib/utils` everywhere, never straight from `"cn"`. Without that config `cn` reads custom `text-*` size tokens (`text-meta`, `text-title`, …) as text *colors* and silently deletes a co-occurring `text-*-foreground`, so `cn`'s type scale must stay in sync with the `--text-*` tokens in `styles/theme.css` (`test/cn-type-scale.test.ts` guards this).
-- Colors: Catppuccin (Latte light, Mocha dark), primary = pink. `primary` is for fills (exact Latte/Mocha pink); pink text, links, rings and notation highlights use `primary-strong` (AA-safe on light backgrounds). Scales in `apps/app/src/styles/palette.css`, semantic shadcn tokens + notation `--pn-*` mapping in `apps/app/src/styles/theme.css`. Use semantic tokens or palette scales, never raw color values. Never pure black or white (`white`/`black` are remapped to Latte base / Mocha crust).
-- `apps/web` (`@polyhymnia/web`) is the notation demo/playground, not the product app.
-
-# Audio
-- `web-audio` has no workspace dependencies; it never imports `mnx`, `mnx-score`, engine or react.
-- Playback builders (`melodic`, `harmonic`) take MIDI numbers; audio never parses pitch strings.
-- `.` entry: no DOM, no Web Audio; only `./webaudio` and `./sampler` touch Web Audio.
-- No rAF, `setTimeout` or `setInterval` in audio. The app owns the UI clock.
-- Score sound derives only from mnx-score `performance()` events, mapped to `NoteEvent`s by the app; `web-audio` never reads MNX documents or timelines.
-- Third-party audio libs or samples only behind `Instrument`, pinned, own entry; ask before installing.
-- `NoteEvent.id` is an MNX id; quiz data stays in the app.
-- Audio docs: `notation/audio.md`.
+# Playground
+- `apps/web` (`@polyhymnia/web`) is the notation demo/playground, private; it consumes packages only through their public exports. Its sound uses `@polyhymnia/web-audio`, fed by mnx-score `performance()` events.
 
 # Interaction (answer entry)
 - Built: hit-testing, insertion slots, `applyIntent` (`notation/interaction.md`). Design every new feature so interaction keeps working on it; never take a shortcut interaction would have to undo.
@@ -52,39 +39,23 @@
 - Engine and audio consumers never re-derive time, pitch → midi or ids from MNX.
 - Playback events come from `performance(timeline, {tempo?})`; whole-score playback uses `buildTimeline(doc, {scope: 'all'})`; cursor sync uses `layout.timeline`.
 
-# music-theory
-- Pure, no dependencies. Its `Pitch` stays structurally equal to MNX's.
-- Callers import pitch, interval, chord, scale and key logic only from `@polyhymnia/music-theory`; never re-implement it in apps or packages.
-
-# MusicXML
-- Import-only, offline: `tools/musicxml-to-mnx` → committed `.mnx.json`. No runtime import or export until a product flow needs it.
-- Conversion uses npm `musicxml-to-mnx` (pinned 0.1.2) behind one `convert()` that never throws. Output must pass Ajv against the pinned schema. Converter warnings are surfaced, not fatal.
-- The render check (`layoutScore`, no errors, no `mnx-unsupported` outside the allowlist) lives in the app and playground tests over the committed `.mnx.json` scores, not in the tool.
-
 # Fonts
 - Add fonts only via `pnpm --filter @polyhymnia/notation-fonts font:add`; verify with `font:verify`. Never hand-edit `packages/notation-fonts/fonts/**`.
 - Fonts reach layout only as `NotationFont` data via `NotationOptions.font`; never hard-code a font name or metric in engine or react.
 - Docs: `notation/font.md`.
-
-# Package split
-- Plan: `docs/plans/package-split.md`. Phase work runs in streams on branches `split/<phase>-<stream>` in worktrees `.worktrees/<stream>`.
-- Streams modify only files in their ownership list, stage with explicit paths (never `git add -A`), run prettier only on owned files.
-- Never run `git checkout`/`restore`/`reset`/`stash` on non-owned paths. Never rebase or force-push. Never regenerate goldens.
-- Need a change outside the ownership list → stop and report.
-- Coordinator owns manifests, lockfile, tsconfig, barrels, `AGENTS.md`, docs, goldens. Merge with `git merge --no-ff`, one stream at a time, then `pnpm -r typecheck` and tests.
 
 # Dependency guard
 - `.githooks/pre-commit` stops a commit when any package's `@polyhymnia/*` dependencies differ from `.githooks/deps.json`.
 - Never edit `.githooks/**`, pass `--no-verify`, or change `core.hooksPath`. Hook fails → stop and ask the user; only the user updates `deps.json`.
 
 # Publishing
-- Packages publish to public npm under `@polyhymnia` (`publishConfig.access: public`, `files` whitelist, own `LICENSE`); apps stay `private`.
+- Packages publish to public npm under `@polyhymnia` (`publishConfig.access: public`, `files` whitelist, own `LICENSE`); `apps/web` stays `private`.
 - Record releasable changes with `pnpm changeset`. Agents never run `changeset publish`, `npm publish`, or push; the user publishes.
 - Before a release, `pnpm pack` each package and smoke-install the tarballs in a scratch project.
 
 # Dependencies
 - Simple work → write it ourselves even if a library exists. Complex work → dependency, pinned, wrapped for replacement, maintained and tracking the MNX schema.
-- Ajv and `json-schema-to-typescript` are devDependencies only; never in `notation-*` runtime bundles. Sole exception: `tools/musicxml-to-mnx` lists Ajv under `dependencies` because its offline CLI validates at run time.
+- Ajv and `json-schema-to-typescript` are devDependencies only; never in `notation-*` runtime bundles.
 - Rejected, don't reintroduce without re-evaluation: Python `w3c-cg/mnxconverter` (stale), npm `mnxconverter` (replaced by `musicxml-to-mnx`), `@mnxjs/*` (source gone), `@quonset/minim`, `musicxml-interfaces` (AGPL), `@stringsync/musicxml` (stale).
 
 # Tests

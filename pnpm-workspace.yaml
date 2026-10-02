@@ -1,13 +1,9 @@
 packages:
   - packages/mnx
-  - packages/music-theory
   - packages/mnx-score
   - packages/notation-fonts
   - packages/notation-engine
   - packages/notation-react
-  - packages/web-audio
-  - apps/app
   - apps/web
-  - tools/*
 allowBuilds:
   esbuild: true

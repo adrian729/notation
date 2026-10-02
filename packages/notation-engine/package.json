@@ -25,7 +25,7 @@
   "dependencies": {
     "@polyhymnia/mnx": "workspace:*",
     "@polyhymnia/mnx-score": "workspace:*",
-    "@polyhymnia/music-theory": "workspace:*",
+    "@polyhymnia/music-theory": "^0.1.0",
     "@polyhymnia/notation-fonts": "workspace:*"
   },
   "devDependencies": {

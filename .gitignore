@@ -2,16 +2,12 @@ node_modules/
 *.tsbuildinfo
 .DS_Store
 
-apps/app/dist/
 apps/web/dist/
 packages/notation-react/dist/
 packages/mnx/dist/
-packages/music-theory/dist/
 packages/mnx-score/dist/
 packages/notation-fonts/dist/
 packages/notation-engine/dist/
-packages/web-audio/dist/
-tools/*/dist/
 
 packages/notation-fonts/.venv
 packages/notation-fonts/vendor

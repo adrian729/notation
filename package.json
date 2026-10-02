@@ -1,14 +1,13 @@
 {
-  "name": "polyhymnia-workspace",
+  "name": "notation-workspace",
   "private": true,
   "type": "module",
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
-    "build": "pnpm -r --filter=./packages/* --filter=./tools/* build",
-    "typecheck": "pnpm -r --filter=./packages/* --filter=./tools/* typecheck",
-    "test": "pnpm -r --filter=./packages/* --filter=./tools/* test",
-    "dev": "pnpm --filter @polyhymnia/app dev",
-    "dev:demo": "pnpm --filter @polyhymnia/web dev --port 5174 --strictPort",
+    "build": "pnpm -r --filter=./packages/* build",
+    "typecheck": "pnpm -r --filter=./packages/* typecheck",
+    "test": "pnpm -r --filter=./packages/* test",
+    "dev": "pnpm --filter @polyhymnia/web dev",
     "mnx:update": "pnpm --filter @polyhymnia/mnx mnx:update",
     "font:add": "pnpm --filter @polyhymnia/notation-fonts font:add",
     "font:verify": "pnpm --filter @polyhymnia/notation-fonts font:verify"

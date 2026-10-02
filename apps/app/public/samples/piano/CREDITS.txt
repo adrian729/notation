@@ -1,3 +1,0 @@
-Salamander Grand Piano by Alexander Holm, licensed CC BY 3.0 (http://creativecommons.org/licenses/by/3.0/).
-Source via Tone.js (https://github.com/Tonejs/audio/tree/master/salamander).
-Files trimmed to 3 seconds.
