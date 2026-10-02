@@ -147,14 +147,7 @@ importers:
         version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
 
   packages/audio:
-    dependencies:
-      '@polyhymnia/notation-engine':
-        specifier: workspace:*
-        version: link:../notation-engine
     devDependencies:
-      '@polyhymnia/mnx':
-        specifier: workspace:*
-        version: link:../mnx
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
