@@ -289,6 +289,7 @@ Integration C:
 - Integration D kept `mnxconverter` and its patch until D2 merged, then removed them.
 - `packages/audio` was renamed to `packages/web-audio` (`@polyhymnia/web-audio`) in integration F.
 - Phase G ran as local prep only (metadata, changesets, `npm pack` smoke installs, local `git subtree split` branches); publishing, repo creation, pushes and CI are the user's.
+- Local `split/repo-{music-theory,web-audio,musicxml-to-mnx,app}` branches carry each split's history plus a standalone commit (own tsconfig base, README, changesets for packages). `web-audio` history was rebuilt across the `audio` rename with a path-mapping filter, since `git subtree split` does not follow renames. `music-theory` and `web-audio` install, build and test standalone; the converter and the app were verified against packed tarballs and get lockfiles once the packages are on npm. Re-run the split for later monorepo commits to those directories.
 - Phase H's guard lives in this repo only until the split repos exist; the user copies `.githooks/` and the `prepare` script into each new repo.
 
 **Phase G: split and publish.** Coordinator and user, sequential, each publish and each first push user-approved.
