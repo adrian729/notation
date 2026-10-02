@@ -206,6 +206,7 @@ function readClefs(
     const clef = resolveClef(entry.clef, measureIndex, reader);
     if (!clef) continue;
     const tick = entry.position === undefined ? 0 : clefTick(timeline, measureIndex, entry.position, reader);
+    if (tick === null) continue;
     if (tick === 0) start = clef;
     else positioned.push({ tick, clef });
   }
@@ -228,10 +229,11 @@ function readClefs(
   return { start, changes, carried: deferred ?? inForce };
 }
 
-function clefTick(timeline: Timeline, measureIndex: number, position: unknown, reader: Reader): number {
+function clefTick(timeline: Timeline, measureIndex: number, position: unknown, reader: Reader): number | null {
   const { measureTick, diagnostic } = positionTick(timeline, measureIndex, position);
-  if (diagnostic) reader.diagnostics.push(diagnostic);
-  return measureTick;
+  if (!diagnostic) return measureTick;
+  reader.diagnostics.push(diagnostic);
+  return measureTick === 0 ? null : measureTick;
 }
 
 function assignTrailingClefs(measures: NormalizedMeasure[], finalClef: ClefSpec): void {

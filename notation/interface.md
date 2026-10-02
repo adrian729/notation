@@ -69,6 +69,10 @@ interface NotationOptions {
     insertAlteration?: 'key' | 'natural';                                            // interaction.md, default 'key'
   };
   tuplets?: { showRatio?: boolean };         // engraving.md, default false — numeral shows actual only
+  changes?: {
+    clefAtBarline?: 'before' | 'after';        // engraving.md "Clef changes", default 'before': small clef before the barline; 'after': full-size clef after it
+    restateTimeAfterCourtesy?: boolean;        // engraving.md "Courtesy signs", default true: the new system repeats a time signature already shown as courtesy
+  };
   widthSp?: number;                          // system width, engraving.md
   maxLastSystemFill?: number;                // default 0.65, engraving.md
   font?: NotationFont | readonly NotationFont[]; // font.md "Runtime" — SMuFL font data from @polyhymnia/notation-fonts, tried in order, then the style's default font

@@ -8,7 +8,7 @@ import type { CurvesResult } from './curves.js';
 import type { TupletsResult } from './tuplets.js';
 import { buildMeasureBox, contentBounds } from '../query/measures.js';
 import { measureSlots } from '../query/slots.js';
-import { COURTESY_LEAD, digitsWidth, layOutKeyGlyphs } from './horizontal.js';
+import { COURTESY_LEAD, digitsWidth, isClefColumn, layOutKeyGlyphs } from './horizontal.js';
 import type { JustifiedScore, PositionedMeasure } from './justify.js';
 import { STAFF_HEIGHT, STAFF_LINES, clefChangeGlyph, clefGlyph, clefGlyphY } from './staff.js';
 import type { TemporalScore } from './temporal.js';
@@ -104,7 +104,7 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
 
       const { contentRight } = bounds;
       measure.columns.forEach((column, i) => {
-        if (column.clef) {
+        if (isClefColumn(column)) {
           glyphs.push(
             glyphRun(fonts, clefChangeGlyph(column.clef), column.x, staffTop + clefGlyphY(column.clef), 'clef-change'),
           );
@@ -234,7 +234,7 @@ function emitTimeSignature(
   staffTop: number,
   glyphs: GlyphRun[],
   fonts: FontContext,
-  cls?: string,
+  cls = 'time-signature',
 ): void {
   // Mensural C and O prolation is not drawable yet, and cannot be fixed here: the
   // pinned MNX schema types time.symbol as 'common' | 'cut' only, so no document
@@ -242,7 +242,7 @@ function emitTimeSignature(
   // needs a schema decision before an engine change, not an engine change now.
   if (time.symbol === 'common' || time.symbol === 'cut') {
     const name = time.symbol === 'cut' ? 'timeSigCutCommon' : 'timeSigCommon';
-    glyphs.push(glyphRun(fonts, name, x, staffTop + 2, cls ?? 'time-signature'));
+    glyphs.push(glyphRun(fonts, name, x, staffTop + 2, cls));
     return;
   }
   const numerator = String(Math.max(0, Math.round(time.beats)));
@@ -252,8 +252,8 @@ function emitTimeSignature(
 
   // Numerator and denominator get separate classes so they can be coloured apart:
   // two hues of similar lightness are hard to tell apart at this size.
-  emitDigits(numerator, centre, staffTop + 1, cls ?? 'time-signature-numerator', glyphs, fonts);
-  emitDigits(denominator, centre, staffTop + 3, cls ?? 'time-signature-denominator', glyphs, fonts);
+  emitDigits(numerator, centre, staffTop + 1, `${cls}-numerator`, glyphs, fonts);
+  emitDigits(denominator, centre, staffTop + 3, `${cls}-denominator`, glyphs, fonts);
 }
 
 function emitDigits(

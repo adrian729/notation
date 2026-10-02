@@ -12,6 +12,7 @@ export interface NotationOptions {
     insertAlteration?: 'key' | 'natural';
   };
   tuplets?: { showRatio?: boolean };
+  changes?: { clefAtBarline?: 'before' | 'after'; restateTimeAfterCourtesy?: boolean };
   widthSp?: number;
   maxLastSystemFill?: number;
 }
@@ -26,6 +27,7 @@ export const DEFAULT_OPTIONS = {
     insertAlteration: 'key' as const,
   },
   tuplets: { showRatio: false },
+  changes: { clefAtBarline: 'before' as const, restateTimeAfterCourtesy: true },
   widthSp: 100,
   maxLastSystemFill: 0.65,
 } satisfies NotationOptions;

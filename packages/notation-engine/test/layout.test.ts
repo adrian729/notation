@@ -349,7 +349,7 @@ describe('systems', () => {
       ),
     );
     const layout = layoutModern(doc, { widthSp: 40 });
-    const courtesyGlyphs = layout.glyphs.filter((g) => g.cls === 'courtesy-key' || g.cls === 'courtesy-time');
+    const courtesyGlyphs = layout.glyphs.filter((g) => g.cls === 'courtesy-key' || g.cls.startsWith('courtesy-time'));
 
     expect(layout.systems.length).toBeGreaterThan(2);
     for (const system of layout.systems) {
@@ -358,6 +358,116 @@ describe('systems', () => {
       const after = courtesyGlyphs.filter((g) => g.y > system.y - 4 && g.y < system.y + 8 && g.x > last.x + last.w);
       expect(after.length > 0).toBe(system.index < layout.systems.length - 1);
     }
+  });
+
+  it.each([
+    [
+      'a clef with no element after it becomes a trailing small clef',
+      mnx(
+        {},
+        withPart({ clefs: [{ clef: TREBLE }, { clef: BASS, position: { fraction: [1, 1] } }] }, measure(rest('w'))),
+        measure(rest('w')),
+      ),
+      {},
+      (layout: LayoutResult) => ({
+        full: glyphsOf(layout, 'clef').length,
+        small: glyphsOf(layout, 'clef-change').map((g) => g.x < layout.measures[0]!.x + layout.measures[0]!.w),
+      }),
+      { full: 1, small: [true] },
+    ],
+    [
+      'several clefs before one element collapse to the last',
+      mnx(
+        {},
+        withPart(
+          {
+            clefs: [
+              { clef: TREBLE },
+              { clef: ALTO, position: { fraction: [1, 8] } },
+              { clef: BASS, position: { fraction: [1, 4] } },
+            ],
+          },
+          measure(rest('q'), rest('q'), rest('h')),
+        ),
+      ),
+      {},
+      (layout: LayoutResult) => glyphsOf(layout, 'clef-change').map((g) => g.cp),
+      [cp('fClefChange')],
+    ],
+    [
+      'an unreadable clef position is dropped and reported',
+      mnx(
+        {},
+        withPart({ clefs: [{ clef: TREBLE }, { clef: BASS, position: { fraction: [1, 0] } }] }, measure(rest('w'))),
+      ),
+      {},
+      (layout: LayoutResult) => ({
+        codes: layout.diagnostics.map((d) => d.code),
+        changes: glyphsOf(layout, 'clef-change').length,
+        start: glyphsOf(layout, 'clef').map((g) => g.cp),
+      }),
+      { codes: ['invalid-position'], changes: 0, start: [cp('gClef')] },
+    ],
+    [
+      'a beam takes each note in the clef in force at its tick',
+      mnx(
+        {},
+        withPart(
+          { clefs: [{ clef: TREBLE }, { clef: BASS, position: { fraction: [1, 4] } }] },
+          measure(note('C4', '8'), note('C4', '8'), note('C5', '8'), note('C5', '8'), rest('h')),
+        ),
+      ),
+      {},
+      (layout: LayoutResult) => {
+        const head = glyphsOf(layout, 'notehead')[0]!;
+        return layout.rects.find((r) => r.cls === 'stem')!.y < head.y - 1 ? 'up' : 'down';
+      },
+      'down',
+    ],
+    [
+      'a clef at a barline is a small clef before it by default',
+      mnx({}, measure(rest('w')), withPart({ clefs: [{ clef: BASS }] }, measure(rest('w')))),
+      {},
+      (layout: LayoutResult) => ({
+        full: glyphsOf(layout, 'clef').length,
+        small: glyphsOf(layout, 'clef-change').length,
+      }),
+      { full: 1, small: 1 },
+    ],
+    [
+      'clefAtBarline after draws a full-size clef at the new measure',
+      mnx({}, measure(rest('w')), withPart({ clefs: [{ clef: BASS }] }, measure(rest('w')))),
+      { changes: { clefAtBarline: 'after' } },
+      (layout: LayoutResult) => ({
+        full: glyphsOf(layout, 'clef').length,
+        small: glyphsOf(layout, 'clef-change').length,
+      }),
+      { full: 2, small: 0 },
+    ],
+    [
+      'a courtesy time is restated at the new system by default, with the small clef before the break',
+      fixture('courtesy-system-break'),
+      {},
+      (layout: LayoutResult) => ({
+        time: glyphsOf(layout, 'time-signature-numerator').length,
+        courtesy: glyphsOf(layout, 'courtesy-time-numerator').length,
+        small: glyphsOf(layout, 'clef-change').length,
+      }),
+      { time: 2, courtesy: 1, small: 1 },
+    ],
+    [
+      'restateTimeAfterCourtesy false and clefAtBarline after leave the new system bare of repeats',
+      fixture('courtesy-system-break'),
+      { changes: { restateTimeAfterCourtesy: false, clefAtBarline: 'after' } },
+      (layout: LayoutResult) => ({
+        time: glyphsOf(layout, 'time-signature-numerator').length,
+        courtesy: glyphsOf(layout, 'courtesy-time-numerator').length,
+        small: glyphsOf(layout, 'clef-change').length,
+      }),
+      { time: 1, courtesy: 1, small: 0 },
+    ],
+  ])('lays out clef and courtesy changes: %s', (_name, doc, options, pick, expected) => {
+    expect(pick(layoutModern(doc, options as NotationOptions))).toEqual(expected);
   });
 
   it('honours the systems of the score layout', () => {

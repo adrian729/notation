@@ -26,7 +26,8 @@ import triplets from './scores/triplets.mnx.json';
 import twoVoices from './scores/two-voices.mnx.json';
 import ties from './scores/ties.mnx.json';
 import slurs from './scores/slurs.mnx.json';
-import { FontNotation } from './font.js';
+import clefChangesCourtesy from './scores/clef-changes-courtesy.mnx.json';
+import { ChangesToggle, FontNotation } from './font.js';
 
 const MELODY = melody as MnxDocument;
 const WHOLE_BAR_REST = wholeBarRest as MnxDocument;
@@ -39,6 +40,7 @@ const TRIPLETS = triplets as MnxDocument;
 const TWO_VOICES = twoVoices as MnxDocument;
 const TIES = ties as MnxDocument;
 const SLURS = slurs as MnxDocument;
+const CLEF_CHANGES_COURTESY = clefChangesCourtesy as MnxDocument;
 
 const KEY_EXAMPLES: readonly { label: string; doc: MnxDocument }[] = [
   { label: 'C major — no accidentals', doc: keyCMajor as MnxDocument },
@@ -117,6 +119,19 @@ export function App() {
           </Example>
         ))}
       </div>
+
+      <h2>Clef changes and courtesy signs</h2>
+      <p className="note">
+        Bar 2 changes clef, key and time and starts a new system; bar 3 changes clef back mid-system. The toggles apply
+        to every example on this page.
+      </p>
+      <ChangesToggle />
+      <Example
+        title="Clef, key and time changes across a system break"
+        caption="Courtesy naturals, key and time end the first system; the clef change is small before the barline by default"
+      >
+        {(onLayout) => <FontNotation score={CLEF_CHANGES_COURTESY} onLayout={onLayout} />}
+      </Example>
 
       <h2>Rests and ledger lines</h2>
       <Example

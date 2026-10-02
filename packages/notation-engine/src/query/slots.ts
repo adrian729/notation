@@ -11,12 +11,14 @@ function elementIdsOf(element: VerticalElement): readonly NoteId[] {
 
 export function measureSlots(measure: PositionedMeasure, { contentX, contentRight }: ContentBounds): readonly Slot[] {
   const slots: Slot[] = [];
-  const columns = measure.columns.filter((column) => !isClefColumn(column));
+  const { columns } = measure;
 
   for (let i = 0; i < columns.length; i += 1) {
     const column = columns[i]!;
+    if (isClefColumn(column)) continue;
+    const previous = columns[i - 1];
     const next = columns[i + 1];
-    const bandStart = column.xStart;
+    const bandStart = previous && isClefColumn(previous) ? previous.xStart : column.xStart;
     const bandEnd = next ? next.xStart : contentRight;
 
     for (const element of column.elements) {

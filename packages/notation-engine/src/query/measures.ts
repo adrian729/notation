@@ -16,8 +16,9 @@ export function contentBounds(measure: PositionedMeasure): ContentBounds {
 
 export function buildMeasureBox(measure: PositionedMeasure, bounds: ContentBounds): MeasureBox {
   const clefChanges: MeasureClefChange[] = measure.columns
-    .filter((column) => column.clef && column.tick < measure.endTick)
-    .map((column) => ({ x: column.x, tick: column.tick, clef: column.clef! }));
+    .filter(isClefColumn)
+    .filter((column) => column.tick < measure.endTick)
+    .map((column) => ({ x: column.x, tick: column.tick, clef: column.clef }));
   return {
     index: measure.index,
     systemIndex: measure.systemIndex,
@@ -35,11 +36,5 @@ export function buildMeasureBox(measure: PositionedMeasure, bounds: ContentBound
 export function clefAtX(box: MeasureBox, x: number): ClefSpec {
   let clef = box.clef;
   for (const change of box.clefChanges ?? []) if (x >= change.x) clef = change.clef;
-  return clef;
-}
-
-export function clefAtTick(box: MeasureBox, tick: number): ClefSpec {
-  let clef = box.clef;
-  for (const change of box.clefChanges ?? []) if (tick >= change.tick) clef = change.clef;
   return clef;
 }

@@ -297,7 +297,7 @@
       "voice": 0,
       "tick": 3360,
       "x": 19.871,
-      "w": 16.355,
+      "w": 14.107,
       "eventId": "m0.s0.e1",
       "elementIds": [
         "m0.s0.e1"
@@ -307,8 +307,8 @@
       "measureIndex": 0,
       "voice": 0,
       "tick": 6720,
-      "x": 36.226,
-      "w": 14.107,
+      "x": 33.978,
+      "w": 16.355,
       "eventId": "m0.s0.e2",
       "elementIds": [
         "m0.s0.e2"

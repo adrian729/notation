@@ -1,0 +1,48 @@
+{
+  "mnx": { "version": 1 },
+  "global": {
+    "measures": [
+      { "id": "m1", "time": { "count": 4, "unit": 4 }, "key": { "fifths": 2 } },
+      { "id": "m2", "time": { "count": 3, "unit": 4 }, "key": { "fifths": -3 } },
+      { "id": "m3", "barline": { "type": "final" } }
+    ]
+  },
+  "parts": [
+    {
+      "measures": [
+        {
+          "clefs": [{ "clef": { "sign": "G", "staffPosition": -2 } }],
+          "sequences": [
+            {
+              "content": [
+                { "duration": { "base": "half" }, "notes": [{ "pitch": { "step": "D", "octave": 5 } }] },
+                { "duration": { "base": "half" }, "notes": [{ "pitch": { "step": "F", "octave": 5, "alter": 1 } }] }
+              ]
+            }
+          ]
+        },
+        {
+          "clefs": [{ "clef": { "sign": "F", "staffPosition": 2 } }],
+          "sequences": [
+            {
+              "content": [
+                { "duration": { "base": "half", "dots": 1 }, "notes": [{ "pitch": { "step": "E", "octave": 3, "alter": -1 } }] }
+              ]
+            }
+          ]
+        },
+        {
+          "clefs": [{ "clef": { "sign": "G", "staffPosition": -2 } }],
+          "sequences": [
+            {
+              "content": [
+                { "duration": { "base": "half", "dots": 1 }, "notes": [{ "pitch": { "step": "E", "octave": 4, "alter": -1 } }] }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "scores": [{ "pages": [{ "systems": [{ "measure": "m1" }, { "measure": "m2" }] }] }]
+}

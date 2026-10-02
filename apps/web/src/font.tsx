@@ -19,16 +19,28 @@ export const STYLES: readonly { id: GlyphStyleName; label: string; note: string 
   },
 ];
 
+type ChangeOptions = Required<NonNullable<NotationOptions['changes']>>;
+
 interface GlyphStyleState {
   style: GlyphStyleName;
   setStyle: (style: GlyphStyleName) => void;
+  changes: ChangeOptions;
+  setChanges: (changes: ChangeOptions) => void;
 }
 
-const GlyphStyleContext = createContext<GlyphStyleState>({ style: DEFAULT_STYLE, setStyle: () => {} });
+const DEFAULT_CHANGES: ChangeOptions = { clefAtBarline: 'before', restateTimeAfterCourtesy: true };
+
+const GlyphStyleContext = createContext<GlyphStyleState>({
+  style: DEFAULT_STYLE,
+  setStyle: () => {},
+  changes: DEFAULT_CHANGES,
+  setChanges: () => {},
+});
 
 export function GlyphStyleProvider({ children }: { children: ReactNode }) {
   const [style, setStyle] = useState<GlyphStyleName>(DEFAULT_STYLE);
-  const value = useMemo(() => ({ style, setStyle }), [style]);
+  const [changes, setChanges] = useState<ChangeOptions>(DEFAULT_CHANGES);
+  const value = useMemo(() => ({ style, setStyle, changes, setChanges }), [style, changes]);
   return <GlyphStyleContext value={value}>{children}</GlyphStyleContext>;
 }
 
@@ -52,8 +64,11 @@ export const FontNotation: typeof Notation & {
   Playback: typeof Notation.Playback;
 } = Object.assign(
   function FontNotationWithStyle({ options, ...rest }: NotationProps) {
-    const { style } = useGlyphStyle();
-    const merged = useMemo(() => ({ ...options, style }), [options, style]);
+    const { style, changes } = useGlyphStyle();
+    const merged = useMemo(
+      () => ({ ...options, style, changes: { ...changes, ...options?.changes } }),
+      [options, style, changes],
+    );
     return <Notation {...rest} options={merged} />;
   },
   { Interaction: Notation.Interaction, Marks: Notation.Marks, Playback: Notation.Playback },
@@ -74,6 +89,30 @@ export function FontToggle() {
           <span>{f.note}</span>
         </button>
       ))}
+    </div>
+  );
+}
+
+export function ChangesToggle() {
+  const { changes, setChanges } = useGlyphStyle();
+  return (
+    <div className="family-toggle" role="group" aria-label="Clef and courtesy options for every example on this page">
+      <label>
+        <input
+          type="checkbox"
+          checked={changes.clefAtBarline === 'after'}
+          onChange={(e) => setChanges({ ...changes, clefAtBarline: e.target.checked ? 'after' : 'before' })}
+        />{' '}
+        Full-size clef after the barline
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          checked={changes.restateTimeAfterCourtesy}
+          onChange={(e) => setChanges({ ...changes, restateTimeAfterCourtesy: e.target.checked })}
+        />{' '}
+        Repeat the time signature after a courtesy
+      </label>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import type { Pitch as MnxPitch } from '@polyhymnia/mnx';
 import { toMnxPitch, type ClefSpec, type NoteId, type StepNumber } from '../layout/records.js';
 import { STAFF_HEIGHT, keyAlterOf, stepIndexAt } from '../layout/staff.js';
 import type { Box, ElementBox, LayoutResult, MeasureBox, Slot, SystemBox } from '../layout/types.js';
-import { clefAtTick, clefAtX } from './measures.js';
+import { clefAtX } from './measures.js';
 
 export type HitKind = 'element' | 'slot' | 'point';
 
@@ -116,7 +116,7 @@ function hitSlot(
   );
   if (!slot) return null;
   const staffPosition = Math.round((p.y - systemY) * 2) / 2;
-  const pitch = pitchAt(staffPosition, measureBox, clefAtTick(measureBox, slot.tick), insertAlteration);
+  const pitch = pitchAt(staffPosition, measureBox, clefAtX(measureBox, p.x), insertAlteration);
   return { kind: 'slot', slot, staffPosition, pitch };
 }
 

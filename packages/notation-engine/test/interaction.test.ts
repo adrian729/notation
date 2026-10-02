@@ -60,7 +60,9 @@ describe('pitch derivation', () => {
 
     expect(change!.clef.kind).toBe('bass');
     expect(pitchAt(slots[1]!.x + slots[1]!.w - 0.01, 'slot')).toEqual({ step: 'B', octave: 4 });
-    expect(pitchAt(slots[2]!.x, 'slot')).toEqual({ step: 'D', octave: 3 });
+    expect(slots[1]!.x + slots[1]!.w).toBeCloseTo(change!.x, 5);
+    expect(slots[2]!.x).toBeCloseTo(change!.x, 5);
+    expect(pitchAt(change!.x + 0.01, 'slot')).toEqual({ step: 'D', octave: 3 });
     expect(pitchAt(change!.x + 0.01, 'point')).toEqual({ step: 'D', octave: 3 });
   });
 });

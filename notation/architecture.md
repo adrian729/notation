@@ -118,7 +118,7 @@ interface ElementBox {
 interface MeasureBox {
   index: number; systemIndex: number;
   x: number; w: number;        // the measure's own band, chrome included, end-of-system courtesy excluded
-  contentX: number;             // left edge of the first column's band — interaction.md's slot bands start here
+  contentX: number;             // left edge of the first element column's band — interaction.md's slot bands start here
   startTick: number; capacityTicks: number;
   clef: ClefSpec; key: KeySpec;   // looked up per measure at hit-test time (interaction.md)
   clefChanges?: { x: number; tick: number; clef: ClefSpec }[];   // mid-measure changes only, omitted when none

@@ -74,7 +74,8 @@
    The gold is hue 90 (yellow metal), not Catppuccin yellow: that scale sits at
    hue 68 and reads as bronze. Held at 3.9:1 on paper rather than the 3:1 a
    brighter gold would allow, since this is the smallest glyph in the score. */
-.pn-notation[data-pn-style='mensural'] [data-pn='time-signature-denominator'] {
+.pn-notation[data-pn-style='mensural']
+  :is([data-pn='time-signature-denominator'], [data-pn='courtesy-time-denominator']) {
   color: var(--pn-gold-mensural, oklch(0.6 0.13 90));
 }
 .pn-notation [data-pn='element'] {

@@ -6,6 +6,8 @@ import { clefChangeGlyph, clefGlyph, keySignature } from './staff.js';
 import type { TemporalScore } from './temporal.js';
 import type { VerticalElement, VerticalScore } from './vertical.js';
 
+type ChangeOptions = Required<NonNullable<NotationOptions['changes']>>;
+
 const ROD_PADDING = 0.4;
 export const EPS_STRETCH = 0.05;
 export const CHROME_GAP = 0.6;
@@ -93,6 +95,11 @@ export function horizontal(
   const base = options?.spacing?.base ?? DEFAULT_OPTIONS.spacing.base;
   const k = options?.spacing?.k ?? DEFAULT_OPTIONS.spacing.k;
   const { divisions } = normalized;
+  const changes: ChangeOptions = {
+    clefAtBarline: options?.changes?.clefAtBarline ?? DEFAULT_OPTIONS.changes.clefAtBarline,
+    restateTimeAfterCourtesy:
+      options?.changes?.restateTimeAfterCourtesy ?? DEFAULT_OPTIONS.changes.restateTimeAfterCourtesy,
+  };
 
   const measures: HorizontalMeasure[] = [];
   let previous: NormalizedMeasure | undefined;
@@ -112,6 +119,7 @@ export function horizontal(
       divisions,
       base,
       k,
+      trailingClefs: changes.clefAtBarline === 'before',
     });
     const elementWidth = columns.reduce((sum, c) => (isClefColumn(c) ? sum : sum + c.width), 0);
     const clefWidth = columns.reduce((sum, c) => (isClefColumn(c) ? sum + c.width : sum), 0);
@@ -130,8 +138,8 @@ export function horizontal(
       capacityTicks: measure.capacityTicks,
       columns,
       contentWidth,
-      startChrome: chromeOf(fonts, measure, previous, true),
-      midChrome: chromeOf(fonts, measure, previous, false),
+      startChrome: chromeOf(fonts, measure, previous, true, changes),
+      midChrome: chromeOf(fonts, measure, previous, false, changes),
       courtesy: next ? courtesyOf(fonts, measure, next) : null,
       systemBreak: measure.systemBreak,
     });
@@ -149,6 +157,7 @@ interface ColumnContext {
   divisions: number;
   base: number;
   k: number;
+  trailingClefs: boolean;
 }
 
 function buildColumns(
@@ -202,7 +211,7 @@ function buildColumns(
     if (change) columns.push(clefColumn(fonts, change.clef, change.tick, ROD_PADDING, ctx));
     columns.push(column);
   });
-  if (measure.trailingClef) {
+  if (ctx.trailingClefs && measure.trailingClef) {
     columns.push(clefColumn(fonts, measure.trailingClef, ctx.endTick - ctx.startTick, 0, ctx));
   }
   return columns;
@@ -238,14 +247,16 @@ function chromeOf(
   measure: NormalizedMeasure,
   previous: NormalizedMeasure | undefined,
   atSystemStart: boolean,
+  changes: ChangeOptions,
 ): MeasureChrome {
   const keyChanged = !previous || measure.key.fifths !== previous.key.fifths;
   const timeChanged = !previous || !timeEquals(measure.time, previous.time);
   const afterCourtesy = atSystemStart && previous !== undefined && (keyChanged || timeChanged);
 
-  const showClef = atSystemStart || !previous;
+  const clefAtBarline = changes.clefAtBarline === 'after' && previous?.trailingClef !== undefined;
+  const showClef = atSystemStart || !previous || clefAtBarline;
   const showKey = afterCourtesy ? measure.key.fifths !== 0 : (atSystemStart && measure.key.fifths !== 0) || keyChanged;
-  const showTime = timeChanged && !afterCourtesy;
+  const showTime = timeChanged && (!afterCourtesy || changes.restateTimeAfterCourtesy);
   const cancelKey = keyChanged && previous && !afterCourtesy ? cancellation(previous.key, measure.key) : null;
 
   const widths = {
@@ -403,6 +414,6 @@ export function measureWidth(measure: HorizontalMeasure, atSystemStart: boolean,
   return chromeWidth(chrome) + measure.contentWidth + chrome.endBarlineWidth + courtesy;
 }
 
-export function isClefColumn(column: HorizontalColumn): boolean {
+export function isClefColumn<T extends HorizontalColumn>(column: T): column is T & { clef: ClefSpec } {
   return column.clef !== undefined;
 }
