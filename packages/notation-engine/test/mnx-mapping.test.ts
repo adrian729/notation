@@ -4,7 +4,7 @@ import { modernStyle } from '@polyhymnia/notation-fonts';
 import { layoutScore } from '../src/layout/index.js';
 import { normalize } from '../src/layout/normalize.js';
 import { temporal } from '../src/layout/temporal.js';
-import { TREBLE, chord, fixture, measure, mnx, note, rest, tuplet, voices, withGlobal, withPart } from './mnx.js';
+import { BASS, TREBLE, chord, fixture, measure, mnx, note, rest, tuplet, voices, withGlobal, withPart } from './mnx.js';
 
 const cp = (name: string): number => modernStyle.glyphs[name]!;
 
@@ -238,6 +238,21 @@ describe('unsupported constructs render what they can and say so', () => {
       'Unsupported MNX: 2 parts; only the first part is laid out.',
       'Unsupported MNX: sequence on staff 2 in measure 0; not laid out.',
     ]);
+  });
+
+  it.each([
+    ['a clef', { clefs: [{ staff: 1.5, clef: BASS }] }, 'clef on staff 1.5'],
+    ['a sequence', {}, 'sequence on staff 1.5'],
+  ])('reports %s on a non-integer staff as unsupported without throwing', (_name, part, message) => {
+    const spec = { ...measure(note('C5', 'w')), part };
+    spec.sequences.push({ staff: 1.5, content: [note('C3', 'w')] });
+    const doc = mnx({}, spec);
+    const layout = layoutScore({ ...doc, parts: [{ ...doc.parts[0]!, staves: 2 }] });
+
+    expect(Object.keys(layout.elements)).toEqual(['m0.s0.e0']);
+    expect(layout.diagnostics.map((d) => d.message)).toContain(
+      `Unsupported MNX: ${message} in measure 0; ${message.startsWith('clef') ? 'ignored' : 'not laid out'}.`,
+    );
   });
 
   it('lays out staves 1-2 of a part with 3 staves', () => {

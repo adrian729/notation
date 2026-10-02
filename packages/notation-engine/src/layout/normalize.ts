@@ -217,8 +217,9 @@ function readClefs(
     if (!entry) continue;
     const staff = typeof entry.staff === 'number' ? entry.staff : 1;
     const staffIndex = staff - 1;
-    if (staffIndex < 0 || staffIndex >= previous.length) {
-      if (staff > declared || staff < 1) reader.unsupported(`clef on staff ${staff}`, measureIndex, 'ignored');
+    if (!Number.isInteger(staff) || staffIndex < 0 || staffIndex >= previous.length) {
+      if (!Number.isInteger(staff) || staff > declared || staff < 1)
+        reader.unsupported(`clef on staff ${staff}`, measureIndex, 'ignored');
       continue;
     }
     if (asObject(entry.position)?.graceIndex !== undefined) {
@@ -285,8 +286,9 @@ function readSequences(
     const sequence = asObject(raw) as Partial<Sequence> | undefined;
     if (!sequence) return;
     const staff = typeof sequence.staff === 'number' ? sequence.staff : 1;
-    if (staff < 1 || staff > staffCount) {
-      if (staff > declared || staff < 1) reader.unsupported(`sequence on staff ${staff}`, measureIndex, 'not laid out');
+    if (!Number.isInteger(staff) || staff < 1 || staff > staffCount) {
+      if (!Number.isInteger(staff) || staff > declared || staff < 1)
+        reader.unsupported(`sequence on staff ${staff}`, measureIndex, 'not laid out');
       return;
     }
     kept.push({ sequence, index, staffIndex: staff - 1 });

@@ -44,4 +44,18 @@ describe('font proof', () => {
     expect(layout.glyphs.length).toBeGreaterThan(0);
     expect(layout.glyphs.every((g) => g.cp > 0)).toBe(true);
   });
+
+  it('sizes the brace by its ink, not its advance', () => {
+    const grand = JSON.parse(
+      readFileSync(new URL('./fixtures/grand-staff.json', import.meta.url), 'utf8'),
+    ) as MnxDocument;
+    const layout = layoutScore(grand, { style: 'modern', font: ttfFont });
+    const brace = layout.glyphs.find((g) => g.cls === 'brace')!;
+    const box = (rism as unknown as SmuflMetadata).glyphBBoxes!.brace!;
+    const scale = brace.scale ?? 1;
+    const left = brace.x + box.bBoxSW[0] * scale;
+    const right = brace.x + box.bBoxNE[0] * scale;
+    expect(right - left).toBeCloseTo(0.9, 2);
+    expect(right).toBeCloseTo(-0.35, 2);
+  });
 });

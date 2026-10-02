@@ -67,6 +67,7 @@ interface Brace {
   scale: number;
   scaleY: number;
   glyphWidth: number;
+  left: number;
   bottom: number;
   width: number;
 }
@@ -139,8 +140,10 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
       measures.push(buildMeasureBox(measure, bounds, multi));
       for (let s = 0; s < staffCount; s += 1) slots.push(...measureSlots(measure, bounds, s, multi));
 
-      const { contentRight } = bounds;
-      measure.columns.forEach((column, i) => {
+      const trailingClef = measure.columns.find((c) => isClefColumn(c) && c.tick >= measure.endTick);
+      const restLeft = bounds.contentX;
+      const restRight = trailingClef ? trailingClef.xStart : bounds.contentRight;
+      measure.columns.forEach((column) => {
         if (isClefColumn(column)) {
           for (const { staffIndex, clef } of column.clefs) {
             const staffTop = staffTops[staffIndex] ?? systemTop;
@@ -148,13 +151,11 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
           }
           return;
         }
-        const next = measure.columns[i + 1];
-        const columnRight = next ? next.xStart : contentRight;
         for (const element of column.elements) {
           emitElement(element, {
             x: column.x,
-            columnLeft: column.xStart,
-            columnRight,
+            restLeft,
+            restRight,
             staffTop: staffTops[element.staffIndex] ?? systemTop,
             ...(multi ? { staff: element.staffIndex } : {}),
             systemIndex: system.index,
@@ -227,11 +228,18 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
 function braceOf(fonts: FontContext, systemHeight: number): Brace {
   const bbox = fonts.bbox('brace');
   const natural = bbox.bBoxNE[1] - bbox.bBoxSW[1];
-  const naturalWidth = Math.max(bbox.bBoxNE[0], fonts.advanceWidth('brace'));
+  const naturalWidth = bbox.bBoxNE[0] - bbox.bBoxSW[0];
   const scale = naturalWidth > 0 ? BRACE_WIDTH / naturalWidth : 1;
   const scaleY = natural > 0 ? systemHeight / (natural * scale) : 1;
   const glyphWidth = naturalWidth * scale;
-  return { scale, scaleY, glyphWidth, bottom: bbox.bBoxSW[1] * scale * scaleY, width: glyphWidth + BRACE_GAP };
+  return {
+    scale,
+    scaleY,
+    glyphWidth,
+    left: bbox.bBoxSW[0] * scale,
+    bottom: bbox.bBoxSW[1] * scale * scaleY,
+    width: glyphWidth + BRACE_GAP,
+  };
 }
 
 function emitSystemStart(
@@ -244,9 +252,13 @@ function emitSystemStart(
 ): void {
   const thickness = fonts.engravingDefaults.thinBarlineThickness;
   rects.push({ x: 0, y: systemTop, w: thickness, h: systemHeight, cls: 'barline' });
-  const x = -BRACE_GAP - brace.glyphWidth;
+  const x = -BRACE_GAP - brace.glyphWidth - brace.left;
   const y = systemTop + systemHeight + brace.bottom;
-  glyphs.push({ ...glyphRun(fonts, 'brace', x, y, 'brace'), scale: brace.scale, scaleY: brace.scaleY });
+  glyphs.push({
+    ...glyphRun(fonts, 'brace', x, y, 'brace'),
+    scale: brace.scale,
+    ...(brace.scaleY !== 1 ? { scaleY: brace.scaleY } : {}),
+  });
 }
 
 function placementsOf(
@@ -450,8 +462,8 @@ function dashes(e: EngravingDefaults, x: number, staffTop: number, bottom: numbe
 
 interface ElementContext {
   x: number;
-  columnLeft: number;
-  columnRight: number;
+  restLeft: number;
+  restRight: number;
   staffTop: number;
   staff?: number;
   systemIndex: number;
@@ -554,7 +566,7 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
 
 function emitRest(element: VerticalElement, ctx: ElementContext): void {
   const rest = element.rest!;
-  const x = rest.wholeBar ? (ctx.columnLeft + ctx.columnRight) / 2 - rest.width / 2 : ctx.x;
+  const x = rest.wholeBar ? (ctx.restLeft + ctx.restRight) / 2 - rest.width / 2 : ctx.x;
   const y = ctx.staffTop + rest.y;
   ctx.glyphs.push(glyphRun(ctx.fonts, rest.glyph, x, y, 'rest', element.id));
   for (const dot of rest.dots) {

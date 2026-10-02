@@ -59,9 +59,22 @@ function substituteAtPath(
   return out;
 }
 
+function usedStaves(part: Record<string, any> | undefined): number {
+  let used = 1;
+  for (const measure of asArray(part?.measures)) {
+    for (const sequence of asArray(asObject(measure)?.sequences)) {
+      const staff = asObject(sequence)?.staff;
+      if (typeof staff === 'number' && Number.isInteger(staff) && staff > used) used = staff;
+    }
+  }
+  return used;
+}
+
 function scopeOf(doc: MnxDocument, partIndex: number): ElementScope {
-  const staves = asObject(asArray(doc.parts)[partIndex])?.staves;
-  const count = typeof staves === 'number' && Number.isInteger(staves) && staves > 1 ? staves : 1;
+  const part = asObject(asArray(doc.parts)[partIndex]);
+  const staves = part?.staves;
+  const declared = typeof staves === 'number' && Number.isInteger(staves) && staves > 1 ? staves : 1;
+  const count = Math.min(declared, usedStaves(part));
   return count > 1
     ? { parts: [partIndex], staves: Array.from({ length: count }, (_, i) => i + 1) }
     : { parts: [partIndex] };

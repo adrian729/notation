@@ -164,6 +164,14 @@ describe('applyIntent setPitches', () => {
 });
 
 describe('applyIntent malformed documents', () => {
+  it('does not allocate for a huge declared staves count', () => {
+    const base = mnx(measure(note(C4, 'q')));
+    const doc = { ...base, parts: [{ ...base.parts[0], staves: 5e8 }] } as typeof base;
+    const id = elementIds(doc).idAt(ev([0]))!;
+    const result = applyIntent(doc, { type: 'setPitches', event: id, pitches: [D4] });
+    expect(result.changed).toEqual([id]);
+  });
+
   it('never throws when the first part has no measures', () => {
     const doc = mnx(measure(note(C4, 'q')));
     const id = elementIds(doc).idAt(ev([0]))!;

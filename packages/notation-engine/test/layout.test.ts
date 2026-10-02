@@ -317,6 +317,135 @@ describe('rests', () => {
   });
 });
 
+const GRAND_MEASURE = (clefs: object[], upper: object[], lower: object[], extra: Record<string, unknown> = {}) => ({
+  ...withPart(
+    { clefs: clefs as never },
+    { sequences: [{ content: upper as never }, { staff: 2, content: lower as never }] },
+  ),
+  ...extra,
+});
+
+function grandDoc(...measures: ReturnType<typeof GRAND_MEASURE>[]): MnxDocument {
+  const doc = mnx({}, ...measures);
+  return { ...doc, parts: [{ ...doc.parts[0]!, staves: 2 }] };
+}
+
+const quarters = (...pitches: string[]) => pitches.map((p) => note(p, 'q'));
+
+describe('grand staff', () => {
+  it('centres a whole-bar rest on one staff in the measure, not under the first merged column', () => {
+    const spec = GRAND_MEASURE([{ clef: TREBLE }, { clef: BASS, staff: 2 }], quarters('C5', 'D5', 'E5', 'F5'), []);
+    spec.sequences[1] = { staff: 2, content: [], fullMeasure: {} };
+    const layout = layoutModern(grandDoc(spec));
+    const bar = layout.measures[0]!;
+    const wholeRest = Object.values(layout.elements).find((b) => b.kind === 'rest')!;
+    const contentRight = bar.x + bar.w - 1;
+    const centre = wholeRest.x + wholeRest.w / 2;
+    expect(Math.abs(centre - (bar.contentX + contentRight) / 2)).toBeLessThan(1);
+  });
+
+  it.each([
+    ['a mid-measure clef on staff 2 only', { staff: 2, clef: ALTO, position: { fraction: [1, 4] } }, 1, 0],
+    ['a trailing clef on staff 1 only', { staff: 1, clef: BASS, position: { fraction: [1, 1] } }, 0, 1],
+  ])('draws %s on that staff and keeps slot bands contiguous', (_name, change, staffIndex) => {
+    const doc = grandDoc(
+      GRAND_MEASURE([{ clef: TREBLE }, { clef: BASS, staff: 2 }, change], quarters('C5', 'D5', 'E5', 'F5'), [
+        note('C3', 'h'),
+        note('E3', 'h'),
+      ]),
+      GRAND_MEASURE([], quarters('C5', 'D5', 'E5', 'F5'), [note('C3', 'w')]),
+    );
+    const layout = layoutModern(doc);
+    const staves = layout.systems[0]!.staves!;
+    const changes = glyphsOf(layout, 'clef-change');
+    expect(changes).toHaveLength(1);
+    const top = staves[staffIndex as number]!.y;
+    expect(changes[0]!.y).toBeGreaterThanOrEqual(top);
+    expect(changes[0]!.y).toBeLessThanOrEqual(top + 4);
+    for (const staff of [0, 1]) {
+      const slots = layout.slots
+        .filter((slot) => slot.staff === staff && slot.measureIndex === 0)
+        .sort((a, b) => a.x - b.x);
+      for (let i = 1; i < slots.length; i += 1) expect(slots[i - 1]!.x + slots[i - 1]!.w).toBeCloseTo(slots[i]!.x, 5);
+    }
+  });
+
+  it.each(['before', 'after'] as const)(
+    'positions the courtesy key per staff clef and the courtesy clef only where it changes (clefAtBarline %s)',
+    (mode) => {
+      const second = withGlobal(
+        { key: { fifths: 2 } },
+        GRAND_MEASURE([{ clef: ALTO, staff: 2 }], quarters('C5', 'D5', 'E5', 'F5'), [note('C3', 'w')]),
+      );
+      const doc = {
+        ...grandDoc(
+          withGlobal(
+            { id: 'm1' } as never,
+            GRAND_MEASURE([{ clef: TREBLE }, { clef: BASS, staff: 2 }], quarters('C5', 'D5', 'E5', 'F5'), [
+              note('C3', 'w'),
+            ]),
+          ),
+          withGlobal({ id: 'm2' } as never, second),
+        ),
+        scores: [{ name: 'S', pages: [{ systems: [{ measure: 'm1' }, { measure: 'm2' }] }] }],
+      } as MnxDocument;
+      const layout = layoutModern(doc, { changes: { clefAtBarline: mode } });
+      const [first, next] = layout.systems;
+      const offsets = (cls: string, system: typeof first, staff: number) =>
+        layout.glyphs
+          .filter((g) => g.cls === cls && g.y >= system!.staves![staff]!.y - 3 && g.y <= system!.staves![staff]!.y + 8)
+          .filter((g) => (staff === 0 ? g.y < system!.staves![1]!.y - 3 : true))
+          .map((g) => +(g.y - system!.staves![staff]!.y).toFixed(3));
+      for (const staff of [0, 1]) {
+        expect(offsets('courtesy-key', first, staff)).toEqual(offsets('key-accidental', next, staff));
+      }
+      expect(offsets('courtesy-key', first, 0)).not.toEqual(offsets('courtesy-key', first, 1));
+      const clefs = layout.glyphs.filter((g) => g.cls === 'courtesy-clef' || g.cls === 'clef-change');
+      expect(clefs.map((g) => (g.y > first!.staves![1]!.y - 3 ? 1 : 0))).toEqual([1]);
+    },
+  );
+
+  it('reports a cross-staff beam, tie and slur as unsupported and draws none of them', () => {
+    const doc = grandDoc(
+      GRAND_MEASURE(
+        [{ clef: TREBLE }, { clef: BASS, staff: 2 }],
+        [
+          note(
+            'C5',
+            '8',
+            { id: 'u0', beams: undefined, slurs: [{ target: 'l0' }] } as never,
+            { ties: [{ target: 'ln0' }] } as never,
+          ),
+          note('D5', '8', { id: 'u1' }),
+          note('E5', 'h'),
+          note('F5', 'q'),
+        ],
+        [note('C3', '8', { id: 'l0' }, { id: 'ln0' }), note('D3', '8', { id: 'l1' }), note('E3', 'h'), note('F3', 'q')],
+      ),
+    );
+    const withBeam = {
+      ...doc,
+      parts: [
+        {
+          ...doc.parts[0]!,
+          measures: doc.parts[0]!.measures.map((m, i) => (i === 0 ? { ...m, beams: [{ events: ['u0', 'l0'] }] } : m)),
+        },
+      ],
+    } as MnxDocument;
+    const layout = layoutModern(withBeam);
+    const messages = layout.diagnostics.filter((d) => d.code === 'mnx-unsupported').map((d) => d.message);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('cross-staff beam'),
+        expect.stringContaining('cross-staff tie'),
+        expect.stringContaining('cross-staff slur'),
+      ]),
+    );
+    expect(layout.paths).toEqual([]);
+    expect(layout.rects.filter((r) => r.cls === 'beam')).toEqual([]);
+  });
+});
+
 describe('systems', () => {
   it('breaks greedily at options.widthSp and keeps column x strictly increasing', () => {
     const doc = mnx(

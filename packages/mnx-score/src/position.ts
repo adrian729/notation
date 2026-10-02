@@ -20,7 +20,7 @@ export function positionTick(timeline: Timeline, measureIndex: number, position:
     return {
       ...at(measure, 0),
       diagnostic: invalid(
-        `Measure ${measureIndex} has a position with an unreadable fraction ${JSON.stringify(raw)}; placed at the measure start.`,
+        `Measure ${measureIndex} has a position with an unreadable fraction ${JSON.stringify(raw)}; the position is ignored.`,
         measureIndex,
       ),
     };
