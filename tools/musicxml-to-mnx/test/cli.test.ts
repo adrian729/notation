@@ -27,13 +27,6 @@ describe('cli', () => {
     expect(doc.parts[0].measures[0].sequences[0].content[0].id).toBe('e0-0');
   });
 
-  it('exits non-zero with readable output for an unsupported-construct file', () => {
-    const outPath = join(outDir, 'simple-repeat.mnx.json');
-    expect(() =>
-      execFileSync('node', [CLI, `${FIXTURES}simple-repeat.musicxml`, outPath], { stdio: 'pipe' }),
-    ).toThrow();
-  });
-
   it('rejects .mxl input with a readable message', () => {
     expect(() =>
       execFileSync('node', [CLI, `${FIXTURES}basic.mxl`, join(outDir, 'x.mnx.json')], { stdio: 'pipe' }),

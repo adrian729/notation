@@ -13,7 +13,7 @@ function fail(message: string): never {
 function main(argv: string[]): void {
   const [inputPath, outputPath] = argv;
   if (!inputPath || !outputPath) {
-    fail('Usage: musicxml-to-mnx convert <in.musicxml|.xml> <out.mnx.json>');
+    fail('Usage: musicxml-to-mnx <in.musicxml|in.xml> <out.mnx.json>');
   }
 
   const ext = extname(inputPath).toLowerCase();
@@ -31,18 +31,20 @@ function main(argv: string[]): void {
     fail(`${inputPath}: could not read input: ${error instanceof Error ? error.message : String(error)}`);
   }
 
-  let converted: unknown;
-  try {
-    converted = convert(musicXml);
-  } catch (error) {
-    fail(`${inputPath}: conversion failed: ${error instanceof Error ? error.message : String(error)}`);
+  const converted = convert(musicXml);
+  if (!converted.ok) fail(`${inputPath}: conversion failed: ${converted.error}`);
+  for (const w of converted.warnings) {
+    const where = [w.part && `part ${w.part}`, w.measure && `measure ${w.measure}`, w.line && `line ${w.line}`]
+      .filter(Boolean)
+      .join(', ');
+    process.stderr.write(`${inputPath}: warning [${w.code}] ${w.message}${where ? ` (${where})` : ''}\n`);
   }
 
-  const withIds = assignIds(converted);
+  const withIds = assignIds(converted.mnx);
   const result = check(withIds);
   if (!result.ok) {
     process.stderr.write(`${inputPath}: ${result.problems.length} problem(s):\n`);
-    for (const problem of result.problems) process.stderr.write(`  [${problem.kind}] ${problem.message}\n`);
+    for (const problem of result.problems) process.stderr.write(`  [schema] ${problem}\n`);
     process.exit(1);
   }
 
