@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import { noteValueLength, Rational as R, rational } from '@polyhymnia/mnx';
-import type { NoteValueBase } from '@polyhymnia/mnx';
-import { normalize } from '../src/layout/normalize.js';
-import type { NormalizedElement } from '../src/layout/records.js';
-import { temporal } from '../src/layout/temporal.js';
-import { DEFAULT_DIVISIONS, decomposeLength, noteValueSpecLength } from '../src/layout/records.js';
+import type { MnxDocument, NoteValueBase, TimeSignatureUnit } from '@polyhymnia/mnx';
+import { DEFAULT_DIVISIONS } from '@polyhymnia/mnx-score';
+import { layoutScore } from '../src/index.js';
 import { fixture, measure, mnx, note, tuplet } from './mnx.js';
 
-function eventLengths(doc: Parameters<typeof normalize>[0]) {
-  return normalize(doc)
-    .staves[0]!.measures[0]!.voices[0]!.events.filter((e): e is NormalizedElement => e.kind !== 'space')
-    .map((e) => e.length);
+function run(doc: MnxDocument) {
+  const { timeline, diagnostics } = layoutScore(doc);
+  return { elements: timeline.entries, measures: timeline.measures, diagnostics };
+}
+
+function padding(count: number, unit: TimeSignatureUnit) {
+  return run(mnx({ time: { count, unit } }, { sequences: [{ content: [] }] })).elements.filter((e) => e.synthetic);
 }
 
 describe('Rational', () => {
@@ -52,7 +53,7 @@ describe('Rational', () => {
 
 describe('tuplet arithmetic', () => {
   it('keeps onsets integral through the temporal stage', () => {
-    const map = temporal(normalize(fixture('triplet')));
+    const map = run(fixture('triplet'));
 
     expect(map.elements.map((e) => [e.tick, e.durationTicks])).toEqual([
       [0, 2240],
@@ -68,17 +69,16 @@ describe('tuplet arithmetic', () => {
   it('a 5:4 sixteenth septuplet-free quintuplet still lands on integer ticks', () => {
     const five = tuplet([5, '16'], [4, '16'], ...Array.from({ length: 5 }, () => note('C4', '16')));
     const doc = mnx({}, measure(five, note('D4', 'h.')));
-    const total = eventLengths(doc)
-      .slice(0, 5)
-      .reduce((sum, l) => R.add(sum, l), R.ZERO);
+    const { elements } = run(doc);
+    const total = elements.slice(0, 5).reduce((sum, e) => R.add(sum, e.duration), R.ZERO);
     expect(total).toEqual({ n: 1, d: 4 });
-    expect(temporal(normalize(doc)).elements[0]!.durationTicks).toBe(672);
+    expect(elements[0]!.durationTicks).toBe(672);
   });
 });
 
 describe('capacities and decomposition', () => {
   it('knows which meters have no single notatable rest', () => {
-    const single = (count: number, unit: number): boolean => decomposeLength(rational(count, unit)).length === 1;
+    const single = (count: number, unit: TimeSignatureUnit): boolean => padding(count, unit).length === 1;
     expect(single(4, 4)).toBe(true);
     expect(single(3, 4)).toBe(true);
     expect(single(6, 8)).toBe(true);
@@ -90,9 +90,7 @@ describe('capacities and decomposition', () => {
   it('decomposition always sums back to the length it was given', () => {
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 40 }), (sixteenths) => {
-        const total = decomposeLength(rational(sixteenths, 16))
-          .map(noteValueSpecLength)
-          .reduce((sum, l) => R.add(sum, l), R.ZERO);
+        const total = padding(sixteenths, 16).reduce((sum, e) => R.add(sum, e.duration), R.ZERO);
         expect(total).toEqual(rational(sixteenths, 16));
       }),
     );

@@ -1,5 +1,5 @@
-import type { Clef, Diagnostic, MeasureGlobal, PartMeasure } from '@polyhymnia/mnx';
-import { DEFAULT_DIVISIONS, type ClefSpec, type KeySpec, type NormalizedMeasure, type TimeSpec } from './records.js';
+import type { Clef, MeasureGlobal, PartMeasure } from '@polyhymnia/mnx';
+import type { ClefSpec, KeySpec, NormalizedMeasure } from './records.js';
 import { asArray, asObject, type Reader } from './normalize-reader.js';
 
 const BARLINES: Partial<Record<string, NormalizedMeasure['barlineEnd']>> = {
@@ -9,18 +9,6 @@ const BARLINES: Partial<Record<string, NormalizedMeasure['barlineEnd']>> = {
   final: 'final',
   noBarline: 'none',
 };
-
-export function resolveDivisions(value: unknown, diagnostics: Diagnostic[]): number {
-  if (typeof value === 'number' && Number.isInteger(value) && value > 0) return value;
-  if (value !== undefined) {
-    diagnostics.push({
-      severity: 'warning',
-      code: 'invalid-divisions',
-      message: `Invalid divisions ${JSON.stringify(value)}; using ${DEFAULT_DIVISIONS}.`,
-    });
-  }
-  return DEFAULT_DIVISIONS;
-}
 
 export function resolveClef(value: unknown, measureIndex: number, reader: Reader): ClefSpec | null {
   const clef = asObject(value) as Partial<Clef> | undefined;
@@ -82,37 +70,6 @@ export function resolveKey(value: unknown, fallback: KeySpec, measureIndex: numb
     reader.unsupported(`key signature with ${fifths} fifths`, measureIndex, `drawn with ${clamped} fifths`);
   }
   return { fifths: clamped };
-}
-
-export function resolveTime(
-  value: unknown,
-  fallback: TimeSpec,
-  measureIndex: number,
-  diagnostics: Diagnostic[],
-): TimeSpec {
-  const time = asObject(value);
-  const count = time?.count;
-  const unit = time?.unit;
-  const valid =
-    typeof count === 'number' &&
-    Number.isInteger(count) &&
-    count > 0 &&
-    typeof unit === 'number' &&
-    Number.isInteger(unit) &&
-    unit > 0;
-  if (!valid) {
-    diagnostics.push({
-      severity: 'warning',
-      code: 'invalid-time-signature',
-      message: `Invalid time signature ${JSON.stringify(value)}; inheriting ${fallback.beats}/${fallback.beatType}.`,
-      measureIndex,
-    });
-    return fallback;
-  }
-  const display = time?.display;
-  return display === 'common' || display === 'cut'
-    ? { beats: count, beatType: unit, symbol: display }
-    : { beats: count, beatType: unit };
 }
 
 export function barlineEndOf(

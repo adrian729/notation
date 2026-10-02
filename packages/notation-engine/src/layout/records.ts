@@ -1,6 +1,7 @@
-import { noteValueLength, Rational as R } from '@polyhymnia/mnx';
-import { STEP_LETTERS, stepNumberOf } from '@polyhymnia/music-theory';
+import { noteValueLength } from '@polyhymnia/mnx';
+import { STEP_LETTERS } from '@polyhymnia/music-theory';
 import type { Diagnostic, Pitch, NoteId as ModelNoteId, Rational } from '@polyhymnia/mnx';
+import type { Timeline } from '@polyhymnia/mnx-score';
 
 export type NoteId = ModelNoteId;
 
@@ -102,25 +103,7 @@ export interface TempoEvent {
 
 export type TempoMap = readonly TempoEvent[];
 
-export const DEFAULT_DIVISIONS = 3360;
-
 export const DEFAULT_TIME: TimeSpec = { beats: 4, beatType: 4 };
-
-export const DURATION_BASES: readonly DurationBase[] = [
-  'breve',
-  'whole',
-  'half',
-  'quarter',
-  'eighth',
-  '16th',
-  '32nd',
-  '64th',
-];
-
-export function stepNumber(letter: unknown): StepNumber | undefined {
-  if (!(STEP_LETTERS as readonly unknown[]).includes(letter)) return undefined;
-  return stepNumberOf(letter as Pitch['step']) as StepNumber;
-}
 
 export function toMnxPitch(p: StaffPitch): Pitch {
   const step = STEP_LETTERS[p.step];
@@ -149,46 +132,6 @@ export function noteValueSpecLength(value: NoteValueSpec): Rational {
   return noteValueLength(value)!;
 }
 
-interface Candidate {
-  value: NoteValueSpec;
-  length: Rational;
-}
-
-const CANDIDATES: readonly Candidate[] = DURATION_BASES.flatMap((base) =>
-  ([0, 1, 2] as const).map((dots) => ({
-    value: { base, dots },
-    length: noteValueSpecLength({ base, dots }),
-  })),
-).sort((a, b) => R.compare(b.length, a.length));
-
-const SHORTEST = CANDIDATES[CANDIDATES.length - 1]!.length;
-
-export function decomposeLength(length: Rational): NoteValueSpec[] {
-  const out: NoteValueSpec[] = [];
-  let remaining = length;
-  for (let guard = 0; guard < 64; guard += 1) {
-    if (R.compare(remaining, SHORTEST) < 0) break;
-    const pick = CANDIDATES.find((c) => R.compare(c.length, remaining) <= 0);
-    if (!pick) break;
-    out.push({ ...pick.value });
-    remaining = R.subtract(remaining, pick.length);
-    if (R.isZero(remaining)) break;
-  }
-  return out;
-}
-
-export interface MeasureFlow {
-  repeatStart: boolean;
-  repeatEnd?: number;
-  ending?: { numbers: readonly number[]; duration: number };
-  segno?: number;
-  fine?: number;
-  jump?: { type: 'segno' | 'dsalfine'; offset: number };
-  invalid?: string;
-}
-
-export type MeasureFlows = readonly MeasureFlow[];
-
 export interface ElementNote {
   id: NoteId;
   pitch: StaffPitch;
@@ -196,30 +139,14 @@ export interface ElementNote {
   accidentalPolicy?: AccidentalPolicy;
 }
 
-export interface NormalizedElement {
-  id: NoteId;
-  kind: 'note' | 'chord' | 'rest';
-  base: DurationBase;
-  dots: Dots;
-  length: Rational;
-  tuplet?: TupletRef;
-  notes: readonly ElementNote[];
+export interface EventEngraving {
   stem?: 'up' | 'down';
   breath?: 'comma' | 'caesura';
-  wholeBar?: boolean;
-  staffPosition?: number;
 }
 
-export interface NormalizedGap {
-  kind: 'space';
-  length: Rational;
-}
-
-export type NormalizedEvent = NormalizedElement | NormalizedGap;
-
-export interface NormalizedVoice {
-  index: 0 | 1;
-  events: readonly NormalizedEvent[];
+export interface NoteEngraving {
+  pitch: StaffPitch;
+  accidentalPolicy?: AccidentalPolicy;
 }
 
 export interface NormalizedMeasure {
@@ -227,9 +154,7 @@ export interface NormalizedMeasure {
   clef: ClefSpec;
   key: KeySpec;
   time: TimeSpec;
-  voices: readonly NormalizedVoice[];
   pickup: boolean;
-  capacity: Rational;
   capacityTicks: number;
   barlineStart?: 'none' | 'repeat-start';
   barlineEnd?: 'single' | 'double' | 'dashed' | 'final' | 'repeat-end' | 'none';
@@ -247,12 +172,12 @@ export interface NormalizedStaff {
 export interface NormalizedScore {
   id: string;
   divisions: number;
-  tempo: TempoMap;
-  flow: MeasureFlows;
+  timeline: Timeline;
   staves: readonly NormalizedStaff[];
+  events: ReadonlyMap<NoteId, EventEngraving>;
+  notes: ReadonlyMap<NoteId, NoteEngraving>;
   beams: readonly NormalizedBeam[];
   ties: readonly NormalizedTie[];
   slurs: readonly NormalizedSlur[];
   diagnostics: readonly Diagnostic[];
-  usedIds: ReadonlySet<string>;
 }

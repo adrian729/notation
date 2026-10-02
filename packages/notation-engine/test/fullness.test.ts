@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { MnxDocument } from '@polyhymnia/mnx';
-import { layoutScore } from '../src/layout/index.js';
-import { normalize } from '../src/layout/normalize.js';
-import { temporal } from '../src/layout/temporal.js';
-import { chord, fixture, measure, mnx, note, tuplet } from './mnx.js';
+import { layoutScore } from '../src/index.js';
+import { chord, measure, mnx, note, tuplet } from './mnx.js';
 
 function run(doc: MnxDocument) {
-  return temporal(normalize(doc));
+  const { timeline, diagnostics } = layoutScore(doc);
+  return {
+    elements: timeline.entries.filter((e) => e.kind !== 'space'),
+    measures: timeline.measures.map((m) => ({ ...m, capacityTicks: m.endTick - m.startTick })),
+    diagnostics,
+  };
 }
 
 function elementsOf(doc: MnxDocument, measureIndex = 0, voice: 0 | 1 = 0) {
@@ -89,11 +92,15 @@ describe('whole-bar rests in unrepresentable meters', () => {
   });
 
   it('takes only the remaining capacity when the bar has other content', () => {
-    const doc = mnx({ time: { count: 9, unit: 8 } }, { sequences: [{ content: [note('C4', 'q')], fullMeasure: {} }] });
+    const doc = mnx(
+      { time: { count: 9, unit: 8 } },
+      { sequences: [{ content: [], fullMeasure: {} }] },
+      { sequences: [{ content: [note('C4', 'q')], fullMeasure: {} }] },
+    );
     expect(run(doc).diagnostics).toHaveLength(0);
-    expect(ticksOf(doc)).toEqual([
-      [0, 3360],
-      [3360, 15120 - 3360],
+    expect(ticksOf(doc, 1)).toEqual([
+      [15120, 3360],
+      [15120 + 3360, 15120 - 3360],
     ]);
   });
 });
