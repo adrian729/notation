@@ -31,7 +31,7 @@
   "devDependencies": {
     "typescript": "^5.7.0",
     "vitest": "^3.0.0",
-    "@types/node": "^26.6.2"
+    "@types/node": "^26.6.3"
   },
   "license": "MIT",
   "repository": {
