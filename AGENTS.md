@@ -1,6 +1,6 @@
 # Modules
 - Each package (`mnx`, `music-theory`, `mnx-score`, `notation-fonts`, `notation-engine`, `notation-react`, `audio`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-fonts` is the font workspace package (glyph tables, committed fonts, build/add/verify scripts); `font:sync` copies only the two default woff2 into `notation-react/styles/`.
-- Dependency direction only: `mnx` and `music-theory` are leaves; `mnx-score` ← `mnx`, `music-theory`; `notation-engine` ← `mnx`, `mnx-score`, `music-theory`, `notation-fonts`; `notation-react` ← `notation-engine`, `mnx-score`, `notation-fonts`, `mnx`; `audio` ← `notation-engine` (types only) and `mnx`; tools use `mnx` (+ `notation-engine` until Phase D). Never import upward or sideways.
+- Dependency direction only: `mnx` and `music-theory` are leaves; `mnx-score` ← `mnx`, `music-theory`; `notation-engine` ← `mnx`, `mnx-score`, `music-theory`, `notation-fonts`; `notation-react` ← `notation-engine`, `mnx-score`, `notation-fonts`, `mnx`; `audio` ← `notation-engine` (types only) and `mnx`; tools use `mnx` only (no engine). Never import upward or sideways.
 - Cross-package imports go through the package name and entry points declared in its `package.json` `exports`, never relative paths or deep `src/` paths. Every cross-package import must be declared in that package's `package.json`.
 - `mnx` and `notation-engine`: no DOM, no React, no Node APIs (`lib` excludes DOM). Renderer-specific code lives only in a renderer package (`notation-react`, future others).
 - New concern that doesn't fit an existing package's role → new package, not a folder inside another.
@@ -53,8 +53,8 @@
 
 # MusicXML
 - Import-only, offline: `tools/musicxml-to-mnx` → committed `.mnx.json`. No runtime import or export until a product flow needs it.
-- Conversion uses npm `mnxconverter`, pinned, behind one `convert()` wrapper. Output must pass Ajv against the pinned schema and headless `layoutScore` with no errors and no `mnx-unsupported` outside `UNSUPPORTED_ALLOWLIST` (`tools/musicxml-to-mnx/src/check.ts`, currently empty). Grow the allowlist only for constructs the engine will support but doesn't draw yet.
-- Keep `patches/mnxconverter@1.2.0.patch` (fixes broken published entry points) until the package verifiably works unpatched.
+- Conversion uses npm `musicxml-to-mnx` (pinned 0.1.2) behind one `convert()` that never throws. Output must pass Ajv against the pinned schema. Converter warnings are surfaced, not fatal.
+- The render check (`layoutScore`, no errors, no `mnx-unsupported` outside the allowlist) lives in the app and playground tests over the committed `.mnx.json` scores, not in the tool.
 
 # Fonts
 - Add fonts only via `pnpm --filter @polyhymnia/notation-fonts font:add`; verify with `font:verify`. Never hand-edit `packages/notation-fonts/fonts/**`.
@@ -71,7 +71,7 @@
 # Dependencies
 - Simple work → write it ourselves even if a library exists. Complex work → dependency, pinned, wrapped for replacement, maintained and tracking the MNX schema.
 - Ajv and `json-schema-to-typescript` are devDependencies only; never in `notation-*` runtime bundles. Sole exception: `tools/musicxml-to-mnx` lists Ajv under `dependencies` because its offline CLI validates at run time.
-- Rejected, don't reintroduce without re-evaluation: Python `w3c-cg/mnxconverter` (stale), `@mnxjs/*` (source gone), `@quonset/minim`, `musicxml-interfaces` (AGPL), `@stringsync/musicxml` (stale).
+- Rejected, don't reintroduce without re-evaluation: Python `w3c-cg/mnxconverter` (stale), npm `mnxconverter` (replaced by `musicxml-to-mnx`), `@mnxjs/*` (source gone), `@quonset/minim`, `musicxml-interfaces` (AGPL), `@stringsync/musicxml` (stale).
 
 # Tests
 - Add a test only to prevent a real regression: silent-drift engraving output, a contract (diagnostic, id stability, applyIntent result, hit-test behavior), or a bug that was actually fixed. Otherwise don't.

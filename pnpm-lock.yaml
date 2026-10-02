@@ -118,6 +118,9 @@ importers:
         specifier: ^19.0.0
         version: 19.3.0(react@19.3.0)
     devDependencies:
+      '@types/node':
+        specifier: ^26.6.2
+        version: 26.6.2
       '@types/react':
         specifier: ^19.0.0
         version: 19.3.0
@@ -133,6 +136,9 @@ importers:
       vite:
         specifier: ^6.0.0
         version: 6.4.3(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)
+      vitest:
+        specifier: ^3.2.7
+        version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
 
   packages/audio:
     dependencies:

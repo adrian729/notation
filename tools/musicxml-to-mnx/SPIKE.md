@@ -1,3 +1,5 @@
+> Historical spike record for the superseded npm `mnxconverter` (replaced by `musicxml-to-mnx`; its patch, `check.ts` render check and allowlist no longer exist).
+
 # Spike: `mnxconverter` for our MusicXML subset
 
 Converter: npm `mnxconverter@1.2.0` ([deemaagog/mnxconverter-ts](https://github.com/deemaagog/mnxconverter-ts), MIT), the latest release on npm (`1.0.0`, `1.0.1`, `1.1.0`, `1.2.0`). Its README says it targets the schema as of 2026-08-12; our pin is `w3c-cg/mnx@25b7d367` (2026-09-24, schema `$id` version 40, `mnx.version` 1) — see `packages/mnx/schema/SOURCE`. No renamed-key mismatches showed up against our pin in this subset (in particular the 2026-09-22 orientation-key rename didn't touch anything the converter emits for single-staff, single-part content); every file that converted also validated against our schema.
