@@ -4,6 +4,12 @@
   },
   "global": {
     "measures": [
+      {
+        "time": {
+          "count": 4,
+          "unit": 4
+        }
+      },
       {}
     ]
   },
@@ -19,6 +25,27 @@
               }
             }
           ],
+          "sequences": [
+            {
+              "content": [
+                {
+                  "duration": {
+                    "base": "whole"
+                  },
+                  "notes": [
+                    {
+                      "pitch": {
+                        "step": "E",
+                        "octave": 4
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
           "sequences": [
             {
               "content": [

@@ -7,7 +7,7 @@ import { layoutScore } from '@polyhymnia/notation-engine';
 const SCORES_DIR = fileURLToPath(new URL('../src/scores/', import.meta.url));
 const UNSUPPORTED_ALLOWLIST: Readonly<Record<string, readonly string[]>> = {};
 const EXPECTED_CODES: Readonly<Record<string, readonly string[]>> = {
-  'mensural-breves.mnx.json': ['measure-overfull'],
+  'underfull.mnx.json': ['measure-underfull'],
 };
 
 const files = readdirSync(SCORES_DIR).filter((f) => f.endsWith('.mnx.json'));

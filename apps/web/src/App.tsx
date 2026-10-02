@@ -193,8 +193,8 @@ export function App() {
 
       <h2>Diagnostics</h2>
       <p className="note">
-        A malformed score degrades visibly instead of throwing. This bar holds one quarter note in 4/4; the engine pads
-        it to length and attaches the warning below, which this page renders exactly as any app would.
+        A malformed score degrades visibly instead of throwing. The second bar holds one quarter note in 4/4; the engine
+        pads it to length and attaches the warning below, which this page renders exactly as any app would.
       </p>
       <Example title="Underfull bar, auto-padded">
         {(onLayout) => <FontNotation score={UNDERFULL} onLayout={onLayout} />}
