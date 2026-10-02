@@ -384,58 +384,5 @@
       }
     }
   ],
-  "diagnostics": [],
-  "timemap": {
-    "divisions": 3360,
-    "entries": [
-      {
-        "ids": [
-          "m0.s0.e0.n0",
-          "m0.s0.e0.n1",
-          "m0.s0.e0.n2",
-          "m0.s0.e0.n3",
-          "m0.s0.e0.n4"
-        ],
-        "tick": 0,
-        "durationTicks": 6720,
-        "measureIndex": 0,
-        "voice": 0,
-        "systemIndex": 0,
-        "x": 10.084,
-        "y": 9,
-        "kind": "chord",
-        "midiNotes": [
-          61,
-          63,
-          68,
-          70,
-          74
-        ]
-      },
-      {
-        "ids": [
-          "m0.s0.e1"
-        ],
-        "tick": 6720,
-        "durationTicks": 6720,
-        "measureIndex": 0,
-        "voice": 0,
-        "systemIndex": 0,
-        "x": 36.812,
-        "y": 6,
-        "kind": "rest"
-      }
-    ],
-    "measures": [
-      {
-        "index": 0,
-        "startTick": 0,
-        "endTick": 13440,
-        "systemIndex": 0,
-        "x": 0,
-        "w": 65
-      }
-    ],
-    "tempo": []
-  }
+  "diagnostics": []
 }

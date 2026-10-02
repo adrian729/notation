@@ -295,57 +295,5 @@
       }
     }
   ],
-  "diagnostics": [],
-  "timemap": {
-    "divisions": 3360,
-    "entries": [
-      {
-        "ids": [
-          "m0.s0.e0"
-        ],
-        "tick": 0,
-        "durationTicks": 6720,
-        "measureIndex": 0,
-        "voice": 0,
-        "systemIndex": 0,
-        "x": 5.764,
-        "y": 9,
-        "kind": "note",
-        "midi": 60
-      },
-      {
-        "ids": [
-          "m0.s0.e1"
-        ],
-        "tick": 6720,
-        "durationTicks": 20160,
-        "measureIndex": 0,
-        "voice": 0,
-        "systemIndex": 0,
-        "x": 22.182,
-        "y": 4.5,
-        "kind": "note",
-        "midi": 76
-      }
-    ],
-    "measures": [
-      {
-        "index": 0,
-        "startTick": 0,
-        "endTick": 13440,
-        "systemIndex": 0,
-        "x": 0,
-        "w": 39.16
-      },
-      {
-        "index": 1,
-        "startTick": 13440,
-        "endTick": 26880,
-        "systemIndex": 0,
-        "x": 39.16,
-        "w": 25.84
-      }
-    ],
-    "tempo": []
-  }
+  "diagnostics": []
 }
