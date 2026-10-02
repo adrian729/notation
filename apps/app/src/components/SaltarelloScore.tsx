@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Notation } from '@polyhymnia/notation-react';
 import type { NotationHandle, PlaybackView } from '@polyhymnia/notation-react';
 import type { MnxDocument } from '@polyhymnia/mnx';
-import { eventsFromTimeMap } from '@polyhymnia/audio';
+import { performance } from '@polyhymnia/mnx-score';
 import type { Playback } from '@polyhymnia/audio/webaudio';
 import { createSound } from '@/lib/sound';
 
@@ -27,18 +27,24 @@ export function SaltarelloScore({ score }: { score: MnxDocument }) {
   const play = useCallback(() => {
     const handle = handleRef.current;
     if (!handle) return;
-    const timeMap = handle.getTimeMap();
-    const clip = eventsFromTimeMap(timeMap);
-    const playback = sound.playEvents(clip.events);
+    const timeline = handle.getTimeline();
+    const performed = performance(timeline);
+    const events = performed.events.map((e) => ({
+      id: e.id,
+      midi: e.midi,
+      start: e.startSeconds,
+      duration: e.durationSeconds,
+    }));
+    const playback = sound.playEvents(events);
     playbackRef.current = playback;
     setPlaying(true);
     const tick = () => {
       const current = handleRef.current;
-      if (playbackRef.current !== playback || !current || current.getTimeMap() !== timeMap) {
+      if (playbackRef.current !== playback || !current || current.getTimeline() !== timeline) {
         if (playbackRef.current === playback) stop();
         return;
       }
-      current.setPlaybackTick(clip.tickAtSeconds(playback.time()));
+      current.setPlaybackTick(performed.tickAtSeconds(playback.time()));
       frameRef.current = requestAnimationFrame(tick);
     };
     frameRef.current = requestAnimationFrame(tick);

@@ -8,7 +8,16 @@ import type {
   ReactNode,
   Ref,
 } from 'react';
-import { DEFAULT_FONTS, DEFAULT_STYLE, HIT_STAFF_MARGIN, hitTest, previewShapes } from '@polyhymnia/notation-engine';
+import {
+  DEFAULT_FONTS,
+  DEFAULT_STYLE,
+  HIT_STAFF_MARGIN,
+  hitTest,
+  positionAtTick,
+  previewShapes,
+} from '@polyhymnia/notation-engine';
+import { performance } from '@polyhymnia/mnx-score';
+import type { Timeline } from '@polyhymnia/mnx-score';
 import { fontFaceCss } from '@polyhymnia/notation-fonts';
 import type { GlyphStyleName, NotationFont } from '@polyhymnia/notation-fonts';
 import type {
@@ -18,7 +27,6 @@ import type {
   LayoutResult,
   NotationOptions,
   RectShape,
-  TimeMap,
   ViewBox,
 } from '@polyhymnia/notation-engine';
 import type { MnxDocument, NoteId } from '@polyhymnia/mnx';
@@ -48,7 +56,7 @@ function PlaybackChild(_props: NotationPlaybackProps): null {
 
 export interface NotationHandle {
   getLayout(): LayoutResult;
-  getTimeMap(): TimeMap;
+  getTimeline(): Timeline;
   exportSVG(): string;
   setPlaybackTick(tick: number): void;
   focus(id: NoteId): void;
@@ -104,7 +112,7 @@ export function Notation({ score, options, children, className, style, onLayout,
     else if (view?.mode === 'off') setPlaying(elementRefs.current, EMPTY_IDS);
     else if (view === undefined && tick === null) setPlaying(elementRefs.current, EMPTY_IDS);
     else {
-      const at = tick ?? (view?.mode === 'cursor' ? declaredTick(layout.timemap, view.position) : 0);
+      const at = tick ?? (view?.mode === 'cursor' ? declaredTick(layout.timeline, view.position) : 0);
       if (view?.mode === 'cursor' && !view.highlightActive) setPlaying(elementRefs.current, EMPTY_IDS);
       applyTick(view, at, layout, elementRefs.current, cursorRef.current);
     }
@@ -133,7 +141,7 @@ export function Notation({ score, options, children, className, style, onLayout,
     ref,
     (): NotationHandle => ({
       getLayout: () => layout,
-      getTimeMap: () => layout.timemap,
+      getTimeline: () => layout.timeline,
       exportSVG: () => serialize(svgRef.current),
       setPlaybackTick: (tick) => {
         const view = viewRef.current;
@@ -262,7 +270,7 @@ export function Notation({ score, options, children, className, style, onLayout,
           )}
         </g>
         {playbackView?.mode === 'cursor' && (
-          <CursorGroup groupRef={cursorRef} timemap={layout.timemap} position={playbackView.position} />
+          <CursorGroup groupRef={cursorRef} layout={layout} position={playbackView.position} />
         )}
         {marks?.preview != null && (
           <PreviewGroup layout={layout} preview={marks.preview} fontFamily={fontFamily} options={options} />
@@ -279,9 +287,9 @@ export namespace Notation {
   export const Marks = MarksChild;
 }
 
-function declaredTick(timemap: TimeMap, position: { tick: number } | { seconds: number } | undefined): number {
+function declaredTick(timeline: Timeline, position: { tick: number } | { seconds: number } | undefined): number {
   if (!position) return 0;
-  return 'tick' in position ? position.tick : timemap.writtenTickAtSeconds(position.seconds);
+  return 'tick' in position ? position.tick : performance(timeline).tickAtSeconds(position.seconds);
 }
 
 function applyTick(
@@ -292,23 +300,23 @@ function applyTick(
   cursorGroup: SVGGElement | null,
 ): void {
   if (view?.mode === 'cursor') {
-    placeCursor(cursorGroup, layout.timemap, tick);
-    if (view.highlightActive) setPlaying(refs, new Set(layout.timemap.activeAt(tick)));
+    placeCursor(cursorGroup, layout, tick);
+    if (view.highlightActive) setPlaying(refs, new Set(layout.timeline.activeAt(tick)));
   } else {
-    setPlaying(refs, new Set(layout.timemap.activeAt(tick)));
+    setPlaying(refs, new Set(layout.timeline.activeAt(tick)));
   }
 }
 
 function CursorGroup({
   groupRef,
-  timemap,
+  layout,
   position,
 }: {
   groupRef: Ref<SVGGElement>;
-  timemap: TimeMap;
+  layout: LayoutResult;
   position: { tick: number } | { seconds: number } | undefined;
 }): JSX.Element {
-  const pos = timemap.positionAtTick(declaredTick(timemap, position));
+  const pos = positionAtTick(layout, declaredTick(layout.timeline, position));
   return (
     <g
       ref={groupRef}
@@ -422,7 +430,7 @@ export function describeScore(layout: LayoutResult): string {
   const boxes: ElementBox[] = Object.values(layout.elements);
   const notes = boxes.filter((b) => b.kind !== 'rest').length;
   const rests = boxes.length - notes;
-  const measures = layout.timemap.measures.length;
+  const measures = layout.timeline.measures.length;
   return `Music notation: ${count(measures, 'measure')}, ${count(notes, 'note')}, ${count(rests, 'rest')}`;
 }
 
@@ -484,9 +492,9 @@ function serialize(svg: SVGSVGElement | null): string {
   return new XMLSerializer().serializeToString(clone);
 }
 
-function placeCursor(group: SVGGElement | null, timemap: TimeMap, tick: number): void {
+function placeCursor(group: SVGGElement | null, layout: LayoutResult, tick: number): void {
   if (!group) return;
-  const pos = timemap.positionAtTick(tick);
+  const pos = positionAtTick(layout, tick);
   const rect = group.firstElementChild;
   if (!pos || !rect) {
     group.setAttribute('visibility', 'hidden');

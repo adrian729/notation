@@ -85,7 +85,7 @@ export function App() {
 
       <h2>Playback</h2>
       <p className="note">
-        The same melody played through <code>@polyhymnia/audio</code>: the app builds the clip from the layout timemap
+        The same melody played through <code>@polyhymnia/audio</code>: the app builds the clip from the layout timeline
         and drives the cursor from its own animation-frame loop.
       </p>
       <Example

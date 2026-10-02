@@ -2,7 +2,7 @@ import { createRef } from 'react';
 import type { JSX } from 'react';
 import { render, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { layoutScore } from '@polyhymnia/notation-engine';
+import { layoutScore, positionAtTick } from '@polyhymnia/notation-engine';
 import type { Event, MnxDocument, NoteValue, Pitch } from '@polyhymnia/mnx';
 import { Notation } from '../src/Notation.js';
 import type { NotationHandle } from '../src/Notation.js';
@@ -139,13 +139,14 @@ describe('<Notation>', () => {
 });
 
 describe('NotationHandle', () => {
-  it('exposes layout, timemap, and SVG export; throws only for the unbuilt cursor', () => {
+  it('exposes layout, timeline, and SVG export; throws only for the unbuilt cursor', () => {
     const ref = createRef<NotationHandle>();
     render(<Notation score={simpleScore()} ref={ref} />);
     const handle = ref.current!;
 
     expect(handle.getLayout().version).toBe(1);
-    expect(handle.getTimeMap().entries.length).toBeGreaterThan(0);
+    expect(handle.getTimeline()).toBe(handle.getLayout().timeline);
+    expect(handle.getTimeline().entries.length).toBeGreaterThan(0);
 
     const svg = handle.exportSVG();
     expect(svg.startsWith('<svg')).toBe(true);
@@ -209,14 +210,14 @@ describe('playback highlighting', () => {
     );
   });
 
-  it('setPlaybackTick highlights exactly the notes sounding at a tick, via the timemap', () => {
+  it('setPlaybackTick highlights exactly the notes sounding at a tick, via the timeline', () => {
     const doc = beamAndTieScore();
     const ref = createRef<NotationHandle>();
     const { container } = render(<Notation score={doc} ref={ref} />);
     const handle = ref.current!;
-    const timemap = handle.getTimeMap();
+    const timeline = handle.getTimeline();
 
-    handle.setPlaybackTick(timemap.byId('bn1')!.tick + 10);
+    handle.setPlaybackTick(timeline.byId('bn1')!.tick + 10);
     expect(container.querySelector('g[data-pn="element"][data-pn-el="bn1"]')?.getAttribute('data-pn-playing')).toBe(
       'true',
     );
@@ -224,8 +225,8 @@ describe('playback highlighting', () => {
       false,
     );
 
-    const bn3 = timemap.byId('bn3')!;
-    handle.setPlaybackTick(bn3.tick + bn3.durationTicks - 10);
+    const bn4 = timeline.byId('bn4')!;
+    handle.setPlaybackTick(bn4.tick + bn4.durationTicks - 10);
     expect(container.querySelector('g[data-pn="element"][data-pn-el="bn4"]')?.getAttribute('data-pn-playing')).toBe(
       'true',
     );
@@ -311,12 +312,12 @@ describe('playback cursor', () => {
     const rect = (): Element => container.querySelector('[data-pn-cursor] rect')!;
     const group = (): Element => container.querySelector('[data-pn-cursor]')!;
 
-    const last = layout.timemap.entries[layout.timemap.entries.length - 1]!;
-    const first = layout.timemap.positionAtTick(0)!;
+    const last = layout.timeline.entries[layout.timeline.entries.length - 1]!;
+    const first = positionAtTick(layout, 0)!;
     expect(group().getAttribute('data-pn-system')).toBe(String(first.systemIndex));
 
     handle.setPlaybackTick(last.tick);
-    const pos = layout.timemap.positionAtTick(last.tick)!;
+    const pos = positionAtTick(layout, last.tick)!;
     expect(pos.systemIndex).toBe(layout.systems.length - 1);
     expect(group().getAttribute('data-pn-system')).toBe(String(pos.systemIndex));
     expect(Number(rect().getAttribute('x'))).toBeLessThan(pos.x);
@@ -341,7 +342,7 @@ describe('playback cursor', () => {
       </Notation>
     );
     const { container, rerender } = render(tree());
-    const last = ref.current!.getLayout().timemap.entries.at(-1)!;
+    const last = ref.current!.getLayout().timeline.entries.at(-1)!;
     ref.current!.setPlaybackTick(last.tick);
     const x = container.querySelector('[data-pn-cursor] rect')!.getAttribute('x');
     rerender(tree());

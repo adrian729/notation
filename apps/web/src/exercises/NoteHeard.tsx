@@ -28,7 +28,7 @@ export function NoteHeard() {
 
   const playId = useCallback(
     (id: NoteId, duration?: number) => {
-      sound.playNote(midiOfId(handleRef.current?.getTimeMap(), id, NOTES.find((n) => n.id === id)?.pitch), duration);
+      sound.playNote(midiOfId(handleRef.current?.getTimeline(), id, NOTES.find((n) => n.id === id)?.pitch), duration);
     },
     [sound],
   );
