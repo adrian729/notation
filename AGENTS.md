@@ -73,6 +73,10 @@
 - Need a change outside the ownership list → stop and report.
 - Coordinator owns manifests, lockfile, tsconfig, barrels, `AGENTS.md`, docs, goldens. Merge with `git merge --no-ff`, one stream at a time, then `pnpm -r typecheck` and tests.
 
+# Dependency guard
+- `.githooks/pre-commit` blocks staged changes to dependency fields or lifecycle scripts in any `package.json`, and to `pnpm-lock.yaml`, `pnpm-workspace.yaml` or `patches/**`.
+- Never set `ALLOW_DEPS`, pass `--no-verify`, or change `core.hooksPath`/hook files. Hook fails → stop and ask the user.
+
 # Publishing
 - Packages publish to public npm under `@polyhymnia` (`publishConfig.access: public`, `files` whitelist, own `LICENSE`); apps stay `private`.
 - Record releasable changes with `pnpm changeset`. Agents never run `changeset publish`, `npm publish`, or push; the user publishes.
