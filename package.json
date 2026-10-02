@@ -13,6 +13,7 @@
     "font:verify": "pnpm --filter @polyhymnia/notation-fonts font:verify"
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "typescript": "^5.7.0"
   }
 }

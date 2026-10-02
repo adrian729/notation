@@ -73,6 +73,11 @@
 - Need a change outside the ownership list → stop and report.
 - Coordinator owns manifests, lockfile, tsconfig, barrels, `AGENTS.md`, docs, goldens. Merge with `git merge --no-ff`, one stream at a time, then `pnpm -r typecheck` and tests.
 
+# Publishing
+- Packages publish to public npm under `@polyhymnia` (`publishConfig.access: public`, `files` whitelist, own `LICENSE`); apps stay `private`.
+- Record releasable changes with `pnpm changeset`. Agents never run `changeset publish`, `npm publish`, or push; the user publishes.
+- Before a release, `pnpm pack` each package and smoke-install the tarballs in a scratch project.
+
 # Dependencies
 - Simple work → write it ourselves even if a library exists. Complex work → dependency, pinned, wrapped for replacement, maintained and tracking the MNX schema.
 - Ajv and `json-schema-to-typescript` are devDependencies only; never in `notation-*` runtime bundles. Sole exception: `tools/musicxml-to-mnx` lists Ajv under `dependencies` because its offline CLI validates at run time.

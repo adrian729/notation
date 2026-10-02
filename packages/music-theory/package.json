@@ -1,7 +1,6 @@
 {
   "name": "@polyhymnia/music-theory",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -13,7 +12,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
     "test": "vitest run --passWithNoTests"
   },
@@ -22,5 +21,12 @@
     "vitest": "^3.0.0",
     "@types/node": "^26.6.2"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrian729/music-theory.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

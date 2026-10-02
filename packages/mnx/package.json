@@ -1,7 +1,6 @@
 {
   "name": "@polyhymnia/mnx",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -18,7 +17,7 @@
     "schema/NOTICE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
     "test": "vitest run",
     "mnx:update": "node scripts/mnx-update.mjs",
@@ -32,5 +31,13 @@
     "ajv": "8.20.0",
     "@types/node": "^26.6.2"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrian729/notation.git",
+    "directory": "packages/mnx"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

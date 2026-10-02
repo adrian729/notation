@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:link": "node scripts/dev-link.mjs link",
+    "dev:unlink": "node scripts/dev-link.mjs unlink",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "build": "vite build && cp dist/index.html dist/404.html",

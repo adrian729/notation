@@ -1,7 +1,6 @@
 {
   "name": "@polyhymnia/notation-fonts",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -15,7 +14,7 @@
     "fonts"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
     "test": "vitest run --passWithNoTests",
     "font:build": "node scripts/build.mjs",
@@ -28,5 +27,13 @@
     "vitest": "^3.0.0",
     "@types/node": "^26.6.2"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adrian729/notation.git",
+    "directory": "packages/notation-fonts"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

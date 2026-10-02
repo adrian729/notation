@@ -7,6 +7,7 @@ export default defineConfig({
   base: process.env.PAGES_BASE ?? '/',
   plugins: [tanstackRouter({ target: 'react', autoCodeSplitting: true }), react(), tailwindcss()],
   resolve: {
+    dedupe: ['react', 'react-dom'],
     alias: {
       '@': new URL('./src', import.meta.url).pathname,
     },
