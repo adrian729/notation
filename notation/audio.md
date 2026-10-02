@@ -1,6 +1,6 @@
 # Audio
 
-`packages/audio` (`@polyhymnia/audio`) makes sound for ear-training exercises. It imports `notation-engine` (types only, `TimeMap`) and nothing from `mnx` at runtime; it never reads MNX documents and never imports React. Rules live in `AGENTS.md` under "Audio".
+`packages/audio` (`@polyhymnia/audio`) makes sound for ear-training exercises. Sound derives from the `@polyhymnia/mnx-score` timeline: `performance(timeline, {tempo?})` returns the events (`NoteEvent`-shaped, with MNX note ids), `durationSeconds` and `tickAtSeconds`. It never reads MNX documents and never imports React. `eventsFromTimeMap` (engine `TimeMap` input) is legacy and stays until Phase F removes the `TimeMap`. Rules live in `AGENTS.md` under "Audio".
 
 ## Entries
 
@@ -13,12 +13,15 @@
 ```ts
 interface NoteEvent { id?: string; midi: number; start: number; duration: number; velocity?: number }
 interface Clip { events: readonly NoteEvent[]; durationSeconds: number; tickAtSeconds(s: number): number }
-eventsFromTimeMap(timemap, { tempo?: TempoOverride }): Clip
+performance(timeline, { tempo?: TempoOverride }): { events, durationSeconds, tickAtSeconds }   // @polyhymnia/mnx-score — the source of events
+eventsFromTimeMap(timemap, { tempo?: TempoOverride }): Clip                                      // legacy until Phase F
 ```
+
+Which timeline to use: `layout.timeline` (or `handle.getTimeline()`) for a laid-out score, so the cursor and the sound share ids and one clock; `buildTimeline(doc, {scope: 'all'})` for whole-score playback of every part, staff and voice. Ids inside the default scope are identical in both, so notes outside the layout simply get no highlight or cursor.
 
 Times are seconds from clip start. `midi` may be fractional; `id` is an MNX note id (synthesized positional ids for id-less notes). Builders (`melodic`, `harmonic`) produce events without ids; they take MIDI numbers only: `melodic(midis, {noteDuration, gap})`, `harmonic(midis, {duration})`. Callers convert pitches with `@polyhymnia/music-theory` (`midiOf`); audio never parses pitch strings. Interval and scale naming belongs to the exercise layer. `concat` starts each list where the previous one's last note ends; a list's trailing gap is not included (add a rest-length `shift` if needed). `Player.play` throws `RangeError` on non-finite input.
 
-`eventsFromTimeMap` walks `timemap.playOrder()`: each segment is offset by the summed seconds of the earlier segments (same `tempo` override throughout), takes entries with `tick` in `[fromTick, toTick)`, clamps each duration to `toTick` (a tie-merged entry straddling a repeat barline is clipped, and re-attacks on the next pass), skips rests, and fans chords out through the parallel `ids[i]` / `midiNotes[i]`. `tickAtSeconds(s)` is `timemap.writtenTickAtSeconds(s, tempo)`, so the sound and the cursor share one clock mapping: feed it `playback.time()` and pass the result to `handle.setPlaybackTick`.
+`performance` walks the timeline's play-order segments (as does legacy `eventsFromTimeMap` with `timemap.playOrder()`): each segment is offset by the summed seconds of the earlier segments (same `tempo` override throughout), takes entries with `tick` in `[fromTick, toTick)`, clamps each duration to `toTick` (a tie-merged entry straddling a repeat barline is clipped, and re-attacks on the next pass), skips rests, and fans chords out through the parallel `ids[i]` / `midiNotes[i]`. `tickAtSeconds(s)` is the timeline's `secondsToWrittenTick` under the same tempo, so the sound and the cursor share one clock mapping: feed it `playback.time()` and pass the result to `handle.setPlaybackTick`.
 
 ## Player
 
@@ -44,4 +47,4 @@ Times are seconds from clip start. `midi` may be fractional; `id` is an MNX note
 - Own the UI clock: a rAF hook calls `handle.setPlaybackTick(clip.tickAtSeconds(playback.time()))`.
 - Call `stop()` on exercise unmount.
 - Keep quiz data about notes in the app, keyed by note id.
-- Hover-to-hear on score notes resolves midi from `timemap.byId(id)` (`midiNotes[ids.indexOf(id)]` for chords, else `midi`), falling back to the hit's `pitch` when the id is not in the time map (app helper `midiOfId`).
+- Hover-to-hear on score notes resolves midi from `timeline.byId(id)` (the entry's `notes[]` carry `{id, midi}`; legacy path: `timemap.byId(id)` with `midiNotes[ids.indexOf(id)]` for chords, else `midi`), falling back to the hit's `pitch` when the id is not in the timeline (app helper `midiOfId`).

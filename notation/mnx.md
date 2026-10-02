@@ -4,9 +4,9 @@ MNX (W3C Community Group, `w3c-cg/mnx`) is the component's only score format —
 
 ## Where MNX is read
 
-Only `notation-engine/src/layout/normalize.ts` reads the raw MNX document. It calls `readMnx()` (`mnx/src/mnx/read.ts`) to check `mnx.version`, then flattens `parts[0]`'s sequences into flat `NormalizedElement`/`NormalizedGap` records (`layout/normalize.ts`) that carry only what later stages need — a resolved clef/key/time per measure, one flat list of events per voice. `layout/temporal.ts` turns those into `TemporalElement` rows (onset/duration in ticks) — it does timing only, it does not read the document. Every stage after `temporal` reads only these flat records (`layout/records.ts`'s types), never the MNX document itself. This is the boundary `AGENTS.md` requires: if MNX gains a field the engine doesn't yet support, exactly one file (`normalize.ts`) changes.
+Two places read the raw MNX document, split by concern. `@polyhymnia/mnx-score` (`buildTimeline`) reads everything that carries musical time: it calls `readMnx()` (`mnx/src/mnx/read.ts`) to check `mnx.version`, walks the scoped sequences with `elementIds` from `mnx` and builds the `Timeline` — ids, ticks, durations, tuplets, pitch → midi, ties, pickup and capacity, padding rests, tempo and play order. `notation-engine`'s `layout/normalize*.ts` reads only engraving data (clef, key, stem directions, beams, slurs, system breaks, `useBeams`) and finds every element through `timeline.ids`, never by walking sequences for ids itself. `layout/temporal.ts` is a join of timeline entries and normalized records; it does not read the document. Every stage after `temporal` reads only flat records (`layout/records.ts`'s types) and the timeline. This is the boundary `AGENTS.md` requires: a MNX field that affects time changes `mnx-score`; one that only affects drawing changes `normalize*.ts`.
 
-`layoutScore(doc: MnxDocument, options)` is the pipeline entry point; `options.divisions` (ticks per quarter note) defaults to 3360.
+`layoutScore(doc: MnxDocument, options)` is the pipeline entry point. It builds the default-scope timeline (memoized per document and `options.divisions`, ticks per quarter note, default 3360) and returns it as `layout.timeline`. Playback outside the laid-out scope uses `buildTimeline(doc, {scope: 'all'})` directly (`audio.md`).
 
 ## Supported subset
 
@@ -34,7 +34,7 @@ Reading `parts[0]` only, `staff 1` only, up to 2 sequences (voices) per measure:
 | `event.markings.breath` | drawn as `'comma'` unless `symbol` is something other than `'comma'`/`'auto'`, then still drawn as a comma + `mnx-unsupported` |
 | `event.markings.caesura` | drawn as `'caesura'`; a caesura + a breath on the same event draws only the caesura + `mnx-unsupported`; a non-default `shape`/`marks` still draws a plain caesura + `mnx-unsupported` |
 | `scores[0].pages[].systems[].measure` | forces a system break after the *previous* measure (a system starting at measure `k` → break after `k−1`). No `pages`/`systems` at all → greedy breaking (`engraving.md`). A `measure` id that doesn't resolve → diagnostic `system-measure-unresolved`. More than one entry in `scores[]` → only `scores[0]` is used, + `mnx-unsupported` |
-| first measure, non-empty, no `fullMeasure`, shorter than the meter | pickup — no padding, no diagnostic (see "Pickup measures" below) |
+| first measure whose longest content is shorter than the meter | pickup — no padding, no diagnostic (see "Pickup and fullness rules" below) |
 | any other measure shorter than its meter | padded with synthetic trailing rests + diagnostic `measure-underfull` |
 | a measure longer than its meter | truncated at the barline + diagnostic `measure-overfull` (error) |
 | `space` sequence content | advances time without emitting a note/rest/chord — invisible |
@@ -51,7 +51,7 @@ Note values: `breve`, `whole`, `half`, `quarter`, `eighth`, `16th`, `32nd`, `64t
 - Grace notes, multi-note tremolo (its time is left blank via a `space`), lyrics, dynamics, ottavas, arpeggios/non-arpeggios, staff configs, measure repeats
 - `slur.lineType` other than `'solid'` (drawn solid); `slur.sideEnd` differing from `slur.side` (the start side is used for the whole curve)
 - `tuplet.showValue` (only the actual count is drawn, per `showNumber`/`options.tuplets.showRatio`)
-- `ending`, `jump`, `segno`, `fine` (honored for playback order via `timemap.playOrder()`, but not drawn), `fermata` (global or per-event), multimeasure rests
+- `ending`, `jump`, `segno`, `fine` (honored for playback order via the timeline's play-order segments, but not drawn), `fermata` (global or per-event), multimeasure rests
 - A measure's `number` override (ignored — measures are numbered positionally)
 - `note.written`/`note.perform` (sounding pitch is drawn instead; perform hints are ignored)
 - Cross-staff notes/events/tuplets (laid out on staff 1 regardless)
@@ -69,7 +69,7 @@ Note values: `breve`, `whole`, `half`, `quarter`, `eighth`, `16th`, `32nd`, `64t
 
 One construct the engine reads but doesn't yet lay out is downstream of `normalize`, not gated through the same `unsupported()` helper, so it gets its own diagnostic code instead of `mnx-unsupported`:
 
-- Anything past 2 sequences never reaches `temporal` at all — diagnostic `too-many-voices` (warning), from `normalize.ts`, listing how many were dropped.
+- Anything past 2 sequences never reaches the timeline's entries — diagnostic `too-many-voices` (warning), from `mnx-score`, listing how many were dropped.
 
 A 2nd voice (`sequences[1]`) is parsed, carried through `temporal`, and laid out by `layout/vertical.ts` (`engraving.md` "Two voices").
 
@@ -97,7 +97,7 @@ interface NormalizedBeam {
 
 **Validation** is one rule (`phase3-rhythm.md` "SCOPE ADJUSTMENTS"): a `beams[]` entry that references an unknown event id, an event in a different measure or voice, a note/chord whose written value is a quarter or longer, or has fewer than two real notes, is dropped — flags are drawn, diagnostic `beam-invalid` — including a beam crossing a barline (D11 called this out specifically; the general rule already covers it, since the referenced events resolve to different measures). An event already claimed by an earlier beam in the same measure is likewise dropped from any later one that reuses it. A repeated id in the same `beams[].events` list is deduplicated before the two-note check, and any member at or past the voice's own measure capacity (what `temporal.ts` would truncate as `measure-overfull`) is dropped first too, so a beam can never reference an event layout never produces.
 
-Beam id = the MNX `beams[].id` when given, otherwise `{firstElementId}.beam` via the same `synthId` every other positional id uses.
+Beam id = the MNX `beams[].id` when given, otherwise `{firstElementId}.beam`, minted into a per-layout fork of the frozen timeline ids (`timeline.ids.fork()`), so re-layouts of the same document give the same beam ids and a beam id never receives a `~2` suffix. A beam id that collides with an id already in use is reported as `id-collision` (it used to be dropped silently).
 
 ## ID rule
 
@@ -105,7 +105,7 @@ Every element the engine lays out gets an id: the MNX `id` when the document sup
 
 Id synthesis is a single shared implementation, `elementIds(doc, scope?)` in `mnx` (`@polyhymnia/mnx`'s `elementIds`/`ElementIds`/`NoteId`/`ElementScope`). It walks the scoped sequences once (default scope: part 0, staff 1, 2 voices), in the same order and with the same rules the engine used to apply inline, and hands back a position-keyed lookup (`idAt(pos)`/`nodeOf(id)`/`mint(candidate, ctx?)`/`registerExplicit`/`freeze()`/`fork()`/`diagnostics`, where a position is `{ measureIndex, sequenceIndex, path }` plus a `note` index for chord members or a `fullMeasureRest` marker, and `nodeOf` returns the entry — `{ measureIndex, sequenceIndex, path, note?, element }` — with `element: { kind, node }` typed per kind from the generated MNX types, kind being `event`, `chordNote`, `tuplet` or `fullMeasureRest`). `mint(candidate, ctx?)` is for ids assigned outside that walk (beams); `freeze()` ends minting and `fork()` returns an independent copy.
 
-**Scoped addressing.** `ElementScope { parts?, staves?, maxVoices? }` selects what the walk covers; the default (part 0, staff 1, 2 voices) yields exactly the ids below. Outside the default scope ids are prefixed: `p{n}.` for part `n` and `st{k}.` for staff `k`, so default-scope ids never change when a wider scope is requested. Collision suffixes are `~n` everywhere: `assignIds` (the MusicXML tool) mints through the same `mintId`. `notation-engine`'s `normalize.ts` no longer synthesizes ids itself; it only looks up what `elementIds` already computed.
+**Scoped addressing.** `ElementScope { parts?, staves?, maxVoices? }` selects what the walk covers; the default (part 0, staff 1, 2 voices) yields exactly the ids below. Outside the default scope ids are prefixed: `p{n}.` for part `n` and `st{k}.` for staff `k`, so default-scope ids never change when a wider scope is requested. Collision suffixes are `~n` everywhere: `assignIds` (the MusicXML tool) mints through the same `mintId`. Neither `normalize.ts` nor any later engine stage synthesizes element ids: the timeline builds one `ElementIds` per document, mints elements first and then padding rests, and freezes it; the engine only looks ids up through `timeline.ids` (`idAt`, `nodeOf`, `has`, `fork`).
 
 Positional id shapes (measure `m`, sequence `s`, event index `k` within its voice):
 
@@ -115,30 +115,30 @@ Positional id shapes (measure `m`, sequence `s`, event index `k` within its voic
 | A chord member | `{eventId}.n{k}` |
 | A tuplet | `m{measure}.s{sequence}.t{k}` |
 | A full-measure rest | `m{measure}.s{sequence}.full` |
-| A synthetic padding rest (underfull measure) | `m{measure}.v{voice}.pad{k}` |
+| A synthetic padding rest (underfull measure; timeline entry with `synthetic: true`) | `m{measure}.v{ordinal}.pad{k}` — `ordinal` counts voices per part and staff within the measure; outside the default scope the `p{n}.st{k}.` prefix applies |
 | A beam | the MNX `beams[].id`, or `{firstElementId}.beam` |
 
 `k` is advanced by every event *and* by every child of a `grace` or `tremolo` container, even though those children are never themselves laid out or given an id — so an unlabeled event after a grace group or a tremolo gets the index it would have had if those children had been ordinary events.
 
-Every explicit `id` in the document is scanned up front, so a positional id is never silently assigned to two different elements: if a synthesized candidate collides with an id already in use (explicit or previously synthesized), it gets a deterministic `~2`, `~3`, … suffix instead, plus diagnostic `id-collision`. Two elements that explicitly share the same `id` also get `id-collision`; the first occurrence keeps the id, the rest are unaddressable by it. All `id-collision` diagnostics — element/tuplet/event ones from the model's own id pass, then any from beam id resolution — are appended after every other diagnostic, so they always land at the end of `NormalizedScore.diagnostics`.
+Every explicit `id` in the document is scanned up front, so a positional id is never silently assigned to two different elements: if a synthesized candidate collides with an id already in use (explicit or previously synthesized), it gets a deterministic `~2`, `~3`, … suffix instead, plus diagnostic `id-collision`. Two elements that explicitly share the same `id` also get `id-collision`; the first occurrence keeps the id, the rest are unaddressable by it. All `id-collision` diagnostics — first the frozen timeline's (element, tuplet, event and padding ids), then those from the beam fork — are appended after every other diagnostic, so they always land at the end of `LayoutResult.diagnostics`.
 
 ## Time: rationals internally, integer ticks at the boundary
 
-- Inside the layout pipeline (from `temporal` on): `Rational { n: number; d: number }` (`mnx/src/mnx/rational.ts`, re-exported as `Rational` from `@polyhymnia/mnx/mnx`), gcd-normalized. Exact arithmetic, no float epsilon bugs (`3 × triplet-eighth = 1 quarter` exactly).
-- `normalize.ts` converts every MNX note-value/tuplet/fraction to a `Rational` via `noteValueLength`/`tupletRatio` (`mnx/src/mnx/time.ts`) before any arithmetic; `temporal.ts` sums those rationals to get onsets and only rounds to integer ticks (`Rational.toTicks`) when producing its output rows.
-- `options.divisions` (default 3360 = 2⁵×3×5×7) is an engine option, not document data — MNX carries no `divisions` field. 3360 divides evenly down to a 64th (needs 2⁴) crossed with triplets/quintuplets/septuplets; conventional 768/960 cannot represent a 64th-note septuplet exactly. `readMnx`/`normalize` reject a non-positive/non-integer `options.divisions`, diagnostic `invalid-divisions`, and fall back to the default.
+- Inside the timeline and the layout pipeline: `Rational { n: number; d: number }` (`mnx/src/mnx/rational.ts`, re-exported as `Rational` from `@polyhymnia/mnx/mnx`), gcd-normalized. Exact arithmetic, no float epsilon bugs (`3 × triplet-eighth = 1 quarter` exactly).
+- `mnx-score` converts every MNX note-value/tuplet/fraction to a `Rational` via `noteValueLength`/`tupletRatio` (`mnx/src/mnx/time.ts`) before any arithmetic, sums those rationals to get onsets and only rounds to integer ticks when producing timeline entries; the engine never redoes this.
+- `options.divisions` (default 3360 = 2⁵×3×5×7) is a timeline option (`buildTimeline`, passed through `NotationOptions.divisions`), not document data — MNX carries no `divisions` field. 3360 divides evenly down to a 64th (needs 2⁴) crossed with triplets/quintuplets/septuplets; conventional 768/960 cannot represent a 64th-note septuplet exactly. `buildTimeline` rejects a non-positive/non-integer `divisions`, diagnostic `invalid-divisions`, and falls back to the default.
 
 ## Pickup and fullness rules
 
 Every tick of a measure must be covered — the engine still enforces this, but the source of truth for "did the content fill the bar" is now MNX content itself, not a model-level fullness rule on input:
 
-- **Pickup**: the first measure only, non-empty, no `fullMeasure`, and shorter than the prevailing meter → `NormalizedMeasure.pickup = true`. Its capacity for layout purposes is exactly whatever its content sums to — no padding, no diagnostic. A pickup measure never restates the time signature on the following measure (that only happens on an actual time change).
-- **Underfull** (a later measure shorter than its meter): `temporal.ts` pads with synthetic trailing rests (`decomposeLength` — fewest notatable rest durations, ≤2 dots) and emits `measure-underfull` (warning).
+- **Pickup**: measure 0 only, when its longest content — measured across every part, staff and voice, ignoring whole-bar rests — is shorter than the meter → `TimelineMeasure.pickup = true`. Whole-bar rests don't rule a pickup out; shorter voices stay left-aligned. Its capacity is exactly whatever its longest content sums to — no padding, no diagnostic. Voices outside the layout scope are read silently for this rule, and their diagnostics are emitted only in scope. A pickup measure never restates the time signature on the following measure (that only happens on an actual time change).
+- **Underfull** (a later measure shorter than its meter): the timeline pads with synthetic trailing rests (`m{i}.v{ordinal}.pad{k}`, `synthetic: true`; fewest notatable rest durations, ≤2 dots) and emits `measure-underfull` (warning).
 - **Overfull** (longer than its meter): truncated at the barline and `measure-overfull` (error) — never a throw; malformed content degrades visibly in a live quiz rather than crashing it.
 
 ### Whole-bar rests
 
-`sequence.fullMeasure` (or `event.rest` alone with no notes, drawn as the sole content) becomes `NormalizedElement.wholeBar: true`: always the single whole-rest glyph (`base: 'whole'`), regardless of meter, but its actual duration in ticks is the measure's real capacity — a 9/8 or 5/4 bar's whole-bar rest is 4.5 or 5 quarters long even though no `{base, dots}` combination can represent that exactly. `temporal.ts`'s `wholeBarShare` divides the measure's remaining capacity evenly across however many whole-bar rests share the bar (normally one).
+`sequence.fullMeasure` (or `event.rest` alone with no notes, drawn as the sole content) becomes `NormalizedElement.wholeBar: true`: always the single whole-rest glyph (`base: 'whole'`), regardless of meter, but its actual duration in ticks is the measure's real capacity — a 9/8 or 5/4 bar's whole-bar rest is 4.5 or 5 quarters long even though no `{base, dots}` combination can represent that exactly. the timeline divides the measure's remaining capacity evenly across however many whole-bar rests share the bar (normally one).
 
 ## Diagnostics
 
@@ -155,31 +155,33 @@ interface Diagnostic {
 }
 ```
 
-Codes actually produced today (verify against `normalize.ts`/`temporal.ts`/`vertical.ts`/`read.ts` — this list is exact as of the current pipeline, not aspirational):
+Order in `LayoutResult.diagnostics`: `readMnx` and `invalid-divisions`, timeline structure, content, tempo and play-order unsupported, ties, fullness, time-affecting `mnx-unsupported`; then the engine's (`mnx-unsupported` for drawing, `invalid-key-signature`, `slur-target-unresolved`, `system-measure-unresolved`, `beam-*`, `tie-unplaced`, curves); then every `id-collision` — the timeline's, then the beam fork's.
+
+Codes actually produced today (verify against `mnx-score/src/`, `normalize*.ts`, `vertical.ts`, `curves.ts` and `read.ts`; "Where" is the stage that emits the code: `timeline` = `mnx-score`, the rest are engine stages — this list is exact as of the current pipeline, not aspirational):
 
 | Code | Severity | Where | Meaning |
 | --- | --- | --- | --- |
 | `mnx-invalid` | error | `readMnx` | The document isn't an object, or has no `mnx` key |
 | `mnx-unsupported-version` | error | `readMnx` | `mnx.version` isn't the version this build supports |
-| `mnx-unsupported` | warning | `normalize` | A recognized-but-unsupported construct, one per construct per measure (or per document) — see "Unsupported MNX" above |
-| `no-parts` | warning | `normalize` | No `parts[0]`; nothing to lay out |
-| `no-measures` | warning | `normalize` | `global.measures` is empty |
-| `measure-count-mismatch` | warning | `normalize` | `parts[0].measures.length !== global.measures.length`; lays out `global`'s count |
-| `missing-sequences` | warning | `normalize` | A part measure has no `sequences` array; treated as empty |
-| `too-many-voices` | warning | `normalize` | More than 2 sequences in a measure; the rest are dropped |
-| `invalid-divisions` | warning | `normalize` | `options.divisions` isn't a positive integer; falls back to 3360 |
-| `invalid-time-signature` | warning | `normalize` | A measure's `time` isn't a valid `{count, unit}`; inherits the previous measure's |
+| `mnx-unsupported` | warning | `timeline`, `normalize` | A recognized-but-unsupported construct, one per construct per measure (or per document): time-affecting ones (tempo, play order, note value, tuplet ratio, nested tuplets, grace, tremolo, kit notes, unknown content) from `timeline`, drawing-only ones from `normalize` — see "Unsupported MNX" above |
+| `no-parts` | warning | `timeline` | No `parts[0]`; nothing to lay out |
+| `no-measures` | warning | `timeline` | `global.measures` is empty |
+| `measure-count-mismatch` | warning | `timeline` | `parts[0].measures.length !== global.measures.length`; lays out `global`'s count |
+| `missing-sequences` | warning | `timeline` | A part measure has no `sequences` array; treated as empty |
+| `too-many-voices` | warning | `timeline` | More than 2 sequences in a measure; the rest are dropped |
+| `invalid-divisions` | warning | `timeline` | `options.divisions` isn't a positive integer; falls back to 3360 |
+| `invalid-time-signature` | warning | `timeline` | A measure's `time` isn't a valid `{count, unit}`; inherits the previous measure's |
 | `invalid-key-signature` | warning | `normalize` | A measure's `key.fifths` is missing or not a finite number; inherits the previous measure's key |
-| `invalid-duration` | warning | `normalize` | An event's `duration` has no readable `base`; the event is skipped |
-| `invalid-pitch` | warning | `normalize` | A note's `pitch` is missing `step`/`octave`; drawn as C4 |
-| `tie-target-unresolved` | warning | `normalize` | `tie.target` doesn't resolve to a laid-out note id; the tie is ignored |
-| `tie-target-not-adjacent` | warning | `normalize` | `tie.target` doesn't resolve to the next event of the same voice; drawn anyway |
+| `invalid-duration` | warning | `timeline` | An event's `duration` has no readable `base`; the event is skipped |
+| `invalid-pitch` | warning | `timeline` | A note's `pitch` is missing `step`/`octave`; drawn as C4 |
+| `tie-target-unresolved` | warning | `timeline` | `tie.target` doesn't resolve to a laid-out note id; the tie is ignored |
+| `tie-target-not-adjacent` | warning | `timeline` | `tie.target` doesn't resolve to the next event of the same voice; drawn anyway |
 | `slur-target-unresolved` | warning | `normalize` | `slur.target`/`startNote`/`endNote` doesn't resolve to a laid-out note/event id; the slur is not drawn |
 | `system-measure-unresolved` | warning | `normalize` | A `systems[].measure` id doesn't resolve to a global measure; ignored |
-| `id-collision` | warning | `normalize`, `temporal` | A synthesized positional id collided with an id already in use (disambiguated with a `~n` suffix), or the same explicit id was assigned to more than one laid-out element (first occurrence wins) |
-| `zero-length-element` | warning | `temporal` | An event's resolved duration is zero (or negative); skipped |
-| `measure-underfull` | warning | `temporal` | A non-pickup measure doesn't fill its capacity; padded |
-| `measure-overfull` | error | `temporal` | A measure exceeds its capacity; truncated at the barline |
+| `id-collision` | warning | `timeline`, `normalize` (beams) | A synthesized positional id collided with an id already in use (disambiguated with a `~n` suffix), or the same explicit id was assigned to more than one laid-out element (first occurrence wins); includes beam ids, minted into the per-layout fork |
+| `zero-length-element` | warning | `timeline` | An event's resolved duration is zero (or negative); skipped |
+| `measure-underfull` | warning | `timeline` | A non-pickup measure doesn't fill its capacity; padded |
+| `measure-overfull` | error | `timeline` | A measure exceeds its capacity; truncated at the barline |
 | `beam-invalid` | warning | `normalize` | A `beams[]` entry references an unknown/cross-measure/cross-voice/non-beamable event, has fewer than two notes (after deduplicating repeated ids and dropping members at or past the measure's capacity), or reuses an event another beam already claimed; dropped |
 | `beam-grouping-invalid` | warning | `normalize` | `options.beaming.beatGrouping[meter]` doesn't sum to the bar; falls back to the default table (`engraving.md`), once per meter |
 | `mnx-unsupported` ("mixed stem directions in a beam") | warning | `vertical` | Two notes in the same beam group carry conflicting explicit `stemDirection`; the first one wins |

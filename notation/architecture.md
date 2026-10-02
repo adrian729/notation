@@ -5,7 +5,8 @@
 ```
 packages/
   music-theory/  # @polyhymnia/music-theory — pitch, intervals, chords, scales, keys; pure TS, no deps
-  mnx-score/     # @polyhymnia/mnx-score — empty for now; future timeline over MNX
+  mnx-score/     # @polyhymnia/mnx-score — the timeline over MNX: musical time, ids, pitch → midi, ties, tempo, play order; `buildTimeline`, `performance`
+    src/                     types.ts timeline.ts performance.ts read.ts report.ts tempo.ts playorder.ts index.ts
   mnx/          # @polyhymnia/mnx — thin MNX layer, pure TS, zero deps, no DOM in tsconfig lib
     schema/                  mnx-schema.json  examples/<52 files>  SOURCE   (mnx.md)
     scripts/                 mnx-update.mjs  gen-mnx-types.mjs
@@ -17,14 +18,15 @@ packages/
     src/font/                metadata.ts metadata.json glyphs.ts   (name -> codepoint)
     src/layout/
       records.ts types.ts    flat engine-internal types: Pitch, Duration/NoteValueSpec, ClefSpec, KeySpec, TimeSpec, TempoEvent...
-      normalize.ts normalize-measure.ts normalize-beams.ts   the only stage that reads MnxDocument — emits NormalizedElement/NormalizedGap
-      temporal.ts             onset/duration ticks — emits TemporalElement, never reads MnxDocument
+      timeline.ts             builds/memoizes the default-scope mnx-score `Timeline` per document and divisions
+      normalize.ts normalize-measure.ts normalize-beams.ts normalize-reader.ts   read only engraving data from MnxDocument (clef, key, stems, beams, slurs, breaks); find elements through `timeline.ids` — emit NormalizedElement/NormalizedGap
+      temporal.ts             join of timeline entries and normalized records — emits TemporalElement, never reads MnxDocument
       accidentals.ts grouping.ts staff.ts tuplets.ts
       beam-policy/            beamGroups, beatGroupingFor — engine-internal auto-beaming policy (engraving.md)
       vertical.ts horizontal.ts break.ts justify.ts beams.ts curves.ts emit.ts
       index.ts              # layoutScore(doc: MnxDocument, options)
-    src/query/               hitTest.ts slots.ts measures.ts preview.ts timemap.ts playorder.ts
-    test/                     fixtures/ (MNX JSON), __golden__/ (golden.test.ts snapshots), __snapshots__/, conformance.test.ts, schema.test.ts, mnx-mapping.test.ts, golden.test.ts, layout.test.ts, pipeline.test.ts, interaction.test.ts, fullness.test.ts, rational.test.ts, key-clef-corpus.test.ts, playorder.test.ts, mnx.ts (test helper)
+    src/query/               hitTest.ts slots.ts measures.ts preview.ts position.ts timemap.ts
+    test/                     fixtures/ (MNX JSON), __golden__/ (golden.test.ts snapshots), __snapshots__/, conformance.test.ts, schema.test.ts, mnx-mapping.test.ts, golden.test.ts, layout.test.ts, pipeline.test.ts, interaction.test.ts, fullness.test.ts, rational.test.ts, key-clef-corpus.test.ts, mnx.ts (test helper)
   notation-react/            # depends on mnx + notation-engine; peer: react ^19
     src/  Notation.tsx  Interaction.tsx  Marks.tsx  index.ts
     styles/notation.css        # default theme, all custom properties
@@ -46,11 +48,11 @@ tools/musicxml-to-mnx/           # offline content pipeline, not a runtime packa
 Dependency direction: `mnx` and `music-theory` are leaves; `mnx-score` ← `mnx`, `music-theory`; `notation-engine` ← `mnx`, `mnx-score`, `music-theory`, `notation-fonts`; `notation-react` ← `notation-engine`, `mnx-score`, `notation-fonts`, `mnx`; `audio` ← `notation-engine` (types only; `mnx` dev-only); {`apps/web`, `apps/app`} consume the packages. The engine resolves glyphs through a font context built from `NotationFont` data (`font.md`), not private font copies. `notation-react` and `audio` never import each other.
 
 - `mnx` — a thin layer over MNX, nothing else: the vendored schema and its 52 official examples, generated `MnxDocument`/`Event`/`Note`/… types, `readMnx()` (version check), `Rational`, `noteValueLength`/`tupletRatio` (MNX note-value and tuplet math, also used by the engine), `assignIds`, scoped positional-id addressing (`element-ids.ts`: `elementIds(doc, scope?)` with `ElementScope {parts?, staves?, maxVoices?}`, default part 0 / staff 1 / 2 voices, ids outside the default scope prefixed `p{n}.`/`st{k}.`; `ElementIds` with `idAt`, `nodeOf`, `mint`, `registerExplicit`, `freeze`, `fork`, `diagnostics` — `mnx.md` "ID rule"), and edit application on the `./edit` entry (`edit/`: `applyIntent(doc, intent, part = 0)`, pure MNX → MNX, `interaction.md`; not re-exported from `.`). No custom score model, no builders in packages (`AGENTS.md`). No dependencies at all besides its own devDependencies (Ajv, `json-schema-to-typescript`, both build/test-time only).
-- `notation-engine` — the font context (`src/font/`, `resolveGlyph` over caller fonts then the style's default font), the layout pipeline reading MNX directly, `query/` (timemap), plus `NotationOptions`. Auto-beaming policy (`beamGroups`, `beatGroupingFor`) is engine-internal, in `layout/beam-policy/`. The root entry exports only what consumers use (`layoutScore`, `hitTest` + `HIT_STAFF_MARGIN`, `previewShapes`, `LayoutResult` and its shape types, `TimeMap`, `NotationOptions`, `ClefSpec`/`KeySpec`/`StaffPitch`/`TimeSpec`, `HitKind`/`HitOptions`/`HitResult`, `PreviewNote`); pipeline stages stay internal. Consumers import each symbol from its owning package; `notation-react` exports only React things. Its output, `LayoutResult`, is the renderer-agnostic contract: a future Vue (or any other) rendering package depends on `mnx` + `notation-engine` exactly as `notation-react` does, and reimplements only the rendering layer.
+- `notation-engine` — the font context (`src/font/`, `resolveGlyph` over caller fonts then the style's default font), the layout pipeline (time, ids and pitch come from the `mnx-score` timeline; `normalize` reads only engraving data from MNX), `query/` (hit-testing, slots, preview, `positionAtTick`, legacy timemap), plus `NotationOptions`. Auto-beaming policy (`beamGroups`, `beatGroupingFor`) is engine-internal, in `layout/beam-policy/`. The root entry exports only what consumers use (`layoutScore`, `positionAtTick`, `hitTest` + `HIT_STAFF_MARGIN`, `previewShapes`, `LayoutResult` and its shape types, `TimeMap`, `NotationOptions`, `ClefSpec`/`KeySpec`/`StaffPitch`/`TimeSpec`, `HitKind`/`HitOptions`/`HitResult`, `PreviewNote`); pipeline stages stay internal. Consumers import each symbol from its owning package; `notation-react` exports only React things. Its output, `LayoutResult`, is the renderer-agnostic contract: a future Vue (or any other) rendering package depends on `mnx` + `notation-engine` exactly as `notation-react` does, and reimplements only the rendering layer.
 - `audio` — sound from a `TimeMap`: pure event builders and `eventsFromTimeMap` on `.`, Web Audio synth and player on `./webaudio` (`audio.md`). Imports engine (types only); no runtime model import.
 - `notation-react` — the React rendering layer. It has no presets export; the app's presets (`apps/app/src/components/presets/`) build plain MNX with the app-private `mnxBuild` helper (`interface.md`).
 - `music-theory` — pitch, interval, chord, scale and key theory; pure, no dependencies. Its `Pitch` is structurally equal to MNX's. It owns the pitch functions that used to live in `mnx` (`parsePitch`, `pitchToMidi`, `STEP_LETTERS`, `stepNumberOf`); engine, audio callers and the app import them from here.
-- `mnx-score` — empty placeholder for the future timeline over MNX.
+- `mnx-score` — the timeline over MNX, built once per document by `buildTimeline(doc, {scope?, divisions?})` (`divisions` defaults to `DEFAULT_DIVISIONS` = 3360). Owns musical time and ids: entries (note, chord, rest, full-measure rest, space; padding rests are synthetic entries `m{i}.v{ordinal}.pad{k}`) with ticks, durations, tuplet, and notes `{id, pitch, midi, tie}`; ties; measures with pickup and capacity; tempo and play-order segments; `activeAt`, `byId`, `writtenTickToSeconds`, `secondsToWrittenTick`; a frozen read-only `ids` (`idAt`, `nodeOf`, `has`, `fork`); diagnostics (`mnx.md`). `performance(timeline, {tempo?})` returns `{events, durationSeconds, tickAtSeconds}` for audio. The engine joins its engraving data to entries by id and never re-parses pitch or time. The default scope (part 0, staff 1, 2 voices) is what layout draws; `scope: 'all'` covers every part, staff and voice, and ids inside the default scope are identical in both.
 - `notation-fonts` — glyph tables per style, committed fonts and their metadata, and the font build/add/verify scripts (`font.md`).
 
 Enforcement: no lint script — the package manifests and tsconfigs are the enforcement. pnpm's strict `node_modules` means a package can only import what its `package.json` declares, so `mnx` (no runtime dependencies) cannot reach the engine (relative-path imports across packages are not blocked by pnpm; there are none, and review keeps it that way), and `notation-engine` (depends on `mnx` only) cannot reach React. Both `tsconfig.json`s exclude `"DOM"` from `lib`, so any DOM or React reference in either is a compile error on the day it's written.
@@ -65,17 +67,20 @@ Each stage is a pure function `(input, options: NotationOptions) => output`, ind
 
 | # | Stage | Adds | Detail |
 | --- | --- | --- | --- |
-| 1 | normalize | resolved clef/key/time per measure | inherits forward; produces diagnostics, never throws |
-| 2 | temporal | onset/duration ticks per element | rational arithmetic, tuplet scaling, fullness policy (`mnx.md`). **Timemap is born here.** |
+| 0 | timeline (`mnx-score`) | entries with ids, ticks, durations, midi; ties, measures (pickup, capacity), tempo and play order | rational arithmetic, tuplet scaling, fullness policy (`mnx.md`); built and memoized by `layoutScore`, ids frozen. **The source of musical time.** |
+| 1 | normalize | resolved clef/key/time per measure, engraving-only records (stems, beams, slurs, breaks) | reads only engraving data from MNX and finds elements through `timeline.ids`; inherits forward; produces diagnostics, never throws |
+| 2 | temporal | one `TemporalElement` per timeline entry | a join of timeline entries and normalized records; no time arithmetic of its own. **Legacy timemap is derived here until Phase F.** |
 | 3 | accidentals | resolved accidental per note | measure-scoped state, key seeding, tie carryover, cautionary rules — `engraving.md` |
 | 4 | grouping | tuplet spans | tie/slur pairing and beam groups both happen in normalize (stage 1), not here — `engraving.md`; vertical (stage 5) only derives each beam group's shared stem direction from the groups normalize already built |
 | 5 | vertical | staff position, stem direction, *provisional* stem length, ledger lines | per-voice stem rules, chord shifting, accidental packing — `engraving.md`. Beamed notes' length is provisional here — stage 9 re-terminates it. |
 | 6 | horizontal | column x, intrinsic widths | spring/rod model — `engraving.md` |
 | 7 | break | system assignment | greedy fill to `options.widthSp` |
 | 8 | justify | final x per column | distribute slack per system |
-| 9 | beams | beam geometry, finalizes beamed-note stem length | runs after justify — slope depends on final x |
+| 9 | beams | beam geometry, finalizes beamed-note stem length | runs after justify — slope depends on final x; beam ids are minted into a per-layout `timeline.ids.fork()`, stable across re-layouts |
 | 10 | curves | tie/slur paths | also post-justify |
-| 11 | emit | `LayoutResult` | flatten to render-ready primitives |
+| 11 | emit | `LayoutResult` | flatten to render-ready primitives, plus `timeline` and `placements` |
+
+Play order comes from the timeline's play-order segments (`query/playorder.ts` is gone). Diagnostics merge in a fixed order: timeline (without `id-collision`) → engine → timeline `id-collision`s → beam-fork `id-collision`s (`mnx.md`).
 
 ## `LayoutResult`
 
@@ -92,8 +97,14 @@ interface LayoutResult {
   elements: Readonly<Record<NoteId, ElementBox>>;
   slots: readonly Slot[];          // interaction.md
   measures: readonly MeasureBox[]; // interaction.md
-  timemap: TimeMap;                 // playback.md
+  timemap: TimeMap;                 // playback.md — legacy, removed in Phase F
+  timeline: Timeline;               // mnx-score; default-scope, read-only — the source of ticks, durations, midi, tempo, play order
+  placements: Placements;           // where each timeline entry and measure landed
   diagnostics: readonly Diagnostic[];   // mnx.md
+}
+interface Placements {
+  entries: Record<NoteId, { x: number; y: number; systemIndex: number }>;   // per timeline entry id, padding rests included
+  measures: { systemIndex: number; x: number; w: number }[];                 // per measure index
 }
 interface SystemBox { index: number; x: number; y: number; w: number; h: number }   // sp, one row of the score
 interface GlyphRun { x: number; y: number; cp: number; cls: string; el?: NoteId }
@@ -120,7 +131,7 @@ interface MeasureBox {
 }
 ```
 
-**Chords:** one `ElementBox` per member note id (one per notehead), not one per chord event. All members of a chord share `x`/`tick`/`durationTicks`/`systemIndex`/`measureIndex`/`eventId`; each has its own `y`/`staffPosition`/`hitBox`/`label`, `kind:'chord'`. No separate chord-level box — matches the one-`<g>`-per-note accessibility rule (`interaction.md`) and keeps `modifyPitch`/`deleteElements` addressable per pitch without a second ID scheme. `NoteId` (`layout/records.ts`) is a plain `string` — the MNX `id` when the document supplies one, else the positional id `mnx.md` documents. `HitResult.part:'notehead'` resolves to the member whose `staffPosition` is nearest the hit point.
+**Chords:** one `ElementBox` per member note id (one per notehead), not one per chord event. All members of a chord share `x`/`tick`/`durationTicks`/`systemIndex`/`measureIndex`/`eventId`; each has its own `y`/`staffPosition`/`hitBox`/`label`, `kind:'chord'`. No separate chord-level box — matches the one-`<g>`-per-note accessibility rule (`interaction.md`) and keeps `modifyPitch`/`deleteElements` addressable per pitch without a second ID scheme. `layout.timeline` and `layout.placements` are the timeline-keyed view: join by id to get an entry's ticks and its drawn position; `positionAtTick(layout, tick)` (`@polyhymnia/notation-engine`) uses them with `layout.systems` for the cursor. `NoteId` (`layout/records.ts`) is a plain `string` — the MNX `id` when the document supplies one, else the positional id `mnx.md` documents. `HitResult.part:'notehead'` resolves to the member whose `staffPosition` is nearest the hit point.
 
 Beams are a 4-point `PathShape` (`cls: 'beam'`, `el` = the beam's own id — `mnx.md`), not a rotated `RectShape`: an exact parallelogram whose near edge is the line every re-terminated stem in it touches (`engraving.md` "Beaming").
 

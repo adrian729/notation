@@ -17,7 +17,7 @@ import {
   previewShapes,
 } from '@polyhymnia/notation-engine';
 import { performance } from '@polyhymnia/mnx-score';
-import type { Timeline } from '@polyhymnia/mnx-score';
+import type { Performance, Timeline } from '@polyhymnia/mnx-score';
 import { fontFaceCss } from '@polyhymnia/notation-fonts';
 import type { GlyphStyleName, NotationFont } from '@polyhymnia/notation-fonts';
 import type {
@@ -287,9 +287,20 @@ export namespace Notation {
   export const Marks = MarksChild;
 }
 
+const performances = new WeakMap<Timeline, Performance>();
+
+function performanceOf(timeline: Timeline): Performance {
+  let performed = performances.get(timeline);
+  if (!performed) {
+    performed = performance(timeline);
+    performances.set(timeline, performed);
+  }
+  return performed;
+}
+
 function declaredTick(timeline: Timeline, position: { tick: number } | { seconds: number } | undefined): number {
   if (!position) return 0;
-  return 'tick' in position ? position.tick : performance(timeline).tickAtSeconds(position.seconds);
+  return 'tick' in position ? position.tick : performanceOf(timeline).tickAtSeconds(position.seconds);
 }
 
 function applyTick(

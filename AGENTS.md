@@ -18,7 +18,7 @@
 - Playback builders (`melodic`, `harmonic`) take MIDI numbers; audio never parses pitch strings.
 - `.` entry: no DOM, no Web Audio; only `./webaudio` touches `AudioContext`.
 - No rAF, `setTimeout` or `setInterval` in audio. The app owns the UI clock.
-- Sound derives only from `TimeMap` (`entries`, `tickToSeconds`, `playOrder`, `writtenTickAtSeconds`); audio never reads MNX documents.
+- Sound derives only from the mnx-score timeline / `performance()` events; audio never reads MNX documents. `eventsFromTimeMap` is legacy until the `TimeMap` is removed.
 - Third-party audio libs or samples only behind `Instrument`, pinned, own entry; ask before installing.
 - `NoteEvent.id` is an MNX id; quiz data stays in the app.
 - Audio docs: `notation/audio.md`.
@@ -27,13 +27,13 @@
 - Built: hit-testing, insertion slots, `applyIntent` (`notation/interaction.md`). Design every new feature so interaction keeps working on it; never take a shortcut interaction would have to undo.
 - Targets ear-training exercises (dictation, click-what-you-heard, error detection), not a sheet editor; editor features (drag pitch, palette, free multi-voice entry, measure/meter edits, copy/paste) are deferred, different scope.
 - `notation-*` packages never produce sound and never run clocks/timers/rAF/animations-as-time; the app owns time and passes position, notation only shows.
-- Every drawn element keeps its MNX/positional id and a hitbox in `LayoutResult`; ids stay stable when an edited document is re-laid out.
+- Every drawn element keeps its MNX/positional id and a hitbox in `LayoutResult`; ids stay stable when an edited document is re-laid out. Beam ids come from a per-layout fork of the frozen timeline ids.
 - Derived notation (beams, tuplet brackets, accidentals, padding rests) is recomputed from MNX on each layout or produced by a pure MNX → MNX function; no state that exists only after rendering.
 
 # Score format
 - MNX (w3c-cg/mnx) is the only score format. Public APIs take and return plain MNX. Never add private fields or `_x` extensions to documents.
 - No custom score model, builder API, or internal "MNX + additions" representation in packages; app-private helpers that return plain MNX (`mnxBuild`) are allowed. Layout structures derived from MNX stay inside `notation-engine`.
-- Only `layout/normalize*.ts` in `notation-engine` reads MNX documents; later stages consume its flat records.
+- Only `mnx-score` (timeline: time, ids, pitch → midi) and `notation-engine` `layout/normalize*.ts` (engraving only) read MNX documents; later stages consume the timeline and normalized records; addressing comes from `mnx`.
 - Unsupported MNX → render what's possible + `mnx-unsupported` diagnostic; never throw.
 - Elements apps reference (playback highlight, quiz lookups, clicks) must carry MNX `id`s; the engine synthesizes positional ids otherwise.
 - App/quiz data about notes lives in the app, keyed by note id, never in the MNX document.
@@ -46,6 +46,11 @@
 - Default id scope (part 0, staff 1, 2 voices) keeps its ids unchanged; ids outside it are prefixed `p{n}.`/`st{k}.`. Never change default-scope id shapes.
 - Edit operations (`applyIntent`) live at `@polyhymnia/mnx/edit`, not `.`; pure MNX → MNX functions that preserve untouched content.
 - Beat grouping (`beamGroups`, `beatGroupingFor`) lives in `notation-engine` `src/layout/beam-policy/`, engine-internal; never export it from `mnx`.
+
+# mnx-score
+- Owns musical time and ids for layout and playback: `buildTimeline(doc, {scope?, divisions?})` → `Timeline`.
+- Engine and audio consumers never re-derive time, pitch → midi or ids from MNX.
+- Playback events come from `performance(timeline, {tempo?})`; whole-score playback uses `buildTimeline(doc, {scope: 'all'})`; cursor sync uses `layout.timeline`.
 
 # music-theory
 - Pure, no dependencies. Its `Pitch` stays structurally equal to MNX's.

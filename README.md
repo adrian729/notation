@@ -41,11 +41,11 @@ The interesting part is the notation stack: it renders MNX to glyphs in the brow
 |---|---|
 | `@polyhymnia/mnx` | Pinned MNX schema with generated types, plus pitch, rational and duration maths. |
 | `@polyhymnia/music-theory` | Pitch, interval, chord, scale and key theory. Pure, no dependencies. |
-| `@polyhymnia/mnx-score` | Placeholder for the future timeline over MNX. |
+| `@polyhymnia/mnx-score` | The timeline over MNX: musical time, stable ids, pitch to MIDI, ties, tempo and play order, plus `performance()` events for playback. |
 | `@polyhymnia/notation-fonts` | Glyph tables, committed notation fonts and their build, add and verify scripts. |
-| `@polyhymnia/notation-engine` | Renderer-agnostic layout: MNX → flat records → positioned glyphs, plus hit-testing and a `TimeMap` for playback. No DOM. |
+| `@polyhymnia/notation-engine` | Renderer-agnostic layout: MNX → timeline → engraving records → positioned glyphs, plus hit-testing and cursor positions. No DOM. |
 | `@polyhymnia/notation-react` | React components that draw an engine `LayoutResult`, with playback highlight and answer entry. |
-| `@polyhymnia/audio` | Derives sound from a `TimeMap`. Only its `./webaudio` and `./sampler` entries touch Web Audio. |
+| `@polyhymnia/audio` | Derives sound from the timeline's `performance()` events. Only its `./webaudio` and `./sampler` entries touch Web Audio. |
 | `@polyhymnia/musicxml-to-mnx` | Offline CLI that converts MusicXML to committed MNX, validated against the pinned schema. |
 | `@polyhymnia/app` | The ear-training product SPA (Vite, React, TanStack Router, Tailwind). |
 | `@polyhymnia/web` | The notation playground used to develop the renderer. |
