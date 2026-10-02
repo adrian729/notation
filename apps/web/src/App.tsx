@@ -27,6 +27,7 @@ import twoVoices from './scores/two-voices.mnx.json';
 import ties from './scores/ties.mnx.json';
 import slurs from './scores/slurs.mnx.json';
 import clefChangesCourtesy from './scores/clef-changes-courtesy.mnx.json';
+import grandStaff from './scores/grand-staff.mnx.json';
 import { ChangesToggle, FontNotation } from './font.js';
 
 const MELODY = melody as MnxDocument;
@@ -41,6 +42,7 @@ const TWO_VOICES = twoVoices as MnxDocument;
 const TIES = ties as MnxDocument;
 const SLURS = slurs as MnxDocument;
 const CLEF_CHANGES_COURTESY = clefChangesCourtesy as MnxDocument;
+const GRAND_STAFF = grandStaff as MnxDocument;
 
 const KEY_EXAMPLES: readonly { label: string; doc: MnxDocument }[] = [
   { label: 'C major — no accidentals', doc: keyCMajor as MnxDocument },
@@ -179,6 +181,18 @@ export function App() {
         caption="Beat 1: a second (v0 shifts right). Beat 2: a unison (no shift). Beat 3: simultaneous rests, offset apart. Beat 4: independent rhythm, per-voice beaming."
       >
         {(onLayout) => <FontNotation score={TWO_VOICES} onLayout={onLayout} />}
+      </Example>
+
+      <h2>Grand staff</h2>
+      <p className="note">
+        A part with <code>staves: 2</code> lays out as a grand staff: a brace and a system line on the left, barlines
+        through both staves, notes aligned across them by time. Each staff keeps its own clef and up to two voices.
+      </p>
+      <Example
+        title="Treble and bass staves"
+        caption="F major, 3/4: right-hand melody with a second voice in bar 2, left-hand broken chords and a second voice in bar 3"
+      >
+        {(onLayout) => <FontNotation score={GRAND_STAFF} onLayout={onLayout} />}
       </Example>
 
       <h2>Ties</h2>
