@@ -85,8 +85,8 @@ export function App() {
 
       <h2>Playback</h2>
       <p className="note">
-        The same melody played through <code>@polyhymnia/audio</code>: the app builds the clip from the layout timeline
-        and drives the cursor from its own animation-frame loop.
+        The same melody played through <code>@polyhymnia/web-audio</code>: the app builds the clip from the layout
+        timeline and drives the cursor from its own animation-frame loop.
       </p>
       <Example
         title="F major, 3/4 — play whole score"
@@ -204,7 +204,7 @@ export function App() {
       <p className="note">
         Three exercises built on the answer-entry primitives: hit-testing through <code>Notation.Interaction</code>,
         per-note state through <code>Notation.Marks</code>, and document edits through <code>applyIntent</code>. All
-        sound comes from <code>@polyhymnia/audio</code> — the notation packages never produce audio.
+        sound comes from <code>@polyhymnia/web-audio</code> — the notation packages never produce audio.
       </p>
       <section className="exercises">
         <NoteHeard />

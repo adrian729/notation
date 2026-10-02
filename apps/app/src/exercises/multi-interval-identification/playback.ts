@@ -1,4 +1,4 @@
-import type { NoteEvent } from '@polyhymnia/audio';
+import type { NoteEvent } from '@polyhymnia/web-audio';
 import { toneEvents } from '../shared/playback.js';
 import type { Tempo } from '../shared/playing.js';
 import type { Question } from './generator.js';

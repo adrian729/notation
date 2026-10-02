@@ -1,5 +1,5 @@
-import { shift } from '@polyhymnia/audio';
-import type { NoteEvent } from '@polyhymnia/audio';
+import { shift } from '@polyhymnia/web-audio';
+import type { NoteEvent } from '@polyhymnia/web-audio';
 import { toneEvents } from '../shared/playback.js';
 import { TEMPO_NOTE_DURATION, type Tempo } from '../shared/playing.js';
 

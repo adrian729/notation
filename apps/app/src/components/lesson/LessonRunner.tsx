@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
-import type { NoteEvent } from '@polyhymnia/audio';
+import type { NoteEvent } from '@polyhymnia/web-audio';
 import { TimerOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

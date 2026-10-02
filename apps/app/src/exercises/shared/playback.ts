@@ -1,5 +1,5 @@
-import { harmonic, melodic } from '@polyhymnia/audio';
-import type { NoteEvent } from '@polyhymnia/audio';
+import { harmonic, melodic } from '@polyhymnia/web-audio';
+import type { NoteEvent } from '@polyhymnia/web-audio';
 import { midiOf } from '@polyhymnia/music-theory';
 import { TEMPO_NOTE_DURATION, type Tempo } from './playing.js';
 

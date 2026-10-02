@@ -10,7 +10,7 @@ Files:
 - `architecture.md` — package structure, layout pipeline, coordinate system.
 - `engraving.md` — staff, stems, beaming, tuplets, spacing/justification, key/time signatures, accidentals, ties, slurs, rests, ledger lines, barlines, two-voice layout.
 - `interaction.md` — hit-testing, click-to-edit, the intent system, edit application.
-- `playback.md` — timemap, tempo, playback-position API, cursor rendering.
+- `playback.md` — the timeline as playback source, `performance()`, tempo, playback-position API, cursor rendering.
 - `roadmap.md` — testing strategy, phased build plan, LOC estimate, open questions.
 - `out-of-scope.md` — symbols/features deliberately not covered: what's blocked on infrastructure that doesn't exist yet vs. what's outside an ear-training app's domain entirely.
 
@@ -38,7 +38,7 @@ In scope — full engraving, not a reduced subset:
 | Multi-measure | Any count, greedy system breaking | Done |
 | Multi-voice | 2 voices per staff | Done |
 | Interaction | Hit-testing, slots, `applyIntent({type:'setPitches'})` — ear-training answer entry, not a sheet editor (editor features deferred, `interaction.md`) | Done for exercise use |
-| Playback position | Discrete highlight (`mode:'notes'`) + exported timemap; continuous cursor (`mode:'cursor'`, app-driven via `setPlaybackTick`) | Done |
+| Playback position | Discrete highlight (`mode:'notes'`) + exported timeline; continuous cursor (`mode:'cursor'`, app-driven via `setPlaybackTick`) | Done |
 | Accessibility | aria-label per note, text alternative | Done |
 | Theming | CSS custom properties | Done |
 

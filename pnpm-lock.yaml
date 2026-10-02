@@ -23,9 +23,6 @@ importers:
       '@fontsource-variable/texturina':
         specifier: 5.3.0
         version: 5.3.0
-      '@polyhymnia/audio':
-        specifier: workspace:*
-        version: link:../../packages/audio
       '@polyhymnia/mnx':
         specifier: workspace:*
         version: link:../../packages/mnx
@@ -41,6 +38,9 @@ importers:
       '@polyhymnia/notation-react':
         specifier: workspace:*
         version: link:../../packages/notation-react
+      '@polyhymnia/web-audio':
+        specifier: workspace:*
+        version: link:../../packages/web-audio
       '@tanstack/react-router':
         specifier: ^1.170.0
         version: 1.170.39(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -99,9 +99,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@polyhymnia/audio':
-        specifier: workspace:*
-        version: link:../../packages/audio
       '@polyhymnia/mnx':
         specifier: workspace:*
         version: link:../../packages/mnx
@@ -117,6 +114,9 @@ importers:
       '@polyhymnia/notation-react':
         specifier: workspace:*
         version: link:../../packages/notation-react
+      '@polyhymnia/web-audio':
+        specifier: workspace:*
+        version: link:../../packages/web-audio
       react:
         specifier: ^19.0.0
         version: 19.3.0
@@ -144,15 +144,6 @@ importers:
         version: 6.4.3(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.33.0)
       vitest:
         specifier: ^3.2.7
-        version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
-
-  packages/audio:
-    devDependencies:
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-      vitest:
-        specifier: ^3.0.0
         version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
 
   packages/mnx:
@@ -283,6 +274,15 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.3.0(react@19.3.0)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@26.6.2)(jiti@2.7.0)(jsdom@25.0.1)(lightningcss@1.33.0)
+
+  packages/web-audio:
+    devDependencies:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3

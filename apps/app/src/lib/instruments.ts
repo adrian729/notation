@@ -1,4 +1,4 @@
-import type { Sample } from '@polyhymnia/audio/sampler';
+import type { Sample } from '@polyhymnia/web-audio/sampler';
 import { midiOf } from '@polyhymnia/music-theory';
 
 export const INSTRUMENTS = [

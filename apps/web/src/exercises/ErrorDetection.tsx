@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NotationHandle, NotationIntent } from '@polyhymnia/notation-react';
 import type { MnxDocument, NoteId } from '@polyhymnia/mnx';
-import { melodic } from '@polyhymnia/audio';
+import { melodic } from '@polyhymnia/web-audio';
 import { midiOf } from '@polyhymnia/music-theory';
 import { createSound, midiOfId } from '../sound.js';
 import score from '../scores/exercise-error-detection.mnx.json';

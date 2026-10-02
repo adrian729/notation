@@ -1,7 +1,7 @@
-import { createAudioContext, createSharedPlayer, defaultInstrument, unlockAudio } from '@polyhymnia/audio/webaudio';
-import type { Playback, Player } from '@polyhymnia/audio/webaudio';
-import { loadSampler } from '@polyhymnia/audio/sampler';
-import type { Instrument, NoteEvent } from '@polyhymnia/audio';
+import { createAudioContext, createSharedPlayer, defaultInstrument, unlockAudio } from '@polyhymnia/web-audio/webaudio';
+import type { Playback, Player } from '@polyhymnia/web-audio/webaudio';
+import { loadSampler } from '@polyhymnia/web-audio/sampler';
+import type { Instrument, NoteEvent } from '@polyhymnia/web-audio';
 import { isInstrumentId, sampleList, type InstrumentId } from './instruments';
 import { readJson, writeJson } from './storage';
 

@@ -283,6 +283,14 @@ Integration C:
 - **F1.** Owns `packages/notation-engine/src/query/timemap.ts` and `playorder.ts` (delete), and `fullness.test.ts`. Remove the old timemap; `fullness.test.ts` stops importing internals.
 - **F2.** Owns `packages/audio/src/**` and `packages/audio/test/**`. Drop `eventsFromTimeMap`; `Clip` loses `tickAtSeconds`. Rewrite `clip`/`builders` against `buildTimeline` and move them to mnx-score; the coordinator commits them, to avoid a workspace cycle.
 
+**Deviations (as executed).**
+- The MIDI clip builders (`melodic`, `harmonic`, `concat`, `shift`, `transpose`) stay in `web-audio`: they take MIDI numbers only, so `web-audio` has no workspace dependencies and nothing moved to `mnx-score`. Apps map `performance()` events to `NoteEvent`s.
+- Phase E had no separate contract commit: E1 defined `layout.timeline`, `layout.placements` and `positionAtTick` itself, and E2 started after E1 merged.
+- Integration D kept `mnxconverter` and its patch until D2 merged, then removed them.
+- `packages/audio` was renamed to `packages/web-audio` (`@polyhymnia/web-audio`) in integration F.
+- Phase G ran as local prep only (metadata, changesets, `npm pack` smoke installs, local `git subtree split` branches); publishing, repo creation, pushes and CI are the user's.
+- Phase H's guard lives in this repo only until the split repos exist; the user copies `.githooks/` and the `prepare` script into each new repo.
+
 **Phase G: split and publish.** Coordinator and user, sequential, each publish and each first push user-approved.
 - Every package gets `repository`, `publishConfig.access: public`, and has `private` removed.
 - Add changesets.

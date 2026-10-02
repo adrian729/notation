@@ -45,7 +45,6 @@ Renders the `<svg>`, computes layout (`useMemo`, keyed on `score` identity), pro
 ```ts
 interface NotationHandle {
   getLayout(): LayoutResult;
-  getTimeMap(): TimeMap;                          // legacy, removed in Phase F
   getTimeline(): Timeline;                        // @polyhymnia/mnx-score — layout.timeline: ticks, durations, midi, tempo, play order
   setPlaybackTick(tick: number): void;
   exportSVG(): string;
@@ -53,7 +52,7 @@ interface NotationHandle {
 }
 ```
 
-Implemented in `notation-react`: `getLayout`, `getTimeMap`, `getTimeline` (the layout's default-scope timeline; feed it to `performance()` from `@polyhymnia/mnx-score` for sound), `exportSVG`, `setPlaybackTick` (drives note highlighting from `timemap.activeAt(tick)` and, when `mode:'cursor'` is mounted, moves the cursor via `timemap.positionAtTick(tick)`; imperatively, no re-render, no clock: the app calls it each frame; the last imperative tick survives parent re-renders until layout or mode changes; ignored in `notes` and `off` modes), `focus` (focuses the element `<g>` by id via the same ref map `setPlaybackTick` uses; no-op if the id has no on-screen element). Cursor and playback positions: `layout.placements` (`{entries: Record<id, {x, y, systemIndex}>, measures: {systemIndex, x, w}[]}`) gives where each timeline entry and measure was drawn, and `positionAtTick(layout, tick)` (from `@polyhymnia/notation-engine`) turns a written tick into `{systemIndex, x, yTop, yBottom}` for app-side scroll-follow or custom cursors. Hit-testing isn't a handle method — callers import `hitTest` from `@polyhymnia/notation-engine` and call `hitTest(handle.getLayout(), p, opts)` directly (`interaction.md`).
+Implemented in `notation-react`: `getLayout`, `getTimeline` (the layout's default-scope timeline; feed it to `performance()` from `@polyhymnia/mnx-score` for sound), `exportSVG`, `setPlaybackTick` (drives note highlighting from `layout.timeline.activeAt(tick)` and, when `mode:'cursor'` is mounted, moves the cursor via `positionAtTick(layout, tick)`; imperatively, no re-render, no clock: the app calls it each frame; the last imperative tick survives parent re-renders until layout or mode changes; ignored in `notes` and `off` modes), `focus` (focuses the element `<g>` by id via the same ref map `setPlaybackTick` uses; no-op if the id has no on-screen element). Cursor and playback positions: `layout.placements` (`{entries: Record<id, {x, y, systemIndex}>, measures: {systemIndex, x, w}[]}`) gives where each timeline entry and measure was drawn, and `positionAtTick(layout, tick)` (from `@polyhymnia/notation-engine`) turns a written tick into `{systemIndex, x, yTop, yBottom}` for app-side scroll-follow or custom cursors. Hit-testing isn't a handle method — callers import `hitTest` from `@polyhymnia/notation-engine` and call `hitTest(handle.getLayout(), p, opts)` directly (`interaction.md`).
 
 ## Options
 

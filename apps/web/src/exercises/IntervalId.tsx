@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MnxDocument } from '@polyhymnia/mnx';
-import { melodic } from '@polyhymnia/audio';
+import { melodic } from '@polyhymnia/web-audio';
 import { midiOf, parsePitch } from '@polyhymnia/music-theory';
 import { createSound } from '../sound.js';
 import { FontNotation } from '../font.js';

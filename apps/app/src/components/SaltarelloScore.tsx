@@ -3,7 +3,7 @@ import { Notation } from '@polyhymnia/notation-react';
 import type { NotationHandle, PlaybackView } from '@polyhymnia/notation-react';
 import type { MnxDocument } from '@polyhymnia/mnx';
 import { performance } from '@polyhymnia/mnx-score';
-import type { Playback } from '@polyhymnia/audio/webaudio';
+import type { Playback } from '@polyhymnia/web-audio/webaudio';
 import { createSound } from '@/lib/sound';
 
 const CURSOR_VIEW: PlaybackView = { mode: 'cursor', highlightActive: true };

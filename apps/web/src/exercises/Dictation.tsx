@@ -3,7 +3,7 @@ import type { NotationIntent } from '@polyhymnia/notation-react';
 import { applyIntent } from '@polyhymnia/mnx/edit';
 import type { MnxDocument, NoteId, Pitch } from '@polyhymnia/mnx';
 import type { PreviewNote } from '@polyhymnia/notation-engine';
-import { melodic } from '@polyhymnia/audio';
+import { melodic } from '@polyhymnia/web-audio';
 import { midiOf, parsePitch } from '@polyhymnia/music-theory';
 import { createSound } from '../sound.js';
 import score from '../scores/exercise-dictation.mnx.json';

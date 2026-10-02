@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { NoteEvent } from '@polyhymnia/audio';
+import type { NoteEvent } from '@polyhymnia/web-audio';
 import { intervalById, intervalIdDisplayName, type IntervalId } from '@polyhymnia/music-theory';
 import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';

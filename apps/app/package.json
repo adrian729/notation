@@ -14,7 +14,7 @@
     "@fontsource-variable/eb-garamond": "5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource-variable/texturina": "5.3.0",
-    "@polyhymnia/audio": "workspace:*",
+    "@polyhymnia/web-audio": "workspace:*",
     "@polyhymnia/mnx": "workspace:*",
     "@polyhymnia/mnx-score": "workspace:*",
     "@polyhymnia/music-theory": "workspace:*",

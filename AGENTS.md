@@ -1,6 +1,6 @@
 # Modules
-- Each package (`mnx`, `music-theory`, `mnx-score`, `notation-fonts`, `notation-engine`, `notation-react`, `audio`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-fonts` is the font workspace package (glyph tables, committed fonts, build/add/verify scripts); `font:sync` copies only the two default woff2 into `notation-react/styles/`.
-- Dependency direction only: `mnx` and `music-theory` are leaves; `mnx-score` ← `mnx`, `music-theory`; `notation-engine` ← `mnx`, `mnx-score`, `music-theory`, `notation-fonts`; `notation-react` ← `notation-engine`, `mnx-score`, `notation-fonts`, `mnx`; `audio` ← `notation-engine` (types only) and `mnx`; tools use `mnx` only (no engine). Never import upward or sideways.
+- Each package (`mnx`, `music-theory`, `mnx-score`, `notation-fonts`, `notation-engine`, `notation-react`, `web-audio`, `tools/musicxml-to-mnx`) is an isolated module, publishable as its own npm package later without moving code. `notation-fonts` is the font workspace package (glyph tables, committed fonts, build/add/verify scripts); `font:sync` copies only the two default woff2 into `notation-react/styles/`.
+- Dependency direction only: `mnx`, `music-theory`, `notation-fonts` and `web-audio` are leaves; `mnx-score` ← `mnx`, `music-theory`; `notation-engine` ← `mnx`, `mnx-score`, `music-theory`, `notation-fonts`; `notation-react` ← `notation-engine`, `mnx-score`, `notation-fonts`, `mnx`; tools use `mnx` only (no engine). Never import upward or sideways.
 - Cross-package imports go through the package name and entry points declared in its `package.json` `exports`, never relative paths or deep `src/` paths. Every cross-package import must be declared in that package's `package.json`.
 - `mnx` and `notation-engine`: no DOM, no React, no Node APIs (`lib` excludes DOM). Renderer-specific code lives only in a renderer package (`notation-react`, future others).
 - New concern that doesn't fit an existing package's role → new package, not a folder inside another.
@@ -14,11 +14,11 @@
 - `apps/web` (`@polyhymnia/web`) is the notation demo/playground, not the product app.
 
 # Audio
-- `audio` imports engine (types only), never react, never `mnx` at runtime. Direction `mnx ← engine ← {react, audio}`.
+- `web-audio` has no workspace dependencies; it never imports `mnx`, `mnx-score`, engine or react.
 - Playback builders (`melodic`, `harmonic`) take MIDI numbers; audio never parses pitch strings.
-- `.` entry: no DOM, no Web Audio; only `./webaudio` touches `AudioContext`.
+- `.` entry: no DOM, no Web Audio; only `./webaudio` and `./sampler` touch Web Audio.
 - No rAF, `setTimeout` or `setInterval` in audio. The app owns the UI clock.
-- Sound derives only from the mnx-score timeline / `performance()` events; audio never reads MNX documents. `eventsFromTimeMap` is legacy until the `TimeMap` is removed.
+- Score sound derives only from mnx-score `performance()` events, mapped to `NoteEvent`s by the app; `web-audio` never reads MNX documents or timelines.
 - Third-party audio libs or samples only behind `Instrument`, pinned, own entry; ask before installing.
 - `NoteEvent.id` is an MNX id; quiz data stays in the app.
 - Audio docs: `notation/audio.md`.

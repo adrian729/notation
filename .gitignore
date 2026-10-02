@@ -10,7 +10,7 @@ packages/music-theory/dist/
 packages/mnx-score/dist/
 packages/notation-fonts/dist/
 packages/notation-engine/dist/
-packages/audio/dist/
+packages/web-audio/dist/
 tools/*/dist/
 
 packages/notation-fonts/.venv

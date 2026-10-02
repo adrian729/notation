@@ -1,6 +1,6 @@
-import { createAudioContext, createSharedPlayer, unlockAudio } from '@polyhymnia/audio/webaudio';
-import type { Playback, Player } from '@polyhymnia/audio/webaudio';
-import type { NoteEvent } from '@polyhymnia/audio';
+import { createAudioContext, createSharedPlayer, unlockAudio } from '@polyhymnia/web-audio/webaudio';
+import type { Playback, Player } from '@polyhymnia/web-audio/webaudio';
+import type { NoteEvent } from '@polyhymnia/web-audio';
 import { midiOf, type PitchLike } from '@polyhymnia/music-theory';
 import type { NoteId } from '@polyhymnia/mnx';
 import type { Timeline } from '@polyhymnia/mnx-score';

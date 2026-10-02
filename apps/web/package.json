@@ -11,7 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@polyhymnia/audio": "workspace:*",
+    "@polyhymnia/web-audio": "workspace:*",
     "@polyhymnia/mnx": "workspace:*",
     "@polyhymnia/mnx-score": "workspace:*",
     "@polyhymnia/music-theory": "workspace:*",

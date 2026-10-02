@@ -1,4 +1,4 @@
-import type { NoteEvent } from '@polyhymnia/audio';
+import type { NoteEvent } from '@polyhymnia/web-audio';
 import { chordById, type ChordId } from '@polyhymnia/music-theory';
 import { NotesReveal } from '@/components/presets/NotesReveal';
 import { cn } from '@/lib/utils';
