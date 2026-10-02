@@ -63,7 +63,7 @@ Research date 2026-09-30. Nothing bought, downloaded or installed.
 - $50 each; licence says the font must "not be passed along to further users". A webfont exposes the file to every visitor, so web embedding needs explicit permission from Duffin.
 - Mac keyboard-mapped, no SMuFL, no metadata: needs a mapping + manual metrics (see above).
 - Rebuilding the glyphs into our own subset font is modification + redistribution: also needs permission.
-- Public repo: same rule as paid text fonts (`docs/fonts.md`): keep files gitignored, inject in CI.
+- Public repo: same rule as paid text fonts (`docs/fonts.md` in github.com/adrian729/app): keep files gitignored, inject in CI.
 
 ### Paid SMuFL fonts
 

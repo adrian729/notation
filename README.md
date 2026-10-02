@@ -1,9 +1,4 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/readme/banner-dark.png">
-    <img alt="Polyhymnia — ear training for musicians: the difference between reading music and hearing it" src="docs/readme/banner-light.png" width="100%">
-  </picture>
-</p>
+# Polyhymnia notation
 
 <p align="center">
   <a href="https://github.com/adrian729/notation/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/adrian729/notation/actions/workflows/ci.yml/badge.svg"></a>
@@ -18,7 +13,7 @@
   <a href="notation/README.md">Notation renderer design</a>
 </p>
 
-Polyhymnia trains the part of musicianship that reading notation alone does not: hearing what is written. Short exercises play real scores and ask you to name, place or correct what you heard — no abstract interval buttons, no MIDI. It is also the proving ground for a from-scratch music engraver that reads [MNX](https://w3c-cg.github.io/mnx/), the emerging W3C score format.
+MNX music notation for the browser: a from-scratch engraver that reads [MNX](https://w3c-cg.github.io/mnx/), the emerging W3C score format, renders it to SVG glyphs with no server and no general-purpose score model, and supports answer entry and playback highlighting. It powers the [Polyhymnia ear-training app](https://github.com/adrian729/app).
 
 ## Repositories
 
@@ -60,7 +55,7 @@ pnpm dev         # notation playground (apps/web)
 ## Documentation
 
 - [`notation/README.md`](notation/README.md) — renderer design: public React API, supported MNX subset, layout pipeline, engraving rules, interaction, playback, roadmap.
-- [`docs/`](docs/) — exercise specifications, the ear-training landscape survey, and font and illustration notes.
+- [`docs/`](docs/) — music font research and the package-split plan. Exercise specs and ear-training research live in the [app repo](https://github.com/adrian729/app/tree/main/docs).
 
 ## License
 
