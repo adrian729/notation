@@ -30,9 +30,9 @@
     "font:sync": "node scripts/sync.mjs"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
-    "@types/node": "^26.6.2"
+    "@types/node": "^26.6.3",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
   },
   "license": "MIT",
   "repository": {
