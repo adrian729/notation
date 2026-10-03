@@ -1,5 +1,11 @@
 # @polyhymnia/mnx
 
+## 0.3.0
+
+### Minor Changes
+
+- 9216ea7: Support grace-note ids and zero-duration timeline entries, cue-size engraving with explicit grace beams, and playback that steals from adjacent events or inserts time. Preserve following event ids and tied-note playback, and report grace editing as unsupported.
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,5 +1,17 @@
 # @polyhymnia/mnx-score
 
+## 0.3.0
+
+### Minor Changes
+
+- 9216ea7: Support grace-note ids and zero-duration timeline entries, cue-size engraving with explicit grace beams, and playback that steals from adjacent events or inserts time. Preserve following event ids and tied-note playback, and report grace editing as unsupported.
+- 9f0c293: Add separate articulation, fermata, dynamic and hairpin hitboxes with stable ids and keyboard selection. Reserve articulation space beside ties and clear stacked accents from neighboring notes. Sustain fermatas using a shared playback clock that keeps voices, repeats, tempo changes and the cursor synchronized.
+
+### Patch Changes
+
+- Updated dependencies [9216ea7]
+  - @polyhymnia/mnx@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
