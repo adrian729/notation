@@ -16,7 +16,7 @@ Font choice is data, not lock-in: Leland/Petaluma are SMuFL-compliant at the sam
 
 ## License obligation
 
-OFL-FAQ 2.6: subsetting a web font is modification; a modified font "would not normally allow the use of RFNs." Our 94-glyph subset does not preserve Functional Equivalence (the full character inventory), so:
+OFL-FAQ 2.6: subsetting a web font is modification; a modified font "would not normally allow the use of RFNs." Our 117-glyph subset does not preserve Functional Equivalence (the full character inventory), so:
 
 - The subsetted font ships under a **renamed family** — CFF `FontName`/`FullName`/`FamilyName` + name IDs 1/4/6/16 rewritten to `PolyhymniaNotation` at build time. `pyftsubset --name-IDs=''` empties the `name` table but leaves the CFF top-dict names (`Bravura`) unchanged — the rename needs an explicit build step or this is a silent compliance bug.
 - Ship `OFL.txt` + copyright/authorship notice + upstream pointer alongside.
@@ -24,7 +24,7 @@ OFL-FAQ 2.6: subsetting a web font is modification; a modified font "would not n
 
 Our reading of the FAQ, not legal advice — flagged in `roadmap.md` open questions.
 
-## Glyph set — 94 glyphs, full scope
+## Glyph set — 117 glyphs, full scope
 
 Staff lines, ledger lines, barlines (the lines themselves) and stems are **not glyphs** — drawn as `<rect>`, thickness from `engravingDefaults` (`architecture.md`); they need exact-length stretching (justification), which a glyph can't do. Beams are likewise not a glyph, but a `<path>` parallelogram (`architecture.md`'s `PathShape`) rather than a rect, since they slope. Repeat-barline dots ARE a glyph (below) — a fixed shape, no stretching needed.
 
@@ -47,10 +47,13 @@ Staff lines, ledger lines, barlines (the lines themselves) and stems are **not g
 | Articulations (optional) | E4AA/E4AB staccatissimoStroke, ED40/ED41 softAccent | 4 |
 | Fermatas | E4C0 fermataAbove, E4C1 fermataBelow | 2 |
 | Dynamics | E520–E526 p, m, f, r, s, z, n | 7 |
+| Dynamics, precomposed (optional) | E527–E53D pppppp…pp, mp, mf, pf, ff…ffffff, fp, fz, sf, sfp, sfpp, sfz, sfzp, sffz, rf, rfz | 23 |
 | Grace slashes (optional) | E564 graceNoteSlashStemUp, E565 graceNoteSlashStemDown | 2 |
-| **Total** | | **94** |
+| **Total** | | **117** |
 
 `augmentationDot` is `U+E1E7` — not `U+E4E5` (that's `restQuarter`, part of the rest block).
+
+The precomposed dynamics are drawn instead of their letters whenever a value has one (`engraving.md` "Dynamics and hairpins"): each glyph is placed on its own, so the font's kerning between letters never applies, and spelled `f f` sits visibly looser than the designed `ff`. They are optional; a font without them falls back to the style's default font, like any optional glyph.
 
 The three clef-change glyphs draw clef changes at a barline and mid-measure (`engraving.md` "Clef changes"); octave clefs keep their full-size glyph.
 
@@ -64,12 +67,13 @@ The three clef-change glyphs draw clef changes at a barline and mid-measure (`en
 | 57 | 9,156 B | Full scope minus `repeatDot` (measured before that glyph was added to the subset) |
 | 61 | 9,448 B | Full scope minus the 3 clef-change glyphs — measured at the Phase 0 build, before they were added |
 | 64 | 10,136 B | Full scope incl. the 3 clef-change glyphs |
-| 94 | 12,116 B | + brace, articulations, fermatas, dynamics, grace slashes — current build |
+| 94 | 12,116 B | + brace, articulations, fermatas, dynamics, grace slashes |
+| 117 | 12,936 B | + precomposed dynamics — current build |
 | 88 | 10,984 B | + articulations, fermatas, dynamics, keyboard pedal marks (E650 block), brace, X-notehead — headroom for deferred features |
 
-Metadata (advance widths, bboxes, anchors) filtered to the 94-glyph set: 10,536 B raw / **2,634 B gzipped**. Full `Bravura.json` is 1,256,995 B — unfiltered metadata costs >100× more than the font.
+Metadata (advance widths, bboxes, anchors) filtered to the 117-glyph set: 13,635 B raw / **3,144 B gzipped**. Full `Bravura.json` is 1,256,995 B — unfiltered metadata costs >100× more than the font.
 
-**Total wire cost, full scope (94 glyphs): ~15 KB** (12,116 B font + 2,634 B gz metadata). `vexflow-core` alone is 328.7 KB before fonts, for comparison.
+**Total wire cost, full scope (117 glyphs): ~16 KB** (12,936 B font + 3,144 B gz metadata). `vexflow-core` alone is 328.7 KB before fonts, for comparison.
 
 ## Runtime
 

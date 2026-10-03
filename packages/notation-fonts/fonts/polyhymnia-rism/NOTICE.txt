@@ -6,6 +6,6 @@ Upstream: https://github.com/rism-digital/leipzig/tree/a8838c6fe6bf3aaf4bfb5d831
 Licence: SIL Open Font License 1.1 (see OFL.txt in this directory).
 
 Modifications:
-- subsetted to 149 glyphs, the glyph tables of @polyhymnia/notation-fonts (src/styles.ts);
+- subsetted to 172 glyphs, the glyph tables of @polyhymnia/notation-fonts (src/styles.ts);
 - renamed to "PolyhymniaRism": the licence reserves the font name "Leipzig", and a subset does not preserve Functional Equivalence, so per OFL-FAQ 2.6 the Reserved Font Name may not be kept on the modified font.
 - converted to WOFF2.
