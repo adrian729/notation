@@ -1,6 +1,6 @@
 {
   "name": "@polyhymnia/notation-fonts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "SMuFL music notation fonts and glyph tables for @polyhymnia/notation-engine, with @font-face CSS helpers.",
   "keywords": [
     "smufl",

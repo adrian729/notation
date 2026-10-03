@@ -1,6 +1,6 @@
 {
   "name": "@polyhymnia/mnx",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MNX (W3C) score format: pinned schema, generated types, readMnx, rational time, scoped element ids and applyIntent edits.",
   "keywords": [
     "mnx",
