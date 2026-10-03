@@ -1,9 +1,16 @@
 import { GRACE_SCALE } from './records.js';
-import type { Diagnostic } from '@polyhymnia/mnx';
+import type { Diagnostic, ElementIds } from '@polyhymnia/mnx';
 import type { Timeline } from '@polyhymnia/mnx-score';
 import type { EngravingDefaults } from '@polyhymnia/notation-fonts';
 import type { FontContext } from '../font/context.js';
-import { describePitch, type Duration, type DurationBase, type NoteId, type TimeSpec } from './records.js';
+import {
+  describePitch,
+  type Duration,
+  type DurationBase,
+  type NoteId,
+  type TimeSpec,
+  type NormalizedDynamic,
+} from './records.js';
 import type { Mark } from './articulations.js';
 import type { BeamsResult } from './beams.js';
 import type { CurvesResult } from './curves.js';
@@ -40,6 +47,8 @@ const BRACE_GAP = 0.35;
 const BRACE_WIDTH = 0.9;
 
 export interface EmitInput {
+  ids: ElementIds;
+  dynamicRecords: readonly NormalizedDynamic[];
   justified: JustifiedScore;
   temporal: TemporalScore;
   timeline: Timeline;
@@ -78,6 +87,7 @@ interface Brace {
 }
 
 export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
+  const diagnosticsStart = input.ids.diagnostics.length;
   const glyphs: GlyphRun[] = [];
   const rects: RectShape[] = [];
   const paths: PathShape[] = [];
@@ -94,10 +104,23 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
   const multi = staffCount > 1;
   const width = Math.max(input.justified.width, 1);
   const marksOf = new Map<NoteId, Mark[]>();
-  for (const mark of input.marks) {
-    const list = marksOf.get(mark.el);
+  const measureMarks = new Map<number, Mark[]>();
+  const usedMarkIds = new Set<string>();
+  const drawnMarks = input.marks.map((mark) => {
+    const id = usedMarkIds.has(mark.id) ? input.ids.mint(`${mark.id}.st${mark.staffIndex + 1}`) : mark.id;
+    usedMarkIds.add(id);
+    return { ...mark, id, sourceId: id !== mark.id ? mark.id : undefined };
+  });
+  for (const mark of drawnMarks) {
+    if (!mark.eventId) {
+      const list = measureMarks.get(mark.measureIndex) ?? [];
+      list.push(mark);
+      measureMarks.set(mark.measureIndex, list);
+      continue;
+    }
+    const list = marksOf.get(mark.eventId);
     if (list) list.push(mark);
-    else marksOf.set(mark.el, [mark]);
+    else marksOf.set(mark.eventId, [mark]);
   }
   const firstMargins = margins[0]!;
   const lastMargins = margins[staffCount - 1]!;
@@ -173,7 +196,7 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
           });
         }
       });
-      for (const mark of marksOf.get(`m${measure.index}.fermata`) ?? []) {
+      for (const mark of measureMarks.get(measure.index) ?? []) {
         glyphs.push(markRun(fonts, mark, staffTops[mark.staffIndex] ?? systemTop));
       }
     }
@@ -209,13 +232,133 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
     const staffTop = staffTopOf(curve.systemIndex, curve.staffIndex);
     paths.push({ d: offsetPathY(curve.d, staffTop), cls: curve.cls, el: curve.el });
   }
-  for (const hairpin of input.dynamics.hairpins) {
-    const staffTop = staffTopOf(hairpin.systemIndex, hairpin.staffIndex);
-    paths.push({ d: offsetPathY(hairpin.d, staffTop), cls: 'hairpin', el: hairpin.el });
+  const addBox = (
+    id: string,
+    kind: ElementBox['kind'],
+    ink: { x0: number; x1: number; y0: number; y1: number },
+    systemIndex: number,
+    staffIndex: number,
+    tick: number,
+    measureIndex: number,
+    eventId?: string,
+    sourceId?: string,
+    label: string = kind,
+  ): void => {
+    const staffTop = staffTopOf(systemIndex, staffIndex);
+    const box = { x: ink.x0, y: staffTop + ink.y0, w: ink.x1 - ink.x0, h: ink.y1 - ink.y0 };
+    const owner = eventId ? input.timeline.byId(eventId) : undefined;
+    elements[id] = {
+      id,
+      kind,
+      systemIndex,
+      measureIndex,
+      voice: (owner?.voice as 0 | 1) ?? 0,
+      ...(multi ? { staff: staffIndex } : {}),
+      ...box,
+      hitBox: pad(box),
+      staffPosition: (ink.y0 + ink.y1) / 2,
+      tick,
+      durationTicks: 0,
+      label: `${label}, measure ${measureIndex + 1}`,
+      ...(owner ? { eventId } : {}),
+      ...(sourceId ? { sourceId } : {}),
+    };
+  };
+  for (const mark of drawnMarks) {
+    const owner = mark.eventId ? input.timeline.byId(mark.eventId) : undefined;
+    const tick = owner?.tick ?? input.timeline.measures[mark.measureIndex]!.endTick;
+    const label = mark.articulation?.replace(/[A-Z]/g, (c) => ` ${c.toLowerCase()}`) ?? mark.cls;
+    addBox(
+      mark.id,
+      mark.cls,
+      mark.box,
+      mark.systemIndex,
+      mark.staffIndex,
+      tick,
+      mark.measureIndex,
+      mark.eventId,
+      mark.sourceId,
+      label,
+    );
   }
+  const dynamicById = new Map(input.dynamicRecords.map((d) => [d.id, d]));
+  const textBounds = new Map<
+    string,
+    { ink: { x0: number; x1: number; y0: number; y1: number }; systemIndex: number; staffIndex: number }
+  >();
   for (const dynamic of input.dynamics.glyphs) {
     const staffTop = staffTopOf(dynamic.systemIndex, dynamic.staffIndex);
     glyphs.push(glyphRun(fonts, dynamic.glyph, dynamic.x, staffTop + dynamic.y, 'dynamic', dynamic.el));
+    const bounds = fonts.bbox(dynamic.glyph);
+    const ink = {
+      x0: dynamic.x + bounds.bBoxSW[0],
+      x1: dynamic.x + bounds.bBoxNE[0],
+      y0: dynamic.y - bounds.bBoxNE[1],
+      y1: dynamic.y - bounds.bBoxSW[1],
+    };
+    const old = textBounds.get(dynamic.el);
+    textBounds.set(dynamic.el, {
+      ...dynamic,
+      ink: old
+        ? {
+            x0: Math.min(old.ink.x0, ink.x0),
+            x1: Math.max(old.ink.x1, ink.x1),
+            y0: Math.min(old.ink.y0, ink.y0),
+            y1: Math.max(old.ink.y1, ink.y1),
+          }
+        : ink,
+    });
+  }
+  for (const [id, { ink, systemIndex, staffIndex }] of textBounds) {
+    const record = dynamicById.get(id)!;
+    addBox(
+      id,
+      'dynamic',
+      ink,
+      systemIndex,
+      staffIndex,
+      record.tick,
+      record.measureIndex,
+      undefined,
+      undefined,
+      `dynamic ${record.text}`,
+    );
+  }
+  const usedHairpinIds = new Set<string>();
+  for (const hairpin of input.dynamics.hairpins) {
+    const record = dynamicById.get(hairpin.el)!;
+    const system = input.justified.systems[hairpin.systemIndex]!;
+    const tick = Math.max(record.tick, system.measures[0]!.startTick);
+    const measureIndex =
+      system.measures.find((m) => tick >= m.startTick && tick < m.endTick)?.index ?? record.measureIndex;
+    let id = record.id;
+    if (usedHairpinIds.has(record.id)) id = input.ids.mint(`${record.id}.m${measureIndex}`);
+    else if (textBounds.has(id)) id = input.ids.mint(`${id}.hairpin`);
+    usedHairpinIds.add(record.id);
+    const points = [...hairpin.d.matchAll(PATH_POINT)].map((p) => [Number(p[1]), Number(p[2])]);
+    const ink = {
+      x0: Math.min(...points.map((p) => p[0]!)),
+      x1: Math.max(...points.map((p) => p[0]!)),
+      y0: Math.min(...points.map((p) => p[1]!)),
+      y1: Math.max(...points.map((p) => p[1]!)),
+    };
+    addBox(
+      id,
+      'hairpin',
+      ink,
+      hairpin.systemIndex,
+      hairpin.staffIndex,
+      tick,
+      measureIndex,
+      undefined,
+      id !== record.id ? record.id : undefined,
+      record.hairpin?.wedge === 'increasing' ? 'crescendo' : 'diminuendo',
+    );
+    paths.push({
+      d: offsetPathY(hairpin.d, staffTopOf(hairpin.systemIndex, hairpin.staffIndex)),
+      cls: 'hairpin',
+      el: id,
+    });
   }
 
   const height =
@@ -241,7 +384,7 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
     measures,
     timeline: input.timeline,
     placements: placementsOf(placement, measureTimes),
-    diagnostics: input.diagnostics,
+    diagnostics: [...input.diagnostics, ...input.ids.diagnostics.slice(diagnosticsStart)],
     ...(fontNames ? { fonts: fontNames } : {}),
   };
 }
@@ -709,7 +852,7 @@ function pathFrom(points: readonly (readonly [number, number])[], staffTop: numb
 }
 
 function markRun(fonts: FontContext, mark: Mark, staffTop: number): GlyphRun {
-  return glyphRun(fonts, mark.glyph, mark.x, staffTop + mark.y, mark.cls, mark.el);
+  return glyphRun(fonts, mark.glyph, mark.x, staffTop + mark.y, mark.cls, mark.id);
 }
 
 export function glyphRun(fonts: FontContext, name: string, x: number, y: number, cls: string, el?: NoteId): GlyphRun {

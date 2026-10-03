@@ -1,0 +1,218 @@
+{
+  "mnx": {
+    "version": 1
+  },
+  "global": {
+    "measures": [
+      {
+        "id": "tie-space",
+        "time": {
+          "count": 4,
+          "unit": 4
+        }
+      },
+      {
+        "id": "tie-ledger"
+      },
+      {
+        "id": "accent-neighbor"
+      }
+    ]
+  },
+  "parts": [
+    {
+      "measures": [
+        {
+          "sequences": [
+            {
+              "content": [
+                {
+                  "duration": {
+                    "base": "half"
+                  },
+                  "notes": [
+                    {
+                      "pitch": {
+                        "step": "A",
+                        "octave": 4
+                      },
+                      "id": "staccatoStart",
+                      "ties": [
+                        {
+                          "target": "staccatoEnd"
+                        }
+                      ]
+                    }
+                  ],
+                  "id": "astaccato"
+                },
+                {
+                  "duration": {
+                    "base": "half"
+                  },
+                  "notes": [
+                    {
+                      "pitch": {
+                        "step": "A",
+                        "octave": 4
+                      },
+                      "id": "staccatoEnd"
+                    }
+                  ],
+                  "id": "bstaccato",
+                  "markings": {
+                    "staccato": {}
+                  }
+                }
+              ]
+            }
+          ],
+          "clefs": [
+            {
+              "clef": {
+                "sign": "G",
+                "staffPosition": -2
+              }
+            }
+          ]
+        },
+        {
+          "sequences": [
+            {
+              "content": [
+                {
+                  "duration": {
+                    "base": "half"
+                  },
+                  "notes": [
+                    {
+                      "pitch": {
+                        "step": "D",
+                        "octave": 4
+                      },
+                      "id": "tenutoStart",
+                      "ties": [
+                        {
+                          "target": "tenutoEnd"
+                        }
+                      ]
+                    }
+                  ],
+                  "id": "atenuto"
+                },
+                {
+                  "duration": {
+                    "base": "half"
+                  },
+                  "notes": [
+                    {
+                      "pitch": {
+                        "step": "D",
+                        "octave": 4
+                      },
+                      "id": "tenutoEnd"
+                    }
+                  ],
+                  "id": "btenuto",
+                  "markings": {
+                    "tenuto": {}
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sequences": [
+            {
+              "content": [
+                {
+                  "duration": {
+                    "base": "half"
+                  },
+                  "notes": [
+                    {
+                      "pitch": {
+                        "step": "B",
+                        "octave": 4
+                      }
+                    }
+                  ],
+                  "id": "accentOwner",
+                  "markings": {
+                    "staccato": {},
+                    "accent": {}
+                  }
+                },
+                {
+                  "duration": {
+                    "base": "half"
+                  },
+                  "notes": [
+                    {
+                      "pitch": {
+                        "step": "B",
+                        "octave": 4
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "content": [
+                {
+                  "duration": {
+                    "base": "half"
+                  },
+                  "notes": [
+                    {
+                      "pitch": {
+                        "step": "G",
+                        "octave": 6
+                      }
+                    }
+                  ],
+                  "id": "neighbor"
+                },
+                {
+                  "duration": {
+                    "base": "half"
+                  },
+                  "notes": [
+                    {
+                      "pitch": {
+                        "step": "G",
+                        "octave": 6
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "name": "Score",
+      "pages": [
+        {
+          "systems": [
+            {
+              "measure": "tie-space"
+            },
+            {
+              "measure": "tie-ledger"
+            },
+            {
+              "measure": "accent-neighbor"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

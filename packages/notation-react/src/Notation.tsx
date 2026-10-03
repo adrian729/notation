@@ -108,12 +108,12 @@ export function Notation({ score, options, children, className, style, onLayout,
   useLayoutEffect(() => {
     const view = playbackView;
     const tick = imperativeTickRef.current;
-    if (view?.mode === 'notes') setPlaying(elementRefs.current, new Set(view.activeIds));
-    else if (view?.mode === 'off') setPlaying(elementRefs.current, EMPTY_IDS);
-    else if (view === undefined && tick === null) setPlaying(elementRefs.current, EMPTY_IDS);
+    if (view?.mode === 'notes') setPlaying(elementRefs.current, new Set(view.activeIds), layout);
+    else if (view?.mode === 'off') setPlaying(elementRefs.current, EMPTY_IDS, layout);
+    else if (view === undefined && tick === null) setPlaying(elementRefs.current, EMPTY_IDS, layout);
     else {
       const at = tick ?? (view?.mode === 'cursor' ? declaredTick(layout.timeline, view.position) : 0);
-      if (view?.mode === 'cursor' && !view.highlightActive) setPlaying(elementRefs.current, EMPTY_IDS);
+      if (view?.mode === 'cursor' && !view.highlightActive) setPlaying(elementRefs.current, EMPTY_IDS, layout);
       applyTick(view, at, layout, elementRefs.current, cursorRef.current);
     }
   }, [playbackView, layout]);
@@ -184,7 +184,10 @@ export function Notation({ score, options, children, className, style, onLayout,
 
   const isElementKeyboardTarget = (id: string): boolean =>
     targets.includes('element') &&
-    (interaction?.voice === undefined || layout.elements[id]?.voice === interaction.voice);
+    layout.elements[id] !== undefined &&
+    (interaction?.voice === undefined ||
+      !layout.elements[id]?.eventId ||
+      layout.elements[id]?.voice === interaction.voice);
 
   const handleElementKeyDown =
     (id: NoteId) =>
@@ -241,9 +244,25 @@ export function Notation({ score, options, children, className, style, onLayout,
           </g>
         )}
         <g data-pn="curves">
-          {layout.paths.map((p, i) => (
-            <path key={`p${i}`} d={p.d} data-pn={p.cls} data-pn-el={p.el} fill="currentColor" stroke="none" />
-          ))}
+          {layout.paths.map((p, i) => {
+            const shape = <path d={p.d} data-pn={p.cls} data-pn-el={p.el} fill="currentColor" stroke="none" />;
+            return p.el && layout.elements[p.el] ? (
+              <g
+                key={`p${i}`}
+                ref={elementRef(elementRefs.current, p.el)}
+                data-pn="element"
+                data-pn-el={p.el}
+                role={isElementKeyboardTarget(p.el) ? 'button' : 'img'}
+                tabIndex={isElementKeyboardTarget(p.el) ? 0 : undefined}
+                aria-label={layout.elements[p.el]!.label}
+                onKeyDown={isElementKeyboardTarget(p.el) ? handleElementKeyDown(p.el) : undefined}
+              >
+                {shape}
+              </g>
+            ) : (
+              <path key={`p${i}`} d={p.d} data-pn={p.cls} data-pn-el={p.el} fill="currentColor" stroke="none" />
+            );
+          })}
         </g>
         <g data-pn="glyphs" fontSize={GLYPH_FONT_SIZE} fontFamily={fontFamily}>
           {groupGlyphs(layout.glyphs).map((group, i) =>
@@ -312,9 +331,9 @@ function applyTick(
 ): void {
   if (view?.mode === 'cursor') {
     placeCursor(cursorGroup, layout, tick);
-    if (view.highlightActive) setPlaying(refs, new Set(layout.timeline.activeAt(tick)));
+    if (view.highlightActive) setPlaying(refs, new Set(layout.timeline.activeAt(tick)), layout);
   } else {
-    setPlaying(refs, new Set(layout.timeline.activeAt(tick)));
+    setPlaying(refs, new Set(layout.timeline.activeAt(tick)), layout);
   }
 }
 
@@ -445,8 +464,8 @@ export function viewBoxAttr(vb: ViewBox): string {
 
 export function describeScore(layout: LayoutResult): string {
   const boxes: ElementBox[] = Object.values(layout.elements);
-  const notes = boxes.filter((b) => b.kind !== 'rest').length;
-  const rests = boxes.length - notes;
+  const notes = boxes.filter((b) => b.kind === 'note' || b.kind === 'chord' || b.kind === 'grace').length;
+  const rests = boxes.filter((b) => b.kind === 'rest').length;
   const measures = layout.timeline.measures.length;
   return `Music notation: ${count(measures, 'measure')}, ${count(notes, 'note')}, ${count(rests, 'rest')}`;
 }
@@ -493,9 +512,13 @@ function elementRef(refs: Map<string, SVGGElement>, id: string) {
   };
 }
 
-function setPlaying(refs: Map<string, SVGGElement>, ids: ReadonlySet<string>): void {
+function setPlaying(refs: Map<string, SVGGElement>, ids: ReadonlySet<string>, layout: LayoutResult): void {
   for (const [id, el] of refs) {
-    if (ids.has(id)) el.setAttribute('data-pn-playing', 'true');
+    const owner = layout.elements[id]?.eventId;
+    const playing =
+      ids.has(id) ||
+      (owner !== undefined && (ids.has(owner) || layout.timeline.byId(owner)?.notes.some((n) => ids.has(n.id))));
+    if (playing) el.setAttribute('data-pn-playing', 'true');
     else el.removeAttribute('data-pn-playing');
   }
 }

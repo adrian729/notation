@@ -2,6 +2,7 @@ import { elementIds, noteValueLength, readMnx, Rational as R } from '@polyhymnia
 import type {
   Diagnostic,
   ElementIds,
+  FermataDuration,
   ElementScope,
   MnxDocument,
   NoteId,
@@ -15,6 +16,7 @@ import { resolvePlayOrder, type MeasureFlow, type MeasureFlows } from './playord
 import {
   createContext,
   fractionOf,
+  fermataDuration,
   readSequence,
   scopePrefix,
   voiceLength,
@@ -62,6 +64,7 @@ interface MeasureRead {
   time: TimeSignature;
   voices: readonly Voice[];
   pickup: boolean;
+  fermata?: FermataDuration;
   capacity: Rational;
 }
 
@@ -271,7 +274,14 @@ function readMeasures(
     const meter = R.of(currentTime.beats, currentTime.beatType);
     const longest = voices.reduce((max, v) => R.max(max, voiceLength(v.events)), R.ZERO);
     const pickup = index === 0 && R.compare(longest, R.ZERO) > 0 && R.compare(longest, meter) < 0;
-    return { index, time: currentTime, voices, pickup, capacity: pickup ? longest : meter };
+    return {
+      index,
+      time: currentTime,
+      voices,
+      pickup,
+      capacity: pickup ? longest : meter,
+      ...(fermataDuration(g.fermata) ? { fermata: fermataDuration(g.fermata) } : {}),
+    };
   });
 }
 
@@ -297,6 +307,7 @@ function walkMeasures(
       time: measure.time,
       pickup: measure.pickup,
       capacity: measure.capacity,
+      ...(measure.fermata ? { fermata: measure.fermata } : {}),
     });
     measureStart = R.add(measureStart, measure.capacity);
   }
@@ -367,6 +378,7 @@ function walkVoice(
         wholeBar: ev.kind === 'fullMeasureRest',
         synthetic: false,
         ...(ev.restPosition !== undefined ? { restPosition: ev.restPosition } : {}),
+        ...(ev.fermata ? { fermata: ev.fermata } : {}),
         ...(ev.articulations ? { articulations: ev.articulations } : {}),
         notes: ev.notes,
       });

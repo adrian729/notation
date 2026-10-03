@@ -1,4 +1,5 @@
 import { noteValueLength, Rational as R } from '@polyhymnia/mnx';
+import { fermataClock, fermataFactor } from './fermata.js';
 import { DEFAULT_VELOCITY } from './dynamics.js';
 import type {
   ArticulationKind,
@@ -27,7 +28,8 @@ interface PlaybackSpan {
 }
 
 export function performance(timeline: Timeline, options: PerformanceOptions = {}): Performance {
-  const seconds = (tick: number): number => timeline.writtenTickToSeconds(tick, options.tempo);
+  const clock = fermataClock(timeline, options.tempo);
+  const seconds = clock.tickToSeconds;
   const sounding = mergeTies(timeline.entries);
   const events: PerformanceEvent[] = [];
   const spans: PlaybackSpan[] = [];
@@ -42,12 +44,16 @@ export function performance(timeline: Timeline, options: PerformanceOptions = {}
       group.push(entry);
       groups.set(key, group);
     }
-    const lengthOf = (entry: TimelineEntry): number =>
-      entry.slash !== false
-        ? 0.06
-        : seconds(
-            entry.tick + R.toTicks(noteValueLength({ base: entry.base, dots: entry.dots })!, timeline.divisions),
-          ) - seconds(entry.tick);
+    const lengthOf = (entry: TimelineEntry): number => {
+      const duration =
+        entry.slash !== false
+          ? 0.06
+          : timeline.writtenTickToSeconds(
+              entry.tick + R.toTicks(noteValueLength({ base: entry.base, dots: entry.dots })!, timeline.divisions),
+              options.tempo,
+            ) - timeline.writtenTickToSeconds(entry.tick, options.tempo);
+      return duration * fermataFactor(entry.fermata);
+    };
     const added = new Map<number, number>();
     for (const group of groups.values()) {
       if (group[0]!.graceType !== 'makeTime') continue;
@@ -143,8 +149,8 @@ export function performance(timeline: Timeline, options: PerformanceOptions = {}
     tickAtSeconds: (value) => {
       const s = Math.max(0, value);
       const span = spans.find((span) => s < span.end);
-      if (!span) return spans.at(-1)?.to ?? timeline.secondsToWrittenTick(s, options.tempo);
-      return span.hold ? span.from : timeline.secondsToWrittenTick(seconds(span.from) + s - span.start, options.tempo);
+      if (!span) return spans.at(-1)?.to ?? clock.secondsToTick(s);
+      return span.hold ? span.from : clock.secondsToTick(seconds(span.from) + s - span.start);
     },
   };
 }
@@ -185,6 +191,7 @@ function mergeTies(entries: readonly TimelineEntry[]): Sounding[] {
 }
 
 function lengthScale(entry: TimelineEntry): number {
+  if (entry.fermata && entry.fermata !== 'none') return 1;
   return Math.min(1, ...(entry.articulations ?? []).map((kind) => LENGTH_SCALE[kind] ?? 1));
 }
 

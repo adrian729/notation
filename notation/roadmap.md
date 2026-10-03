@@ -86,7 +86,7 @@ Integration only — no isolated-function unit tests. Every test enters through 
 - **Property tests**: cover 3 of 5 planned invariants, single-measure documents only.
 - **`apps/web` tests**: none.
 - **Grand staff**: 2 staves per part at most; cross-staff elements are laid out on their own staff.
-- **Articulations, fermatas, dynamics, hairpins**: done (`engraving.md`), with velocity and staccato length in playback (`playback.md`). Fermatas don't hold in playback; relative dynamics, dynamic text and the remaining markings (spiccato, bowings, tremolo) are `mnx-unsupported`.
+- **Articulations, fermatas, dynamics, hairpins**: done (`engraving.md`), including separate mark hitboxes, tie/neighbor collision clearance, velocity, staccato length and synchronized fermata holds in playback (`playback.md`); relative dynamics, dynamic text and the remaining markings (spiccato, bowings, tremolo) are `mnx-unsupported`.
 - **Knuth-Plass line breaking**: not done; greedy only, measures indivisible.
 - **`applyIntent` addressing**: one part (default 0), all its staves, the first 2 sequences per staff.
 - **`EditIntent`**: one variant (`setPitches`).

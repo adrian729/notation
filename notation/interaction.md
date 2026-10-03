@@ -18,7 +18,7 @@ interface HitOptions { kinds?: readonly HitKind[]; voice?: 0|1; radius?: number;
 // kinds default: ['element', 'slot', 'point'], tried in that order. radius: sp tolerance, default 0.5.
 // insertAlteration default 'key'.
 type HitResult =
-  | { kind:'element'; id:NoteId; part:'notehead'|'rest'; box:ElementBox; staffPosition:number; pitch:Pitch|null; staff?:number }
+  | { kind:'element'; id:NoteId; part:'notehead'|'rest'|'articulation'|'fermata'|'dynamic'|'hairpin'; box:ElementBox; staffPosition:number; pitch:Pitch|null; staff?:number }
   | { kind:'slot'; slot:Slot; staffPosition:number; pitch:Pitch; staff?:number }
   | { kind:'point'; measureIndex:number; systemIndex:number; x:number; tick:number; staffPosition:number; pitch:Pitch; staff?:number };
 // staff: 2-staff parts only, 0 = staff 1, 1 = staff 2.
@@ -26,7 +26,7 @@ type HitResult =
 
 `NoteId` is a plain string — the MNX id when the document supplies one, else the engine's deterministic positional id (`mnx.md`'s ID rule). `Pitch` here is MNX's pitch shape, `{ step: 'A'..'G'; alter?: number; octave: number }` (`mnx`'s `types.ts`), the same shape `@polyhymnia/music-theory`'s `parsePitch('C#4')` produces — `hitTest` omits `alter` when it's 0.
 
-Resolution: a system is found first from `p.y` (the system band `SystemBox.y`..`y + h` ±4 sp, a ledger-line allowance — a point further off-staff than that misses every kind and `hitTest` returns `null`); `element` is tried against every `ElementBox` in that system regardless of measure (its own padded `hitBox`, expanded by `opts.radius`); a chord's several member boxes resolve to the member whose `staffPosition` is nearest the click, and among members on the same position (a chromatic unison's side-by-side noteheads) to the one whose box centre is horizontally nearest. `slot`/`point` then need a `MeasureBox` found from `p.x` within that system — no matching measure means both miss. `element`'s `pitch` is `null` for a rest, otherwise the same key-relative derivation as `slot`/`point` (below) from the box's own `staffPosition`, not the note's true written accidental — `ElementBox` doesn't carry the written `Pitch`, only position.
+Resolution: `element` is tried first against every drawn element's padded `hitBox`, expanded by `opts.radius`, so marks above or below the staff remain reachable. The closest vertical center wins, with horizontal center breaking ties. A chord resolves to its nearest member notehead. Notes return their written pitch; rests and marks return `pitch: null`. An attached mark carries its event in `box.eventId`; score-level marks omit it and remain selectable under either voice filter. If no element is hit, a system is found from `p.y` (the staff band ±4sp), then a measure from `p.x`; `slot`/`point` need both. Mark glyphs and hairpins are keyboard targets when element interaction is enabled, and attached marks follow their event's playback highlight.
 
 On a grand staff an element's `staffPosition` is measured from its own staff's top line (`SystemBox.staves`), and `slot`/`point` first pick the staff nearest `p.y` (distance to its line band, 0 inside it), then use that staff's y, slots and clef (`MeasureBox.staves`); the result carries `staff`.
 

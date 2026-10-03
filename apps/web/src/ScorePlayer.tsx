@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NotationHandle, PlaybackView } from '@polyhymnia/notation-react';
 import type { MnxDocument } from '@polyhymnia/mnx';
 import { performance } from '@polyhymnia/mnx-score';
+import { createAudioContext } from '@polyhymnia/web-audio/webaudio';
 import type { Playback } from '@polyhymnia/web-audio/webaudio';
 import { createSound } from './sound.js';
 import { FontNotation } from './font.js';
@@ -39,18 +40,27 @@ export function ScorePlayer({ score }: { score: MnxDocument }) {
     const playback = sound.playEvents(events);
     playbackRef.current = playback;
     setPlaying(true);
+    const context = createAudioContext();
+    let tail: { elapsed: number; contextTime: number } | undefined;
     const tick = () => {
       const current = handleRef.current;
       if (playbackRef.current !== playback || !current || current.getTimeline() !== timeline) {
         if (playbackRef.current === playback) stop();
         return;
       }
-      current.setPlaybackTick(performed.tickAtSeconds(playback.time()));
+      const elapsed = tail ? tail.elapsed + context.currentTime - tail.contextTime : playback.time();
+      if (elapsed >= performed.durationSeconds) {
+        stop();
+        return;
+      }
+      current.setPlaybackTick(performed.tickAtSeconds(elapsed));
       frameRef.current = requestAnimationFrame(tick);
     };
     frameRef.current = requestAnimationFrame(tick);
-    void playback.finished.then(() => {
-      if (playbackRef.current === playback) stop();
+    void playback.finished.then((result) => {
+      if (playbackRef.current !== playback) return;
+      if (result !== 'ended' || playback.time() >= performed.durationSeconds) stop();
+      else tail = { elapsed: playback.time(), contextTime: context.currentTime };
     });
   }, [sound, stop]);
 

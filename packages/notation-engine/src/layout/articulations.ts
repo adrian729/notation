@@ -5,7 +5,7 @@ import type { CurvesResult } from './curves.js';
 import { isClefColumn } from './horizontal.js';
 import type { JustifiedScore } from './justify.js';
 import type { ArticulationSpec, EventEngraving, NoteId } from './records.js';
-import { curvePoints, glyphBox, polylineYs, type InkBox } from './skyline.js';
+import { curvePoints, elementBoxes, glyphBox, polylineYs, type InkBox } from './skyline.js';
 import { STAFF_HEIGHT } from './staff.js';
 import { stemX, type NoteheadLayout, type VerticalElement } from './vertical.js';
 
@@ -42,6 +42,11 @@ const INSIDE_SLURS = new Set<ArticulationKind>(['staccato', 'tenuto', 'staccatis
 const BASIC = new Set<ArticulationKind>(['staccato', 'tenuto', 'accent', 'strongAccent']);
 
 export interface Mark {
+  id: NoteId;
+  headSide?: boolean;
+  articulation?: ArticulationKind;
+  eventId?: NoteId;
+  measureIndex: number;
   el: NoteId;
   systemIndex: number;
   staffIndex: number;
@@ -183,6 +188,11 @@ function chordMarks(
   const mark = (spec: ArticulationSpec, above: boolean, cx: number, edge: Parameters<typeof placeMark>[3]): Mark => {
     const glyph = glyphOf(spec, above);
     return {
+      id: spec.id,
+      articulation: spec.kind,
+      eventId: frame.el.id,
+      measureIndex: frame.el.measureIndex,
+      headSide: above !== frame.up,
       el: frame.el.id,
       systemIndex: frame.systemIndex,
       staffIndex: frame.el.staffIndex,
@@ -312,6 +322,52 @@ export function clearSlurs(marks: readonly Mark[], curves: CurvesResult): Mark[]
           other.y += delta;
           other.box.y0 += delta;
           other.box.y1 += delta;
+        }
+      }
+    }
+  }
+  return settled;
+}
+
+export function clearNotes(
+  marks: readonly Mark[],
+  justified: JustifiedScore,
+  beams: BeamsResult,
+  fonts: FontContext,
+): Mark[] {
+  const settled = marks.map((m) => ({ ...m, box: { ...m.box } }));
+  for (const system of justified.systems) {
+    const obstacles = system.measures.flatMap((measure) =>
+      measure.columns.flatMap((column) =>
+        column.elements.flatMap((el) =>
+          elementBoxes(el, column.x, beams, fonts).map((box) => ({ el: el.id, staff: el.staffIndex, box })),
+        ),
+      ),
+    );
+    for (const mark of settled) {
+      if (mark.systemIndex !== system.index || mark.insideSlurs) continue;
+      const neighbors = obstacles.filter(
+        (ob) => ob.el !== mark.el && ob.staff === mark.staffIndex && ob.box.x1 > mark.box.x0 && ob.box.x0 < mark.box.x1,
+      );
+      for (let pass = 0; pass < neighbors.length; pass += 1) {
+        const collisions = neighbors.filter(
+          ({ box }) => box.y1 + MIN_DISTANCE > mark.box.y0 && box.y0 - MIN_DISTANCE < mark.box.y1,
+        );
+        if (collisions.length === 0) break;
+        const shift = mark.above
+          ? Math.min(...collisions.map(({ box }) => box.y0 - MIN_DISTANCE)) - mark.box.y1
+          : Math.max(...collisions.map(({ box }) => box.y1 + MIN_DISTANCE)) - mark.box.y0;
+        const outward = settled.filter(
+          (m) =>
+            m.el === mark.el &&
+            m.systemIndex === mark.systemIndex &&
+            m.above === mark.above &&
+            (mark.above ? m.box.y0 <= mark.box.y0 : m.box.y1 >= mark.box.y1),
+        );
+        for (const m of outward) {
+          m.y += shift;
+          m.box.y0 += shift;
+          m.box.y1 += shift;
         }
       }
     }

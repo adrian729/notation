@@ -22,6 +22,7 @@ interface Timeline {
   secondsToWrittenTick(seconds: number, tempo?: TempoOverride): number;
 }
 interface TimelineEntry { id; kind; part; staff; voice; measureIndex; tick; durationTicks; notes: readonly { id; pitch; midi; tie: {start; stop} }[];
+  fermata?: FermataDuration;                   // event/rest holds; TimelineMeasure also carries barline fermatas
   articulations?: readonly ArticulationKind[];   // the event's MNX articulation markings, omitted when none
   dynamicLevel?: number;                         // 0..1 loudness at its onset, omitted at the mf default (0.8); notes, chords and grace notes
   … }
@@ -64,7 +65,8 @@ function frame() {
 - **Hairpins** (`gradual`) ramp linearly in velocity from their start (`value`, else the level in force) to the `immediate` dynamic at their `end`, or one level up/down when there is none; the end level then holds.
 - **Accent dynamics** (`sfz`, `fp`, …) play their `value` on notes starting at their position, then `residualValue` if given, else the previous level.
 - **Articulations**: accent adds 0.1, marcato 0.15 (the larger if both), capped at 1. Staccato plays half the written length, staccatissimo a quarter, tenuto the full length; on a tied note the mark on the chain's last note scales that last note's share.
-- Fermatas, `relative` dynamics and the other unsupported marks do not affect playback.
+- **Fermatas** stretch the marked written duration: `none` 1×, `veryShort` 1.25×, `short` 1.5×, `normal`/`auto` (including omitted duration) 2×, `long` 3×, `veryLong` 4×. MNX deliberately leaves exact timing to the player; these are this player's defaults. Notes sustain, rests remain silent, and a full-measure rest stretches its whole bar. A barline fermata stretches the final quarter-note beat (or the entire measure if shorter). Overlapping holds use the largest factor, never their sum. The shared clock stretches every voice equally, preserves repeats and tempo changes, and `tickAtSeconds` reverses that same clock, so the cursor slows with the music. Grace-note fermatas multiply the grace window before the usual borrowing limit. An event's sounding fermata takes precedence over staccato shortening. Written ticks and the timeline's tempo-only conversion methods remain unchanged. A player must keep running through `durationSeconds`, including trailing held rests, after the final sound ends.
+- `relative` dynamics and the other unsupported marks do not affect playback.
 
 ## Repeats and jumps
 

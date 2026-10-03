@@ -17,7 +17,7 @@ export type HitResult =
   | {
       kind: 'element';
       id: NoteId;
-      part: 'notehead' | 'rest';
+      part: 'notehead' | 'rest' | 'articulation' | 'fermata' | 'dynamic' | 'hairpin';
       box: ElementBox;
       staffPosition: number;
       pitch: MnxPitch | null;
@@ -101,7 +101,7 @@ function hitElement(
   let bestDist = Infinity;
   let bestDx = Infinity;
   for (const box of Object.values(layout.elements)) {
-    if (voice !== undefined && box.voice !== voice) continue;
+    if (voice !== undefined && box.eventId !== undefined && box.voice !== voice) continue;
     if (!inflatedContains(box.hitBox, p, radius)) continue;
     const y = staffY(systemByIndex.get(box.systemIndex), box.staff);
     const dist = Math.abs(box.staffPosition - (p.y - y));
@@ -118,7 +118,7 @@ function hitElement(
   return {
     kind: 'element',
     id: best.id,
-    part: best.kind === 'rest' ? 'rest' : 'notehead',
+    part: best.kind === 'note' || best.kind === 'chord' || best.kind === 'grace' ? 'notehead' : best.kind,
     box: best,
     staffPosition: best.staffPosition,
     pitch,

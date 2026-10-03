@@ -32,6 +32,7 @@ const fixtureNames = [
   'grand-staff',
   'inheritance',
   'mapping',
+  'mark-clearance',
   'pickup',
   'repeat-alto',
   'system-break',

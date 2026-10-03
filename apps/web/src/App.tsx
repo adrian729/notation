@@ -3,6 +3,7 @@ import type { MnxDocument } from '@polyhymnia/mnx';
 import { NoteHeard, Dictation, ErrorDetection, IntervalId } from './exercises/index.js';
 import { Example } from './Example.js';
 import { FontComparison } from './FontComparison.js';
+import { MarksExample } from './MarksExample.js';
 import { ScorePlayer } from './ScorePlayer.js';
 import { unlockSound } from './sound.js';
 
@@ -29,6 +30,7 @@ import slurs from './scores/slurs.mnx.json';
 import clefChangesCourtesy from './scores/clef-changes-courtesy.mnx.json';
 import grandStaff from './scores/grand-staff.mnx.json';
 import articulationsDynamics from './scores/articulations-dynamics.mnx.json';
+import markClearance from './scores/mark-clearance.mnx.json';
 import graceNotes from './scores/grace-notes.mnx.json';
 import { ChangesToggle, FontNotation } from './font.js';
 
@@ -46,6 +48,7 @@ const SLURS = slurs as MnxDocument;
 const CLEF_CHANGES_COURTESY = clefChangesCourtesy as MnxDocument;
 const GRAND_STAFF = grandStaff as MnxDocument;
 const ARTICULATIONS_DYNAMICS = articulationsDynamics as MnxDocument;
+const MARK_CLEARANCE = markClearance as MnxDocument;
 const GRACE_NOTES = graceNotes as MnxDocument;
 
 const KEY_EXAMPLES: readonly { label: string; doc: MnxDocument }[] = [
@@ -209,7 +212,20 @@ export function App() {
         title="Marks and dynamics"
         caption="p to f under a slurred, articulated bar; fermatas on a note, a rest, a whole-bar rest and the final barline; a diminuendo to pp"
       >
-        {(onLayout) => <FontNotation score={ARTICULATIONS_DYNAMICS} onLayout={onLayout} />}
+        {(onLayout) => <MarksExample score={ARTICULATIONS_DYNAMICS} onLayout={onLayout} />}
+      </Example>
+
+      <Example
+        title="Tie and accent clearance"
+        caption="The staccato and tenuto appear at the ends of their ties. In the last system, each voice keeps its articulations on its own stem side."
+      >
+        {(onLayout) => <FontNotation score={MARK_CLEARANCE} onLayout={onLayout} />}
+      </Example>
+      <Example
+        title="Fermata playback"
+        caption="Normal fermatas double the marked note or rest. The cursor slows with the hold; the final whole-bar rest stays silent for four seconds at 120 bpm."
+      >
+        {() => <ScorePlayer score={ARTICULATIONS_DYNAMICS} />}
       </Example>
 
       <h2>Grace notes</h2>

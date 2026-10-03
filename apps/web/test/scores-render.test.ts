@@ -7,6 +7,7 @@ import { layoutScore } from '@polyhymnia/notation-engine';
 const SCORES_DIR = fileURLToPath(new URL('../src/scores/', import.meta.url));
 const UNSUPPORTED_ALLOWLIST: Readonly<Record<string, readonly string[]>> = {
   'clef-changes-courtesy.mnx.json': ['score name'],
+  'mark-clearance.mnx.json': ['score name'],
 };
 const EXPECTED_CODES: Readonly<Record<string, readonly string[]>> = {
   'underfull.mnx.json': ['measure-underfull'],

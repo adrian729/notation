@@ -26,9 +26,11 @@ export function fermatas(
     el: string,
     systemIndex: number,
     staffIndex: number,
+    measureIndex: number,
     cx: number,
     spec: FermataSpec,
     above: boolean,
+    eventId?: string,
   ): void => {
     const glyph = (spec.pointing ? spec.pointing === 'up' : above) ? 'fermataAbove' : 'fermataBelow';
     const { box } = placeMark(fonts, glyph, cx, { center: 0 });
@@ -42,7 +44,19 @@ export function fermatas(
             sky.bottom(systemIndex, staffIndex, box.x0, box.x1) + FERMATA_MIN_DISTANCE,
           ),
         });
-    const mark: Mark = { el, systemIndex, staffIndex, glyph, cls: 'fermata', ...placed, above, insideSlurs: false };
+    const mark: Mark = {
+      id: spec.id,
+      eventId,
+      measureIndex,
+      el,
+      systemIndex,
+      staffIndex,
+      glyph,
+      cls: 'fermata',
+      ...placed,
+      above,
+      insideSlurs: false,
+    };
     sky.add(systemIndex, staffIndex, mark.box);
     marks.push(mark);
   };
@@ -60,9 +74,11 @@ export function fermatas(
             el.id,
             system.index,
             el.staffIndex,
+            measure.index,
             centerOf(el, column.x, measure, system.index, beams, fonts),
             spec,
             above,
+            el.id,
           );
         }
       }
@@ -72,9 +88,9 @@ export function fermatas(
       const group = measure.barlineEnd === 'none' ? 0 : endBarlineWidth(fonts, measure.barlineEnd) - BARLINE_PAD;
       const cx = right - group / 2;
       const el = `m${measure.index}.fermata`;
-      if (spec.placement !== 'below') place(el, system.index, 0, cx, spec, true);
+      if (spec.placement !== 'below') place(el, system.index, 0, measure.index, cx, spec, true);
       if (spec.placement === 'below' || (spec.placement === undefined && lastStaff > 0)) {
-        place(el, system.index, lastStaff, cx, spec, false);
+        place(el, system.index, lastStaff, measure.index, cx, spec, false);
       }
     }
   }

@@ -88,7 +88,7 @@ export function glyphBox(fonts: FontContext, glyph: string, x: number, y: number
   return { x0: x + bBoxSW[0] * scale, x1: x + bBoxNE[0] * scale, y0: y - bBoxNE[1] * scale, y1: y - bBoxSW[1] * scale };
 }
 
-function elementBoxes(el: VerticalElement, x: number, beams: BeamsResult, fonts: FontContext): InkBox[] {
+export function elementBoxes(el: VerticalElement, x: number, beams: BeamsResult, fonts: FontContext): InkBox[] {
   const boxes: InkBox[] = [];
   const scale = el.kind === 'grace' ? GRACE_SCALE : 1;
   const { legerLineExtension, legerLineThickness } = fonts.engravingDefaults;

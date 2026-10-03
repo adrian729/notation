@@ -1,6 +1,7 @@
 import { noteValueLength, tupletRatio, Rational as R } from '@polyhymnia/mnx';
 import type {
   ElementIds,
+  FermataDuration,
   ElementPosition,
   Event as MnxEvent,
   Note as MnxNote,
@@ -46,6 +47,7 @@ export interface ReadEvent {
   length: Rational;
   tuplet?: TimelineTuplet;
   restPosition?: number;
+  fermata?: FermataDuration;
   articulations?: readonly ArticulationKind[];
   notes: ReadNote[];
 }
@@ -117,6 +119,7 @@ export function readSequence(sequence: Record<string, any>, scope: SequenceScope
       dots: 0,
       length: R.ONE,
       notes: [],
+      ...(fermataDuration(full.fermata) ? { fermata: fermataDuration(full.fermata) } : {}),
       ...(typeof full.staffPosition === 'number' ? { restPosition: full.staffPosition } : {}),
     });
   }
@@ -262,6 +265,7 @@ function readEvent(
     base: value.base,
     dots: value.dots,
     length,
+    ...(fermataDuration(event.fermata) ? { fermata: fermataDuration(event.fermata) } : {}),
     ...(tuplet ? { tuplet } : {}),
   };
 
@@ -386,4 +390,11 @@ function scaled(length: Rational, tuplet: TimelineTuplet | undefined): Rational 
 
 export function voiceLength(events: readonly ReadEvent[]): Rational {
   return events.reduce((sum, e) => (e.kind === 'fullMeasureRest' ? sum : R.add(sum, e.length)), R.ZERO);
+}
+
+export function fermataDuration(raw: unknown): FermataDuration | undefined {
+  const fermata = asObject(raw);
+  if (!fermata) return undefined;
+  const value = fermata.duration;
+  return ['none', 'veryShort', 'short', 'normal', 'long', 'veryLong'].includes(value) ? value : 'auto';
 }

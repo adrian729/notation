@@ -2,6 +2,7 @@ import type {
   Diagnostic,
   ElementIdEntry,
   ElementIds,
+  FermataDuration,
   ElementPosition,
   ElementScope,
   NoteId,
@@ -68,6 +69,7 @@ export interface TimelineEntry {
   wholeBar: boolean;
   synthetic: boolean;
   restPosition?: number;
+  fermata?: FermataDuration;
   articulations?: readonly ArticulationKind[];
   dynamicLevel?: number;
   notes: readonly TimelineNote[];
@@ -93,6 +95,7 @@ export interface TimelineMeasure {
   time: TimeSignature;
   pickup: boolean;
   capacity: Rational;
+  fermata?: FermataDuration;
 }
 
 export interface BeatUnit {

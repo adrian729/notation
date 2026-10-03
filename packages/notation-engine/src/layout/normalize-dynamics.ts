@@ -1,6 +1,6 @@
 import { positionTick, type Timeline } from '@polyhymnia/mnx-score';
 import type { DynamicPlacement, NormalizedDynamic, NormalizedHairpin } from './records.js';
-import { asObject, type Reader } from './normalize-reader.js';
+import { asObject, markingId, type Reader } from './normalize-reader.js';
 
 const VALUES = new Set([
   'pppppp',
@@ -58,7 +58,7 @@ export function readDynamics(
     const hairpin = type === 'gradual' ? hairpinOf(dynamic, tick, measureIndex, ctx) : undefined;
     if (text === undefined && hairpin === undefined) return;
     dynamics.push({
-      id: typeof dynamic.id === 'string' ? dynamic.id : `m${measureIndex}.dyn${k}`,
+      id: markingId(dynamic.id, `m${measureIndex}.dyn${k}`, measureIndex, reader),
       measureIndex,
       tick,
       ...(staffIndex !== undefined ? { staffIndex } : {}),

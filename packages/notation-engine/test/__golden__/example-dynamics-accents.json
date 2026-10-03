@@ -389,6 +389,132 @@
         "alter": 0,
         "octave": 4
       }
+    },
+    "m0.dyn0": {
+      "id": "m0.dyn0",
+      "kind": "dynamic",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "x": 4.594,
+      "y": 10,
+      "w": 2.932,
+      "h": 2.384,
+      "hitBox": {
+        "x": 4.444,
+        "y": 9.85,
+        "w": 3.232,
+        "h": 2.684
+      },
+      "staffPosition": 7.192,
+      "tick": 0,
+      "durationTicks": 0,
+      "label": "dynamic sfz, measure 1"
+    },
+    "m0.dyn1": {
+      "id": "m0.dyn1",
+      "kind": "dynamic",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "x": 13.06,
+      "y": 10,
+      "w": 3.056,
+      "h": 2.384,
+      "hitBox": {
+        "x": 12.91,
+        "y": 9.85,
+        "w": 3.356,
+        "h": 2.684
+      },
+      "staffPosition": 7.192,
+      "tick": 3360,
+      "durationTicks": 0,
+      "label": "dynamic rfz, measure 1"
+    },
+    "m0.dyn2": {
+      "id": "m0.dyn2",
+      "kind": "dynamic",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "x": 21.649,
+      "y": 10,
+      "w": 2.552,
+      "h": 2.384,
+      "hitBox": {
+        "x": 21.499,
+        "y": 9.85,
+        "w": 2.852,
+        "h": 2.684
+      },
+      "staffPosition": 7.192,
+      "tick": 6720,
+      "durationTicks": 0,
+      "label": "dynamic fz, measure 1"
+    },
+    "m0.dyn3": {
+      "id": "m0.dyn3",
+      "kind": "dynamic",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "x": 30.499,
+      "y": 10,
+      "w": 2.416,
+      "h": 2.384,
+      "hitBox": {
+        "x": 30.349,
+        "y": 9.85,
+        "w": 2.716,
+        "h": 2.684
+      },
+      "staffPosition": 7.192,
+      "tick": 10080,
+      "durationTicks": 0,
+      "label": "dynamic sf, measure 1"
+    },
+    "m1.dyn0": {
+      "id": "m1.dyn0",
+      "kind": "dynamic",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "x": 38.928,
+      "y": 10,
+      "w": 3.04,
+      "h": 2.384,
+      "hitBox": {
+        "x": 38.778,
+        "y": 9.85,
+        "w": 3.34,
+        "h": 2.684
+      },
+      "staffPosition": 7.192,
+      "tick": 13440,
+      "durationTicks": 0,
+      "label": "dynamic fp, measure 2"
+    },
+    "m1.dyn1": {
+      "id": "m1.dyn1",
+      "kind": "dynamic",
+      "systemIndex": 0,
+      "measureIndex": 1,
+      "voice": 0,
+      "x": 51.163,
+      "y": 10,
+      "w": 4.304,
+      "h": 2.384,
+      "hitBox": {
+        "x": 51.013,
+        "y": 9.85,
+        "w": 4.604,
+        "h": 2.684
+      },
+      "staffPosition": 7.192,
+      "tick": 20160,
+      "durationTicks": 0,
+      "label": "dynamic sfzp, measure 2"
     }
   },
   "slots": [

@@ -1,4 +1,4 @@
-import type { Diagnostic, Slur } from '@polyhymnia/mnx';
+import type { Diagnostic, Slur, ElementIds } from '@polyhymnia/mnx';
 import type { TimelineEntry, TimelineIds } from '@polyhymnia/mnx-score';
 import type { EventEngraving, NormalizedSlur, NoteEngraving, NoteId, StaffPitch } from './records.js';
 
@@ -17,6 +17,7 @@ interface PendingSlur {
 
 export interface Reader {
   diagnostics: Diagnostic[];
+  engravingIds: ElementIds;
   unsupported(construct: string, measureIndex: number | undefined, consequence: string): void;
   ids: TimelineIds;
   laidOut: ReadonlyMap<NoteId, TimelineEntry>;
@@ -39,10 +40,12 @@ export function createReader(
   ids: TimelineIds,
   laidOut: ReadonlyMap<NoteId, TimelineEntry>,
   diagnostics: Diagnostic[],
+  engravingIds: ElementIds,
 ): Reader {
   const seen = new Set<string>();
   return {
     diagnostics,
+    engravingIds,
     ids,
     laidOut,
     explicitNotes: new Set(),
@@ -84,4 +87,9 @@ export function asObject(value: unknown): Record<string, any> | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, any>)
     : undefined;
+}
+
+export function markingId(raw: unknown, candidate: string, measureIndex: number, reader: Reader): NoteId {
+  if (typeof raw === 'string' && reader.engravingIds.registerExplicit(raw, { measureIndex })) return raw;
+  return reader.engravingIds.mint(typeof raw === 'string' ? raw : candidate, { measureIndex });
 }

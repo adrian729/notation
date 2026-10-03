@@ -60,7 +60,7 @@ export interface Box {
 
 export interface ElementBox {
   id: NoteId;
-  kind: 'note' | 'chord' | 'rest' | 'grace';
+  kind: 'note' | 'chord' | 'rest' | 'grace' | 'articulation' | 'fermata' | 'dynamic' | 'hairpin';
   systemIndex: number;
   measureIndex: number;
   voice: 0 | 1;
@@ -74,7 +74,8 @@ export interface ElementBox {
   tick: number;
   durationTicks: number;
   label: string;
-  eventId: NoteId;
+  eventId?: NoteId;
+  sourceId?: NoteId;
   pitch?: StaffPitch;
 }
 

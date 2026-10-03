@@ -418,3 +418,91 @@ describe('grace playback', () => {
     expect(result.events.every((e) => e.durationSeconds >= 0)).toBe(true);
   });
 });
+
+describe('fermata playback', () => {
+  it('holds notes, rests and whole-bar rests, with an inverse cursor clock across repeats and tempo changes', () => {
+    const doc = score(
+      [4, 4],
+      [
+        [
+          [
+            seq([
+              { ...n('C'), fermata: {}, markings: { staccato: {} } },
+              { ...rest(), fermata: { duration: 'short' } },
+              n('D', 4, {}, 'half'),
+            ]),
+          ],
+          [seq([], { fullMeasure: { fermata: { duration: 'long' } } })],
+          [seq([n('E', 4, {}, 'whole')])],
+        ],
+      ],
+      [
+        { repeatStart: {} },
+        { tempos: [{ bpm: 60, beat: { base: 'quarter' }, position: { fraction: [0, 1] } }] },
+        { fermata: {}, repeatEnd: {} },
+      ],
+    );
+    const timeline = buildTimeline(doc);
+    const played = performance(timeline);
+    expect(timeline.entries[0]!.fermata).toBe('auto');
+    expect(played.events[0]!.durationSeconds).toBeCloseTo(1);
+    expect(played.events[1]!.startSeconds).toBeCloseTo(1.75);
+    expect(played.events[2]!.startSeconds).toBeCloseTo(14.75);
+    expect(played.events[2]!.durationSeconds).toBeCloseTo(5);
+    expect(played.durationSeconds).toBeCloseTo(39.5);
+    expect(played.tickAtSeconds(0.5)).toBeCloseTo(Q / 2);
+    expect(played.tickAtSeconds(8.75)).toBeCloseTo(6 * Q);
+    expect(played.tickAtSeconds(20.25)).toBeCloseTo(Q / 2);
+    expect(performance(timeline, { tempo: { bpm: 120 } }).durationSeconds).toBeCloseTo(22.5);
+  });
+
+  it('uses the longest simultaneous hold across voices and keeps inserted grace time synchronized', () => {
+    const doc = score(
+      [2, 4],
+      [
+        [
+          [
+            seq([
+              { type: 'grace', graceType: 'makeTime', content: [{ ...n('D', 4, {}, 'eighth'), fermata: {} }] },
+              { ...n('C'), fermata: { duration: 'short' } },
+              n('E'),
+            ]),
+            seq([{ ...n('G'), fermata: { duration: 'long' } }, n('A')]),
+          ],
+        ],
+      ],
+    );
+    const played = performance(buildTimeline(doc), { tempo: { bpm: 120 } });
+    const first = played.events.filter((e) => e.midi === 60 || e.midi === 67);
+    expect(first.map((e) => round(e.durationSeconds))).toEqual([1.5, 1.5]);
+    expect(first.map((e) => round(e.startSeconds))).toEqual([0.12, 0.12]);
+    expect(played.events.filter((e) => e.midi === 64 || e.midi === 69).map((e) => round(e.startSeconds))).toEqual([
+      1.62, 1.62,
+    ]);
+    expect(played.tickAtSeconds(0.03)).toBe(0);
+    expect(played.tickAtSeconds(0.87)).toBeCloseTo(Q / 2);
+    expect(played.durationSeconds).toBeCloseTo(2.12);
+  });
+
+  it('keeps an explicit none fermata neutral and sustains a tie through a fermata on its ending note', () => {
+    const doc = score(
+      [4, 4],
+      [
+        [
+          [
+            seq([
+              { ...n('C'), fermata: { duration: 'none' }, markings: { staccato: {} } },
+              n('D', 4, { id: 'start', ties: [{ target: 'end' }] }),
+              { ...n('D', 4, { id: 'end' }), fermata: { duration: 'veryLong' } },
+              n('E'),
+            ]),
+          ],
+        ],
+      ],
+    );
+    const played = performance(buildTimeline(doc));
+    expect(played.events.map((e) => round(e.durationSeconds))).toEqual([0.25, 2.5, 0.5]);
+    expect(played.events.map((e) => round(e.startSeconds))).toEqual([0, 0.5, 3]);
+    expect(played.durationSeconds).toBeCloseTo(3.5);
+  });
+});

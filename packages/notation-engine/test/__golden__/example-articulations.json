@@ -46,7 +46,7 @@
       "y": 3.6,
       "cp": 58530,
       "cls": "articulation",
-      "el": "m0.s0.e0"
+      "el": "m0.s0.e0.staccato"
     },
     {
       "x": 20.433,
@@ -60,7 +60,7 @@
       "y": 3.6,
       "cp": 58532,
       "cls": "articulation",
-      "el": "m0.s0.e1"
+      "el": "m0.s0.e1.tenuto"
     },
     {
       "x": 35.102,
@@ -74,7 +74,7 @@
       "y": 3.604,
       "cp": 58528,
       "cls": "articulation",
-      "el": "m0.s0.e2"
+      "el": "m0.s0.e2.accent"
     },
     {
       "x": 49.771,
@@ -88,7 +88,7 @@
       "y": 3.596,
       "cp": 58540,
       "cls": "articulation",
-      "el": "m0.s0.e3"
+      "el": "m0.s0.e3.strongAccent"
     }
   ],
   "rects": [
@@ -276,6 +276,94 @@
         "alter": 0,
         "octave": 5
       }
+    },
+    "m0.s0.e0.staccato": {
+      "id": "m0.s0.e0.staccato",
+      "kind": "articulation",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "x": 6.186,
+      "y": 3.264,
+      "w": 0.336,
+      "h": 0.336,
+      "hitBox": {
+        "x": 6.036,
+        "y": 3.114,
+        "w": 0.636,
+        "h": 0.636
+      },
+      "staffPosition": -0.568,
+      "tick": 0,
+      "durationTicks": 0,
+      "label": "staccato, measure 1",
+      "eventId": "m0.s0.e0"
+    },
+    "m0.s0.e1.tenuto": {
+      "id": "m0.s0.e1.tenuto",
+      "kind": "articulation",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "x": 20.345,
+      "y": 3.408,
+      "w": 1.356,
+      "h": 0.192,
+      "hitBox": {
+        "x": 20.195,
+        "y": 3.258,
+        "w": 1.656,
+        "h": 0.492
+      },
+      "staffPosition": -0.496,
+      "tick": 3360,
+      "durationTicks": 0,
+      "label": "tenuto, measure 1",
+      "eventId": "m0.s0.e1"
+    },
+    "m0.s0.e2.accent": {
+      "id": "m0.s0.e2.accent",
+      "kind": "articulation",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "x": 35.014,
+      "y": 2.624,
+      "w": 1.356,
+      "h": 0.976,
+      "hitBox": {
+        "x": 34.864,
+        "y": 2.474,
+        "w": 1.656,
+        "h": 1.276
+      },
+      "staffPosition": -0.888,
+      "tick": 6720,
+      "durationTicks": 0,
+      "label": "accent, measure 1",
+      "eventId": "m0.s0.e2"
+    },
+    "m0.s0.e3.strongAccent": {
+      "id": "m0.s0.e3.strongAccent",
+      "kind": "articulation",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "x": 49.889,
+      "y": 2.584,
+      "w": 0.944,
+      "h": 1.016,
+      "hitBox": {
+        "x": 49.739,
+        "y": 2.434,
+        "w": 1.244,
+        "h": 1.316
+      },
+      "staffPosition": -0.908,
+      "tick": 10080,
+      "durationTicks": 0,
+      "label": "strong accent, measure 1",
+      "eventId": "m0.s0.e3"
     }
   },
   "slots": [

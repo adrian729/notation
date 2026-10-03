@@ -43,6 +43,7 @@ import {
   asArray,
   asObject,
   createReader,
+  markingId,
   sequenceKey,
   staffMeasureKey,
   type Reader,
@@ -83,7 +84,7 @@ export function normalize(
   for (const entry of timeline.entries) {
     if (!entry.synthetic && !laidOut.has(entry.id)) laidOut.set(entry.id, entry);
   }
-  const reader = createReader(timeline.ids, laidOut, diagnostics);
+  const reader = createReader(timeline.ids, laidOut, diagnostics, beamIds);
   const empty = (): NormalizedScore => ({
     id: 'score',
     divisions: timeline.divisions,
@@ -152,7 +153,7 @@ export function normalize(
     });
 
     reportGlobalConstructs(g, index, reader);
-    const fermata = fermataOf(g.fermata, index, reader);
+    const fermata = fermataOf(g.fermata, index, reader, `m${index}.fermata`);
     reportPartConstructs(pm, index, reader);
     dynamics.push(...readDynamics(asArray(pm.dynamics), index, { timeline, reader, staffCount, measureIndexById }));
     readSequences(asArray(pm.sequences), index, reader, staffCount, declared);
@@ -335,7 +336,6 @@ function readSequences(
         );
         const full = asObject(sequence.fullMeasure);
         if (full) {
-          const fermata = fermataOf(full.fermata, measureIndex, reader);
           const id = reader.ids.idAt({
             measureIndex,
             sequenceIndex: index,
@@ -343,6 +343,7 @@ function readSequences(
             fullMeasureRest: true,
             staff: staffIndex + 1,
           });
+          const fermata = id === undefined ? undefined : fermataOf(full.fermata, measureIndex, reader, `${id}.fermata`);
           if (fermata && id !== undefined) reader.events.set(id, { fermata });
           if (full.visualDuration !== undefined) {
             reader.unsupported('full-measure rest visualDuration', measureIndex, 'drawn as a whole-bar rest');
@@ -387,7 +388,7 @@ function readEvent(event: MnxEvent, pos: ElementPosition & { staff: number }, re
 
   if (entry.dots > 2) reader.unsupported(`${entry.dots} dots`, measureIndex, 'two dots are drawn');
   reportEventConstructs(event, entry.articulations ?? [], measureIndex, staff, reader);
-  const fermata = fermataOf(event.fermata, measureIndex, reader);
+  const fermata = fermataOf(event.fermata, measureIndex, reader, `${id}.fermata`);
   if (entry.notes.length === 0) {
     if (fermata) reader.events.set(id, { fermata });
     return;
@@ -406,7 +407,7 @@ function readEvent(event: MnxEvent, pos: ElementPosition & { staff: number }, re
   });
   const stem = event.stemDirection === 'up' || event.stemDirection === 'down' ? event.stemDirection : undefined;
   const breath = breathOf(event, measureIndex, reader);
-  const articulations = articulationsOf(event, entry.articulations ?? []);
+  const articulations = articulationsOf(event, entry.articulations ?? [], id, measureIndex, reader);
   reader.events.set(id, {
     ...(stem ? { stem } : {}),
     ...(breath ? { breath } : {}),
@@ -415,21 +416,36 @@ function readEvent(event: MnxEvent, pos: ElementPosition & { staff: number }, re
   });
 }
 
-function articulationsOf(event: MnxEvent, kinds: readonly ArticulationKind[]): ArticulationSpec[] {
+function articulationsOf(
+  event: MnxEvent,
+  kinds: readonly ArticulationKind[],
+  id: NoteId,
+  measureIndex: number,
+  reader: Reader,
+): ArticulationSpec[] {
   const markings = asObject(event.markings);
   return kinds.map((kind) => {
     const marking = asObject(markings?.[kind]);
-    return { kind, ...sideOf(marking?.placement), ...pointingOf(marking?.pointing) };
+    return {
+      id: markingId(marking?.id, `${id}.${kind}`, measureIndex, reader),
+      kind,
+      ...sideOf(marking?.placement),
+      ...pointingOf(marking?.pointing),
+    };
   });
 }
 
-function fermataOf(raw: unknown, measureIndex: number, reader: Reader): FermataSpec | undefined {
+function fermataOf(raw: unknown, measureIndex: number, reader: Reader, candidate: string): FermataSpec | undefined {
   const fermata = asObject(raw);
   if (!fermata) return undefined;
   if (fermata.symbol !== undefined && fermata.symbol !== 'normal') {
     reader.unsupported(`${String(fermata.symbol)} fermata`, measureIndex, 'drawn as a normal fermata');
   }
-  return { ...sideOf(fermata.placement), ...pointingOf(fermata.pointing) };
+  return {
+    id: markingId(fermata.id, candidate, measureIndex, reader),
+    ...sideOf(fermata.placement),
+    ...pointingOf(fermata.pointing),
+  };
 }
 
 function sideOf(placement: unknown): { placement?: VerticalSide } {

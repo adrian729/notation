@@ -142,12 +142,14 @@ export interface ElementNote {
 export type VerticalSide = 'above' | 'below';
 
 export interface ArticulationSpec {
+  id: NoteId;
   kind: ArticulationKind;
   placement?: VerticalSide;
   pointing?: 'up' | 'down';
 }
 
 export interface FermataSpec {
+  id: NoteId;
   placement?: VerticalSide;
   pointing?: 'up' | 'down';
 }

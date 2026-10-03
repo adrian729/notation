@@ -115,14 +115,15 @@ interface RectShape { x: number; y: number; w: number; h: number; rot?: number; 
 // are a `PathShape` instead, so no stage computes an `atan(slope)` value to feed it.
 interface PathShape { d: string; cls: string; el?: NoteId }
 interface ElementBox {
-  id: NoteId; kind: 'note'|'chord'|'rest';
+  id: NoteId; kind: 'note'|'chord'|'rest'|'grace'|'articulation'|'fermata'|'dynamic'|'hairpin';
   systemIndex: number; measureIndex: number; voice: 0|1;
   staff?: number;   // 2-staff parts only: 0 = staff 1, 1 = staff 2
   x: number; y: number; w: number; h: number;
   hitBox: { x: number; y: number; w: number; h: number };
   staffPosition: number; tick: number; durationTicks: number;   // staffPosition relative to its own staff
   label: string;    // "E flat 4, quarter note" — a11y + text-alternative source
-  eventId: NoteId;   // this box's own id for a note/rest, the chord's shared id for a member notehead
+  eventId?: NoteId;  // note/rest event, shared chord event, or a mark's owning event; absent for score-level marks
+  sourceId?: NoteId; // source mark when a fermata or hairpin has multiple drawn instances
 }
 interface MeasureBox {
   index: number; systemIndex: number;
@@ -139,7 +140,7 @@ interface MeasureBox {
 
 Beams are a 4-point `PathShape` (`cls: 'beam'`, `el` = the beam's own id — `mnx.md`), not a rotated `RectShape`: an exact parallelogram whose near edge is the line every re-terminated stem in it touches (`engraving.md` "Beaming").
 
-Marks: articulations and fermatas are `GlyphRun`s with `cls: 'articulation'`/`'fermata'` and `el` = the event's id, emitted right after the event's own glyphs (so a single note's marks join its `<g>`); a measure fermata has `el` = `m{i}.fermata`. Dynamics are `GlyphRun`s with `cls: 'dynamic'`, hairpins `PathShape`s with `cls: 'hairpin'`, both with `el` = the dynamic's id (`mnx.md`). None of them get an `ElementBox`, like slurs and beams.
+Marks have their own `ElementBox` and `el` id: articulations and fermatas are `GlyphRun`s, dynamics are glyph runs, and hairpins are paths. An attached mark's `eventId` points to its note/rest event; dynamics and barline fermatas omit it. MNX ids win; otherwise marks use `{eventId}.{kind}`, `{eventId}.fermata`, `m{i}.fermata` or `m{i}.dyn{k}`. Repeated fermatas on another staff use `.st{k}` and hairpin continuations use `.m{i}`, with `sourceId` pointing to the original mark. A dynamic with text and a hairpin keeps its id for the text and uses `.hairpin` for the first wedge. The shared id allocator resolves collisions. Slurs and beams still have no hitboxes.
 
 ## Coordinate system
 

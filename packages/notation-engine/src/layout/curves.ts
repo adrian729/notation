@@ -86,6 +86,7 @@ export function curves(
 
   const diagnostics: Diagnostic[] = [];
   const shapes: CurveShape[] = [];
+  const reserved = new Set<string>();
 
   for (const tie of ties) {
     const from = noteMap.get(tie.from);
@@ -114,6 +115,8 @@ export function curves(
           : directionFor(from, siblings, twoVoiceMeasures.has(staffMeasure(from.el.staffIndex, tie.measureIndex)));
 
     for (const span of spansBetween(from, to, justified)) shapes.push(tieShape(e, tie.id, span, dir));
+    reserveTieSpace(from, dir, marks, reserved);
+    reserveTieSpace(to, dir, marks, reserved);
   }
 
   for (const slur of slurs) {
@@ -135,6 +138,30 @@ export function curves(
   }
 
   return { shapes, diagnostics };
+}
+
+function reserveTieSpace(note: PlacedNote, dir: 1 | -1, marks: readonly Mark[], reserved: Set<string>): void {
+  if (!isOuterChordMember(note, dir)) return;
+  const key = `${note.el.id}:${dir}`;
+  if (reserved.has(key)) return;
+  const own = marks.filter((m) => m.el === note.el.id && m.above === (dir === 1));
+  const close = own.filter(
+    (m) => m.headSide && (m.glyph.startsWith('articStaccato') || m.glyph.startsWith('articTenuto')),
+  );
+  if (close.length === 0) return;
+  reserved.add(key);
+  const position = note.head.staffPosition;
+  const outside = dir === 1 ? position <= 0.5 : position >= STAFF_HEIGHT - 0.5;
+  const amount = outside
+    ? Math.max(...close.map((m) => (m.glyph.startsWith('articTenuto') ? 0.6 : 0.4)))
+    : Math.round(position * 2) % 2 !== 0
+      ? 1
+      : 0;
+  for (const mark of own) {
+    mark.y -= dir * amount;
+    mark.box.y0 -= dir * amount;
+    mark.box.y1 -= dir * amount;
+  }
 }
 
 function staffMeasure(staffIndex: number, measureIndex: number): string {

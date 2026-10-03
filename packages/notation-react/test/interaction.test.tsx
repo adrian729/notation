@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { layoutScore, previewShapes } from '@polyhymnia/notation-engine';
 import type { HitResult } from '@polyhymnia/notation-engine';
 import type { Event, MnxDocument, NoteValue, Pitch } from '@polyhymnia/mnx';
-import { Notation } from '../src/Notation.js';
+import { Notation, describeScore } from '../src/index.js';
 import type { NotationHandle } from '../src/Notation.js';
 import type { NotationIntent } from '../src/Interaction.js';
 
@@ -100,6 +100,52 @@ function stubGeometry(svg: SVGSVGElement): void {
 }
 
 describe('<Notation.Interaction>', () => {
+  it('activates mark glyphs and hairpins by keyboard and keeps attached marks highlighted without counting them as notes', () => {
+    const doc = simpleScore();
+    doc.global.measures[0]!.id = 'bar';
+    const first = doc.parts[0]!.measures[0]!.sequences[0]!.content[0] as Event;
+    first.id = 'n';
+    first.markings = { staccato: { id: 'dot' } };
+    first.fermata = { id: 'hold' };
+    doc.parts[0]!.measures[0]!.dynamics = [
+      {
+        id: 'ramp',
+        type: 'gradual',
+        value: 'p',
+        wedgeType: 'increasing',
+        position: { fraction: [0, 1] },
+        end: { measure: 'bar', position: { fraction: [1, 1] } },
+      },
+    ];
+    const layout = layoutScore(doc);
+    const intents: NotationIntent[] = [];
+    const ref = createRef<NotationHandle>();
+    const { container } = render(
+      <Notation ref={ref} score={doc}>
+        <Notation.Interaction targets={['element']} onIntent={(i) => intents.push(i)} />
+      </Notation>,
+    );
+    expect(describeScore(layout)).toContain('3 notes');
+    for (const id of ['dot', 'hold', 'ramp', 'ramp.hairpin']) {
+      const group = container.querySelector(`g[data-pn="element"][data-pn-el="${id}"]`)!;
+      expect(group.getAttribute('role')).toBe('button');
+      fireEvent.keyDown(group, { key: 'Enter' });
+      expect(intents.at(-1)).toMatchObject({
+        type: 'activate',
+        target: { id, part: layout.elements[id]!.kind, pitch: null },
+      });
+    }
+    ref.current!.setPlaybackTick(0);
+    for (const id of ['n', 'dot', 'hold']) {
+      expect(container.querySelector(`g[data-pn="element"][data-pn-el="${id}"]`)!.getAttribute('data-pn-playing')).toBe(
+        'true',
+      );
+    }
+    expect(container.querySelector('g[data-pn="element"][data-pn-el="ramp"]')!.hasAttribute('data-pn-playing')).toBe(
+      false,
+    );
+  });
+
   it('emits activate with kind slot on a slot click', () => {
     const doc = simpleScore();
     const layout = layoutScore(doc);

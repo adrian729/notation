@@ -380,6 +380,48 @@
         "alter": 0,
         "octave": 5
       }
+    },
+    "m0.dyn0": {
+      "id": "m0.dyn0",
+      "kind": "dynamic",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "x": 3.962,
+      "y": 10,
+      "w": 2.98,
+      "h": 2.384,
+      "hitBox": {
+        "x": 3.812,
+        "y": 9.85,
+        "w": 3.28,
+        "h": 2.684
+      },
+      "staffPosition": 7.192,
+      "tick": 0,
+      "durationTicks": 0,
+      "label": "dynamic ff, measure 1"
+    },
+    "m0.dyn1": {
+      "id": "m0.dyn1",
+      "kind": "dynamic",
+      "systemIndex": 0,
+      "measureIndex": 0,
+      "voice": 0,
+      "x": 47.625,
+      "y": 10.68,
+      "w": 4.66,
+      "h": 1.664,
+      "hitBox": {
+        "x": 47.475,
+        "y": 10.53,
+        "w": 4.96,
+        "h": 1.964
+      },
+      "staffPosition": 7.512,
+      "tick": 10080,
+      "durationTicks": 0,
+      "label": "dynamic ppp, measure 1"
     }
   },
   "slots": [

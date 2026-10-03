@@ -2,7 +2,7 @@ import { fontContext } from '../font/context.js';
 import type { NotationOptions } from '../options.js';
 import type { Diagnostic, MnxDocument } from '@polyhymnia/mnx';
 import { accidentals } from './accidentals.js';
-import { articulations, clearSlurs } from './articulations.js';
+import { articulations, clearNotes, clearSlurs } from './articulations.js';
 import { beams } from './beams.js';
 import { breakSystems } from './break.js';
 import { curves } from './curves.js';
@@ -45,7 +45,7 @@ export function layoutScore(doc: MnxDocument, options?: NotationOptions): Layout
   const tupletShapes = tuplets(justified, groups.tuplets, normalized.beams, beamed, fonts, options);
   const marks = articulations(justified, beamed, normalized.events, fonts);
   const curveShapes = curves(justified, placed, beamed, normalized.ties, normalized.slurs, marks, fonts);
-  const settled = clearSlurs(marks, curveShapes);
+  const settled = clearNotes(clearSlurs(marks, curveShapes), justified, beamed, fonts);
   const sky = skyline({ justified, beams: beamed, tuplets: tupletShapes, curves: curveShapes, marks: settled }, fonts);
   const allMarks = [...settled, ...fermatas(justified, beamed, normalized, sky, fonts)];
   const marginsInput = {
@@ -82,6 +82,8 @@ export function layoutScore(doc: MnxDocument, options?: NotationOptions): Layout
 
   return emit(
     {
+      ids: beamIds,
+      dynamicRecords: normalized.dynamics,
       justified,
       temporal: timed,
       timeline,
