@@ -7,7 +7,22 @@ export interface GlyphBBox {
 
 export type GlyphAnchors = Readonly<Record<string, GlyphPoint>>;
 
+/** A pen outline sampled along its length. Edge positions are fractions of
+ * the allocated width; distance runs from the attachment towards the tip.
+ */
+export interface PenStroke {
+  readonly profile: readonly (readonly [distance: number, left: number, right: number])[];
+  readonly wander: number;
+}
+
 export interface EngravingDefaults {
+  /** Optional pen pressure variation in staff spaces. */
+  readonly strokeVariation?: number;
+  /** Optional lateral pen movement for stems, barlines and beams, in staff spaces. */
+  readonly strokeWander?: number;
+  /** Optional font-drawn outlines for variable-length stems and beams. */
+  readonly stemStroke?: PenStroke;
+  readonly beamStroke?: PenStroke;
   readonly staffLineThickness: number;
   readonly stemThickness: number;
   readonly beamThickness: number;

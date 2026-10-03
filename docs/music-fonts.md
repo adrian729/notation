@@ -7,7 +7,8 @@ Research date 2026-09-30. Nothing bought, downloaded or installed.
 | Role | Font | Licence | Status |
 | --- | --- | --- | --- |
 | Modern notation | [Bravura](https://github.com/steinbergmedia/bravura) (SMuFL) | OFL, free | In use: `packages/notation-fonts` subsets Bravura 1.482 into `PolyhymniaNotation` |
-| Mensural (c.1400–1550) | Bravura mensural glyphs (SMuFL) | OFL, free | In use: `PolyhymniaMensural` in `packages/notation-fonts`, the default for the mensural style |
+| Mensural (c.1400–1550) | Bravura mensural glyphs (SMuFL) | OFL, free | Available as `PolyhymniaMensural` through `NotationOptions.font` |
+| Manuscript | Custom quill forms with Texturina lettering (SMuFL) | OFL, free | `PolyhymniaManuscript`, the default for the mensural style and playground |
 | Favourite early look | [Nivelle](https://casfaculty.case.edu/ross-duffin/homepage/fonts-for-early-music/) (Ross Duffin) | Paid, $50 | Candidate only; not SMuFL, web use needs permission (see notes) |
 
 ## Options

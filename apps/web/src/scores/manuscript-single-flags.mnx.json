@@ -1,0 +1,233 @@
+{
+  "mnx": {
+    "version": 1,
+    "support": {
+      "useBeams": true
+    }
+  },
+  "global": {
+    "measures": [
+      {
+        "time": {
+          "count": 2,
+          "unit": 4
+        }
+      },
+      {
+        "barline": {
+          "type": "final"
+        }
+      }
+    ]
+  },
+  "parts": [
+    {
+      "measures": [
+        {
+          "sequences": [
+            {
+              "content": [
+                {
+                  "id": "manuscript-single-flags-1-1",
+                  "duration": {
+                    "base": "eighth"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-1-1-note",
+                      "pitch": {
+                        "step": "F",
+                        "octave": 4
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "manuscript-single-flags-1-2",
+                  "duration": {
+                    "base": "eighth"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-1-2-note",
+                      "pitch": {
+                        "step": "G",
+                        "octave": 4
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "manuscript-single-flags-1-3",
+                  "duration": {
+                    "base": "eighth"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-1-3-note",
+                      "pitch": {
+                        "step": "E",
+                        "octave": 5
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "manuscript-single-flags-1-4",
+                  "duration": {
+                    "base": "eighth"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-1-4-note",
+                      "pitch": {
+                        "step": "F",
+                        "octave": 5
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "clefs": [
+            {
+              "clef": {
+                "sign": "G",
+                "staffPosition": -2
+              }
+            }
+          ]
+        },
+        {
+          "sequences": [
+            {
+              "content": [
+                {
+                  "id": "manuscript-single-flags-2-1",
+                  "duration": {
+                    "base": "16th"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-2-1-note",
+                      "pitch": {
+                        "step": "F",
+                        "octave": 4
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "manuscript-single-flags-2-2",
+                  "duration": {
+                    "base": "16th"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-2-2-note",
+                      "pitch": {
+                        "step": "G",
+                        "octave": 4
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "manuscript-single-flags-2-3",
+                  "duration": {
+                    "base": "16th"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-2-3-note",
+                      "pitch": {
+                        "step": "A",
+                        "octave": 4
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "manuscript-single-flags-2-4",
+                  "duration": {
+                    "base": "16th"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-2-4-note",
+                      "pitch": {
+                        "step": "G",
+                        "octave": 4
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "manuscript-single-flags-2-5",
+                  "duration": {
+                    "base": "16th"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-2-5-note",
+                      "pitch": {
+                        "step": "E",
+                        "octave": 5
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "manuscript-single-flags-2-6",
+                  "duration": {
+                    "base": "16th"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-2-6-note",
+                      "pitch": {
+                        "step": "F",
+                        "octave": 5
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "manuscript-single-flags-2-7",
+                  "duration": {
+                    "base": "16th"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-2-7-note",
+                      "pitch": {
+                        "step": "G",
+                        "octave": 5
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "manuscript-single-flags-2-8",
+                  "duration": {
+                    "base": "16th"
+                  },
+                  "notes": [
+                    {
+                      "id": "manuscript-single-flags-2-8-note",
+                      "pitch": {
+                        "step": "F",
+                        "octave": 5
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

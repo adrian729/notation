@@ -5,6 +5,7 @@ import type { JustifiedScore } from './justify.js';
 import type { NormalizedBeam, NoteId } from './records.js';
 import { MIDDLE_LINE } from './staff.js';
 import { stemX, type VerticalElement } from './vertical.js';
+import { beamInkAt, inkBeam } from './ink.js';
 
 const MIN_STEM = 3.0;
 const MAX_SLOPE = 0.25;
@@ -65,6 +66,8 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
     const thickness = e.beamThickness * scale;
     const stack = (e.beamThickness + e.beamSpacing) * scale;
     const stemW = e.stemThickness * scale;
+    const beamPen = e.beamStroke ? { ...e.beamStroke, wander: e.beamStroke.wander * scale } : undefined;
+    const beamWander = (e.strokeWander ?? 0) * scale;
     if (scale !== 1) for (const p of noteOrder.slice(1)) suppressedGraceSlashes.add(p.el.id);
     const dir = noteOrder[0]!.el.stem!.dir;
     const tip = (p: Placed): number => (dir === 1 ? p.el.stem!.yTop : p.el.stem!.yBottom);
@@ -107,11 +110,21 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
     yLeft -= dir * shift;
 
     for (const p of noteOrder) {
-      const beamY = beamYAt(x(p)) - dir * thickness;
+      let beamY = beamYAt(x(p)) - dir * thickness;
+      if (beamPen || beamWander > 0) {
+        // Seat both corners inside the actual outer edge, including the
+        // beam's slope and its pressure changes across the stem's width.
+        const outer = [x(p), x(p) + stemW / 2, x(p) + stemW].map((px) => {
+          const ink = beamInkAt(px, x0, x1 + stemW, beamWander, group.id, beamPen);
+          return beamYAt(px) + ink.shift - dir * thickness * ink.far;
+        });
+        beamY = (dir === 1 ? Math.max(...outer) : Math.min(...outer)) + dir * 0.015 * scale;
+      }
       const a = attach(p);
       stemOverrides.set(p.el.id, dir === 1 ? { yTop: beamY, yBottom: a } : { yTop: a, yBottom: beamY });
     }
 
+    const polygonStart = polygons.length;
     const xEnd = x1 + stemW;
     const at = { systemIndex: first.systemIndex, staffIndex: group.staffIndex };
     polygons.push(rectPolygon(group.id, at, x0, beamYAt(x0), xEnd, beamYAt(xEnd), thickness, dir));
@@ -155,6 +168,10 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
           dir,
         ),
       );
+    }
+    for (let i = polygonStart; i < polygons.length; i += 1) {
+      const polygon = polygons[i]!;
+      polygon.points = inkBeam(polygon.points, x0, xEnd, beamWander, group.id, beamPen);
     }
   }
 

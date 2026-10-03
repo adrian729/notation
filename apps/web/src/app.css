@@ -242,3 +242,167 @@ footer {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
 }
+
+.page-heading {
+  padding-bottom: 0.75rem;
+}
+
+.page-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.85rem;
+}
+
+.page-nav a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
+.font-compare .family-toggle button {
+  flex: 1 1 14rem;
+}
+
+#glyphs,
+#scores,
+#studies,
+#playback {
+  scroll-margin-top: 1rem;
+}
+
+.gallery-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.gallery-heading h2 {
+  margin-top: 1rem;
+  border: 0;
+}
+
+.glyph-search {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.glyph-search input {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: white;
+  width: min(100%, 18rem);
+}
+
+.gallery-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.gallery-filters button {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.45rem 0.65rem;
+  background: white;
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.gallery-filters button span {
+  font-size: 0.7rem;
+  opacity: 0.65;
+  margin-left: 0.25rem;
+}
+
+.gallery-filters button[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: white;
+}
+
+.gallery-count {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.glyph-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.65rem;
+}
+
+.glyph-card {
+  margin: 0;
+  min-width: 0;
+  padding: 0.6rem 0.65rem 0.8rem;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: #fff;
+}
+
+.glyph-card .pn-notation {
+  width: 100%;
+  height: 108px;
+}
+
+.glyph-card figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.glyph-card strong {
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.glyph-card code {
+  color: var(--muted);
+  font-size: 0.63rem;
+}
+
+.gallery-details {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.8rem 1rem;
+  margin: 1rem 0;
+}
+
+.gallery-details summary {
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.gallery-details[open] > summary {
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 1.25rem 0.85rem 3rem;
+  }
+
+  .glyph-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .glyph-search {
+    width: 100%;
+  }
+}

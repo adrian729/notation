@@ -4,6 +4,7 @@
     "@polyhymnia/mnx-score",
     "@polyhymnia/music-theory",
     "@polyhymnia/notation-engine",
+    "@polyhymnia/notation-fonts",
     "@polyhymnia/notation-react",
     "@polyhymnia/web-audio"
   ],

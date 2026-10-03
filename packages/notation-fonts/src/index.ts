@@ -1,4 +1,12 @@
-export type { EngravingDefaults, GlyphAnchors, GlyphBBox, GlyphPoint, NotationFont, SmuflMetadata } from './types.js';
+export type {
+  EngravingDefaults,
+  GlyphAnchors,
+  GlyphBBox,
+  GlyphPoint,
+  NotationFont,
+  PenStroke,
+  SmuflMetadata,
+} from './types.js';
 export {
   glyphStyles,
   mensuralStyle,

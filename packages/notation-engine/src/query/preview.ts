@@ -3,6 +3,7 @@ import { STEP_LETTERS, keyAlterOf, stepNumberOf } from '@polyhymnia/music-theory
 import { fontContext, type FontContext } from '../font/context.js';
 import type { NotationOptions } from '../options.js';
 import { glyphRun, tagFonts } from '../layout/emit.js';
+import { inkRules } from '../layout/ink.js';
 import type { Alter, StaffPitch, StepNumber } from '../layout/records.js';
 import { STAFF_HEIGHT, accidentalGlyph, staffPositionOf } from '../layout/staff.js';
 import type { GlyphRun, LayoutResult, RectShape } from '../layout/types.js';
@@ -77,5 +78,9 @@ export function previewShapes(
   }
 
   const fontNames = tagFonts(glyphs, fonts);
-  return { glyphs, rects, ...(fontNames ? { fonts: fontNames } : {}) };
+  return {
+    glyphs,
+    rects: inkRules(rects, fonts.engravingDefaults.strokeVariation),
+    ...(fontNames ? { fonts: fontNames } : {}),
+  };
 }

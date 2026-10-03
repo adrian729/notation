@@ -25,6 +25,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
     "test": "vitest run --passWithNoTests",
     "font:build": "node scripts/build.mjs",
+    "font:manuscript": "node scripts/manuscript.mjs",
     "font:add": "node scripts/add.mjs",
     "font:verify": "node scripts/verify.mjs",
     "font:sync": "node scripts/sync.mjs"

@@ -391,6 +391,18 @@ function PreviewGroup({
 }
 
 function Rect({ shape }: { shape: RectShape }): JSX.Element {
+  if (shape.outline) {
+    return (
+      <path
+        d={shape.outline}
+        transform={shape.rot ? `rotate(${shape.rot} ${shape.x} ${shape.y})` : undefined}
+        data-pn={shape.cls}
+        data-pn-el={shape.el}
+        fill="currentColor"
+        stroke="none"
+      />
+    );
+  }
   return (
     <rect
       x={shape.x}

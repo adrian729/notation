@@ -102,8 +102,10 @@ describe('<Notation>', () => {
   it('scales a glyph with GlyphRun.scale and stretches it with scaleY, such as the brace of a two-staff part', () => {
     const base = simpleScore();
     const doc: MnxDocument = { ...base, parts: [{ ...base.parts[0]!, staves: 2 }] };
-    const brace = layoutScore(doc).glyphs.find((g) => g.cls === 'brace')!;
-    const { container } = render(<Notation score={doc} />);
+    // The modern brace exercises enlargement in both axes.
+    const options = { style: 'modern' as const };
+    const brace = layoutScore(doc, options).glyphs.find((g) => g.cls === 'brace')!;
+    const { container } = render(<Notation score={doc} options={options} />);
 
     expect(brace.scale).toBeGreaterThan(1);
     expect(brace.scaleY).toBeGreaterThan(1);

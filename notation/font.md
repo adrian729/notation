@@ -1,6 +1,11 @@
 # Font
 
-## Decision: Bravura
+`PolyhymniaManuscript` is the default music font, using the mensural glyph table,
+centered stems and the mensural color palette. `style: 'modern'` selects
+`PolyhymniaNotation`; the original `PolyhymniaMensural` remains available through
+`NotationOptions.font` and the playground's **Mensural** choice.
+
+## Bravura-derived families
 
 Bravura 1.482 (2026-08-24), SMuFL reference font, SIL OFL-1.1, Reserved Font Name "Bravura".
 
@@ -14,6 +19,39 @@ Rejected alternatives:
 
 Font choice is data, not lock-in: Leland/Petaluma are SMuFL-compliant at the same codepoints, same 1000 units/em. Swap = `font:add` the new font (`Adding a font` below) and pass it as `NotationOptions.font` (`Runtime` below); the `engravingDefaults` values come from its metadata (`architecture.md`) — no layout code changes, nothing in the engine or renderer hardcodes a font name, thickness or width.
 
+## Manuscript family
+
+`PolyhymniaManuscript` is the default family with 187 newly drawn music and
+Texturina lettering glyphs, covering the union of both style tables. Its G clef
+follows the compact rounded form in the later illuminated manuscript; its lozenges,
+flats and other signs use the first references' uneven quill character. The third reference
+supplies the F clef's form only. Missing signs are reconstructed in that style.
+Omitting `font` and `style` selects it with centered stems. The playground opens
+with **Manuscript** selected.
+
+The numerals, octave indications and dynamics embed Texturina outlines. General
+text and lyrics are not yet supported by the renderer. Drawing sources, source
+pinning, licensing and rebuild instructions are in
+[`scripts/manuscript/README.md`](../packages/notation-fonts/scripts/manuscript/README.md).
+
+The font opts into Polyhymnia extensions to `engravingDefaults`:
+
+- `strokeVariation` gives rectangular rules pressure-varying edges;
+  `strokeWander` adds a small lateral sweep to barlines and unprofiled stems/beams.
+  Both values are in staff spaces. Horizontal ruling and insertion-preview
+  ledgers keep their original course.
+- `stemStroke` and `beamStroke` supply sampled pen outlines and their own
+  lateral sweep. Each `PenStroke.profile` row is `[distance, left, right]`,
+  with distances increasing from 0 to 1 and edges expressed as fractions of
+  the allocated thickness. Stems run from head to tip; beams from left to right.
+  Bare stems taper; tips that join a flag or beam retain their connection.
+
+Renderers draw `RectShape.outline` when present; its rectangle bounds the ink,
+including lateral displacement. Note placement, positional IDs and interaction
+targets are preserved. Beam levels share one pen profile, and stems meet the
+actual beam outline. Slurs and ties keep their existing geometry. Fonts without
+these optional fields keep the original straight rules and beams.
+
 ## License obligation
 
 OFL-FAQ 2.6: subsetting a web font is modification; a modified font "would not normally allow the use of RFNs." Our 117-glyph subset does not preserve Functional Equivalence (the full character inventory), so:
@@ -26,7 +64,7 @@ Our reading of the FAQ, not legal advice — flagged in `roadmap.md` open questi
 
 ## Glyph set — 117 glyphs, full scope
 
-Staff lines, ledger lines, barlines (the lines themselves) and stems are **not glyphs** — drawn as `<rect>`, thickness from `engravingDefaults` (`architecture.md`); they need exact-length stretching (justification), which a glyph can't do. Beams are likewise not a glyph, but a `<path>` parallelogram (`architecture.md`'s `PathShape`) rather than a rect, since they slope. Repeat-barline dots ARE a glyph (below) — a fixed shape, no stretching needed.
+Staff lines, ledger lines, barlines (the lines themselves) and stems are **not glyphs** — drawn as `<rect>` (or their filled pen outline), thickness from `engravingDefaults` (`architecture.md`); they need exact-length stretching (justification), which a glyph can't do. Beams are likewise not a glyph, but a filled `<path>` (`architecture.md`'s `PathShape`), normally a parallelogram, optionally a font-driven pen outline. Repeat-barline dots ARE a glyph (below) — a fixed shape, no stretching needed.
 
 | Category | Codepoints | Count |
 | --- | --- | --- |
@@ -82,7 +120,7 @@ A font is data: `NotationFont {name, metadata, src}` from `@polyhymnia/notation-
 - `font?: NotationFont | readonly NotationFont[]` — caller fonts, in priority order. The legacy `FontFamily` string option is gone.
 - `style?: 'modern' | 'mensural'` — default `'mensural'`. The style picks the glyph table (which SMuFL glyph draws each element) and the stem policy; the font only supplies shapes and metrics. Any font can be used with either style.
 
-The engine resolves every glyph through `fontContext` (`packages/notation-engine/src/font/context.ts`): `resolveGlyph(name)` returns `{font, codepoint, metadata}`, searching the caller fonts in order and then the style's default font (`DEFAULT_FONTS`: `PolyhymniaNotation` for `modern`, `PolyhymniaMensural` for `mensural`; their metadata is imported from `@polyhymnia/notation-fonts/fonts/*`). Advances, bboxes and anchors all come from the resolved font's metadata. `engravingDefaults` missing from a caller font are inherited from the default font. Contexts are cached per font object, so keep a stable `NotationFont` reference.
+The engine resolves every glyph through `fontContext` (`packages/notation-engine/src/font/context.ts`): `resolveGlyph(name)` returns `{font, codepoint, metadata}`, searching the caller fonts in order and then the style's default font (`DEFAULT_FONTS`: `PolyhymniaNotation` for `modern`, `PolyhymniaManuscript` for `mensural`; their metadata is imported from `@polyhymnia/notation-fonts/fonts/*`). Advances, bboxes and anchors all come from the resolved font's metadata. Standard `engravingDefaults` missing from a caller font are inherited from the default font. The optional pen fields (`strokeVariation`, `strokeWander`, `stemStroke`, `beamStroke`) come only from the primary font, so choosing another font preserves its own drawing style. Contexts are cached per font object, so keep a stable `NotationFont` reference.
 
 Fallback output is opt-in by need: `LayoutResult.fonts` (font names) and `GlyphRun.font` (index into it) appear only when some glyph falls back to a later font. `previewShapes(layout, preview, {font, style})` returns `fonts?` the same way. With a single font, output is unchanged.
 
@@ -105,9 +143,10 @@ Fonts live in the `@polyhymnia/notation-fonts` workspace package (`packages/nota
 
 - `src/` is the runtime surface: glyph tables per style (`modernStyle`, `mensuralStyle`, core and optional glyphs; `src/styles.ts` is the single list that drives both the subset and the filtered metadata, so they cannot drift apart), the `NotationFont {name, metadata, src}` types, and `fontFaceCss()`.
 - `fonts/<slug>/` holds the committed outputs: `<slug>.woff2`, `metadata.json`, `OFL.txt`, `NOTICE.txt`. Exported as `@polyhymnia/notation-fonts/fonts/*`. Never hand-edit.
-- `pnpm --filter @polyhymnia/notation-fonts font:build` regenerates the two default fonts (`polyhymnia-notation`, modern; `polyhymnia-mensural`, mensural) from the vendored Bravura through the same path as `font:add`, then runs `font:verify`.
+- `pnpm --filter @polyhymnia/notation-fonts font:build` regenerates the two Bravura-derived fonts (`polyhymnia-notation`, modern; `polyhymnia-mensural`, original mensural) from the vendored Bravura through the same path as `font:add`, then runs `font:verify`.
+- `pnpm --filter @polyhymnia/notation-fonts font:manuscript` rebuilds the default manuscript family from its editable drawings and pinned Texturina source, also through `font:add`.
 - `font:verify [slug]` checks, per style, glyph coverage, cmap against metadata, Reserved Font Name, and licence presence, and writes a test sheet to `packages/notation-fonts/out/<slug>.html`.
-- `font:sync` copies only the two default woff2 files into `notation-react/styles/`. The engine keeps no font copies and has no `assets/` folder; it imports default metadata from `@polyhymnia/notation-fonts/fonts/*`.
+- `font:sync` copies only the two style defaults (`polyhymnia-manuscript` and `polyhymnia-notation`) into `notation-react/styles/`. The engine keeps no font copies and has no `assets/` folder; it imports default metadata from `@polyhymnia/notation-fonts/fonts/*`.
 
 The subset follows the recipe in the table above: `pyftsubset` with `--no-hinting --desubroutinize`, `GSUB,GPOS,BASE,JSTF,DSIG` dropped, name table rewritten to the new family.
 

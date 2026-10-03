@@ -15,6 +15,7 @@
     "@polyhymnia/mnx-score": "workspace:*",
     "@polyhymnia/music-theory": "^0.1.0",
     "@polyhymnia/notation-engine": "workspace:*",
+    "@polyhymnia/notation-fonts": "workspace:*",
     "@polyhymnia/notation-react": "workspace:*",
     "@polyhymnia/web-audio": "^0.1.0",
     "react": "^19.0.0",

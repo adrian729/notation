@@ -32,6 +32,9 @@ importers:
       '@polyhymnia/notation-engine':
         specifier: workspace:*
         version: link:../../packages/notation-engine
+      '@polyhymnia/notation-fonts':
+        specifier: workspace:*
+        version: link:../../packages/notation-fonts
       '@polyhymnia/notation-react':
         specifier: workspace:*
         version: link:../../packages/notation-react

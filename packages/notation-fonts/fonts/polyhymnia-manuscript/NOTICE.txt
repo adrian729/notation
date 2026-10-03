@@ -1,0 +1,11 @@
+PolyhymniaManuscript is a modified version of the font PolyhymniaManuscript 1.000.
+
+Original font: PolyhymniaManuscript 1.000
+Copyright: Copyright 2026 Polyhymnia contributors (manuscript music outlines). Copyright 2020 The Texturina Project Authors (https://github.com/Omnibus-Type/Texturina)
+Upstream: https://github.com/adrian729/notation/tree/development/packages/notation-fonts/scripts/manuscript
+Licence: SIL Open Font License 1.1 (see OFL.txt in this directory).
+
+Modifications:
+- subsetted to 187 glyphs, the glyph tables of @polyhymnia/notation-fonts (src/styles.ts);
+- kept its original name "PolyhymniaManuscript": the licence reserves no font name.
+- converted to WOFF2.

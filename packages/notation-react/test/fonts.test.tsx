@@ -37,8 +37,27 @@ function glyphFamily(container: HTMLElement): string | null {
 }
 
 describe('<Notation> fonts', () => {
+  it('renders manuscript rules and preview ledgers by default with their original element tags', () => {
+    const layout = layoutScore(score);
+    const { container } = render(
+      <Notation score={score}>
+        <Notation.Marks
+          preview={{ measureIndex: 0, x: layout.measures[0]!.contentX, pitch: { step: 'C', octave: 6 } }}
+        />
+      </Notation>,
+    );
+    for (const rule of layout.rects) {
+      const paths = [...container.querySelectorAll(`path[data-pn="${rule.cls}"]`)];
+      const path = paths.find((p) => p.getAttribute('d') === rule.outline);
+      expect(path).toBeDefined();
+      expect(path!.getAttribute('data-pn-el')).toBe(rule.el ?? null);
+    }
+    expect(container.querySelectorAll('path[data-pn="preview-ledger"]')).toHaveLength(2);
+    expect(container.querySelector('rect[data-pn="staff-line"]')).toBeNull();
+  });
+
   it.each([
-    [undefined, 'mensural', 'PolyhymniaMensural'],
+    [undefined, 'mensural', 'PolyhymniaManuscript'],
     [{ style: 'modern' as const }, 'modern', 'PolyhymniaNotation'],
   ])('default fonts keep their family for options %j', (options, style, family) => {
     const { container } = render(<Notation score={score} options={options} />);

@@ -3,6 +3,7 @@ import type { Diagnostic, ElementIds } from '@polyhymnia/mnx';
 import type { Timeline } from '@polyhymnia/mnx-score';
 import type { EngravingDefaults } from '@polyhymnia/notation-fonts';
 import type { FontContext } from '../font/context.js';
+import { inkRules, inkStem } from './ink.js';
 import {
   describePitch,
   type Duration,
@@ -377,7 +378,7 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
     viewBox: { x: -leftMargin, y: 0, w: right + leftMargin, h: height },
     systems,
     glyphs,
-    rects,
+    rects: inkRules(rects, fonts.engravingDefaults.strokeVariation, fonts.engravingDefaults.strokeWander),
     paths,
     elements,
     slots,
@@ -702,14 +703,22 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
     const override = ctx.stemOverrides?.get(element.id);
     const yTop = override?.yTop ?? stem.yTop;
     const yBottom = override?.yBottom ?? stem.yBottom;
-    ctx.rects.push({
-      x: stemX(ctx.x, stem),
-      y: staffTop + yTop,
-      w: stem.width,
-      h: yBottom - yTop,
-      cls: 'stem',
-      ...(owner ? { el: owner } : {}),
-    });
+    ctx.rects.push(
+      inkStem(
+        {
+          x: stemX(ctx.x, stem),
+          y: staffTop + yTop,
+          w: stem.width,
+          h: yBottom - yTop,
+          cls: 'stem',
+          ...(owner ? { el: owner } : {}),
+        },
+        stem.dir,
+        Boolean(stem.flag || override),
+        ctx.fonts.engravingDefaults.stemStroke,
+        scale,
+      ),
+    );
     if (stem.flag) {
       ctx.glyphs.push(glyphRun(ctx.fonts, stem.flag.glyph, stemX(ctx.x, stem), staffTop + stem.flag.y, 'flag', owner));
     }

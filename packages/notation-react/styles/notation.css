@@ -6,19 +6,18 @@
   font-display: block;
 }
 
-/* PolyhymniaNotation is the superseded modern family. It is NOT dead weight and
-   must not be removed: it stays the opt-in look and the fallback for any future
-   per-user style setting. Both faces are shipped on purpose. */
+/* Both style defaults ship here: Manuscript for mensural and Notation for modern.
+   Additional faces, including the original Mensural, load through NotationOptions.font. */
 @font-face {
-  font-family: 'PolyhymniaMensural';
-  src: url('./polyhymnia-mensural.woff2') format('woff2');
+  font-family: 'PolyhymniaManuscript';
+  src: url('./polyhymnia-manuscript.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: block;
 }
 
 .pn-notation {
-  font-family: 'PolyhymniaMensural';
+  font-family: 'PolyhymniaManuscript';
   color: var(--pn-ink, currentColor);
   display: block;
   max-width: 100%;

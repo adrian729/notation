@@ -9,7 +9,7 @@ import {
   type SmuflMetadata,
 } from '@polyhymnia/notation-fonts';
 import modernMetadata from '@polyhymnia/notation-fonts/fonts/polyhymnia-notation/metadata.json' with { type: 'json' };
-import mensuralMetadata from '@polyhymnia/notation-fonts/fonts/polyhymnia-mensural/metadata.json' with { type: 'json' };
+import manuscriptMetadata from '@polyhymnia/notation-fonts/fonts/polyhymnia-manuscript/metadata.json' with { type: 'json' };
 import type { NotationOptions } from '../options.js';
 import { DEFAULT_STYLE } from './glyphs.js';
 
@@ -40,7 +40,7 @@ function defaultFont(slug: string, metadata: unknown): NotationFont {
 
 export const DEFAULT_FONTS: Readonly<Record<GlyphStyleName, NotationFont>> = {
   modern: defaultFont('polyhymnia-notation', modernMetadata),
-  mensural: defaultFont('polyhymnia-mensural', mensuralMetadata),
+  mensural: defaultFont('polyhymnia-manuscript', manuscriptMetadata),
 };
 
 const EMPTY_BBOX: GlyphBBox = { bBoxNE: [0, 0], bBoxSW: [0, 0] };
@@ -62,6 +62,7 @@ function fontList(font: NotationOptions['font'], fallback: NotationFont): readon
 function createContext(style: GlyphStyleName, font: NotationOptions['font']): FontContext {
   const fallback = DEFAULT_FONTS[style];
   const fonts = fontList(font, fallback);
+  const primaryDefaults = fonts[0]!.metadata.engravingDefaults;
   const table = glyphStyles[style].glyphs;
   const resolved = new Map<string, ResolvedGlyph | undefined>();
 
@@ -77,7 +78,15 @@ function createContext(style: GlyphStyleName, font: NotationOptions['font']): Fo
   return {
     fonts,
     style: glyphStyles[style],
-    engravingDefaults: { ...fallback.metadata.engravingDefaults, ...fonts[0]!.metadata.engravingDefaults },
+    engravingDefaults: {
+      ...fallback.metadata.engravingDefaults,
+      ...primaryDefaults,
+      // Pen drawing is an opt-in property of the primary face, not its fallback.
+      strokeVariation: primaryDefaults?.strokeVariation,
+      strokeWander: primaryDefaults?.strokeWander,
+      stemStroke: primaryDefaults?.stemStroke,
+      beamStroke: primaryDefaults?.beamStroke,
+    },
     resolveGlyph,
     advanceWidth: (name) => resolveGlyph(name)?.metadata.glyphAdvanceWidths?.[name] ?? 0,
     bbox: (name) => resolveGlyph(name)?.metadata.glyphBBoxes?.[name] ?? EMPTY_BBOX,

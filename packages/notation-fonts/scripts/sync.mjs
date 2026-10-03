@@ -5,7 +5,7 @@ import { fontsDir, packageDir } from './lib.mjs';
 
 const packages = path.resolve(process.argv[2] ?? path.dirname(packageDir));
 
-const SLUGS = ['polyhymnia-notation', 'polyhymnia-mensural'];
+const SLUGS = ['polyhymnia-notation', 'polyhymnia-manuscript'];
 
 const reactStyles = path.join(packages, 'notation-react', 'styles');
 mkdirSync(reactStyles, { recursive: true });

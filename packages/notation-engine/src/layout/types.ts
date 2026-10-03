@@ -43,6 +43,8 @@ export interface RectShape {
   rot?: number;
   cls: string;
   el?: NoteId;
+  /** Optional filled outline inside this rectangle, in layout coordinates. */
+  outline?: string;
 }
 
 export interface PathShape {

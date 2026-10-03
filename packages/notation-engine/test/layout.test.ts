@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Clef, MnxDocument } from '@polyhymnia/mnx';
-import type { GlyphBBox } from '@polyhymnia/notation-fonts';
+import type { GlyphBBox, NotationFont, SmuflMetadata } from '@polyhymnia/notation-fonts';
+import mensuralMetadata from '@polyhymnia/notation-fonts/fonts/polyhymnia-mensural/metadata.json' with { type: 'json' };
 import { layoutScore } from '../src/layout/index.js';
 import type { NotationOptions } from '../src/options.js';
 import type { NoteId } from '../src/layout/records.js';
@@ -1513,8 +1514,15 @@ describe('font family', () => {
   });
 
   it('centres a lozenge stem on the notehead, unlike a round one', () => {
-    const offset = (font: 'modern' | 'mensural', pitch: string): number => {
-      const layout = layoutScore(mnx({}, measure(note(pitch, 'q'))), { style: font });
+    // This fixture measures rectangular stems; manuscript attachment is checked
+    // against its actual ink contour in fonts.test.ts.
+    const font: NotationFont = {
+      name: 'PolyhymniaMensural',
+      metadata: mensuralMetadata as unknown as SmuflMetadata,
+      src: 'mensural.woff2',
+    };
+    const offset = (style: 'modern' | 'mensural', pitch: string): number => {
+      const layout = layoutScore(mnx({}, measure(note(pitch, 'q'))), { style, font });
       const head = Object.values(layout.elements).find((b) => b.kind === 'note')!;
       const stem = layout.rects.find((r) => r.cls === 'stem')!;
       return stem.x + stem.w / 2 - (head.x + head.w / 2);
