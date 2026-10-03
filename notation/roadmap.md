@@ -91,4 +91,6 @@ Integration only — no isolated-function unit tests. Every test enters through 
 - **`applyIntent` addressing**: one part (default 0), all its staves, the first 2 sequences per staff.
 - **`EditIntent`**: one variant (`setPitches`).
 
-- **Grace notes**: done, including cue-size engraving, explicit grace beams, stable ids and the three playback timing modes (`engraving.md`, `playback.md`). Editing grace notes and targeting grace positions remain deferred.
+- **Grace notes**: done, including cue-size engraving, explicit grace beams, stable ids and the three playback timing modes (`engraving.md`, `playback.md`). The following gaps are deferred until an exercise needs them. Checked the ear-training app's exercise code, score builders, committed scores and exercise specifications on 2026-10-03: none currently uses grace notes.
+- **Grace-note answer entry**: grace notes can be identified and selected, but `applyIntent` rejects changing their pitches. Future support must edit events inside grace groups, preserve ids and engraving attributes, handle affected ties/slurs, and show a grace-sized answer preview. Inserting or deleting grace groups remains a separate editor concern.
+- **Changes at specific grace notes**: clef, dynamic and tempo positions currently ignore MNX `graceIndex`, report unsupported positioning, and use the ordinary beat position. Future support must distinguish individual grace positions through layout and playback so a change can start before a particular small note instead of applying at the shared beat.
