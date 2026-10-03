@@ -1,6 +1,6 @@
 # Audio
 
-`packages/web-audio` (`@polyhymnia/web-audio`) makes sound for ear-training exercises. It has no workspace dependencies: it takes MIDI numbers and seconds, never MNX, pitch strings, timelines or React. Score sound comes from the `@polyhymnia/mnx-score` timeline: `performance(timeline, {tempo?})` returns `{id, midi, startSeconds, durationSeconds}` events, `durationSeconds` and `tickAtSeconds`; the app maps them to `NoteEvent`s. Rules live in `AGENTS.md` under "Audio".
+`packages/web-audio` (`@polyhymnia/web-audio`) makes sound for ear-training exercises. It has no workspace dependencies: it takes MIDI numbers and seconds, never MNX, pitch strings, timelines or React. Score sound comes from the `@polyhymnia/mnx-score` timeline: `performance(timeline, {tempo?})` returns `{id, midi, startSeconds, durationSeconds, velocity?}` events, `durationSeconds` and `tickAtSeconds`; the app maps them to `NoteEvent`s, passing `velocity` through (`playback.md` "Dynamics and articulations"). Rules live in `AGENTS.md` under "Audio".
 
 ## Entries
 
@@ -13,14 +13,14 @@
 ```ts
 interface NoteEvent { id?: string; midi: number; start: number; duration: number; velocity?: number }
 interface Clip { events: readonly NoteEvent[]; durationSeconds: number }
-performance(timeline, { tempo?: TempoOverride }): { events, durationSeconds, tickAtSeconds }   // @polyhymnia/mnx-score — the source of score events
+performance(timeline, { tempo?: TempoOverride }): { events, durationSeconds, tickAtSeconds }   // @polyhymnia/mnx-score — the source of score events; events carry velocity? (omitted at 0.8)
 ```
 
 Which timeline to use: `layout.timeline` (or `handle.getTimeline()`) for a laid-out score, so the cursor and the sound share ids and one clock; `buildTimeline(doc, {scope: 'all'})` for whole-score playback of every part, staff and voice. Ids inside the default scope are identical in both, so notes outside the layout simply get no highlight or cursor.
 
 Times are seconds from clip start. `midi` may be fractional; `id` is an MNX note id (synthesized positional ids for id-less notes). Builders (`melodic`, `harmonic`) produce events without ids; they take MIDI numbers only: `melodic(midis, {noteDuration, gap})`, `harmonic(midis, {duration})`. Callers convert pitches with `@polyhymnia/music-theory` (`midiOf`); audio never parses pitch strings. Interval and scale naming belongs to the exercise layer. `concat` starts each list where the previous one's last note ends; a list's trailing gap is not included (add a rest-length `shift` if needed). `Player.play` throws `RangeError` on non-finite input.
 
-`performance` merges tied notes per voice, then walks the timeline's play-order segments: each segment is offset by the summed seconds of the earlier segments (same `tempo` override throughout), takes merged notes starting in `[fromTick, toTick)`, clamps each duration to `toTick` (a tie straddling a repeat barline is clipped, and re-attacks on the next pass), skips rests and spaces, and emits one event per chord member with that note's own id and midi. `tickAtSeconds(s)` is the timeline's `secondsToWrittenTick` under the same tempo, so the sound and the cursor share one clock mapping: feed it `playback.time()` and pass the result to `handle.setPlaybackTick`.
+`performance` merges tied notes per voice, then walks the timeline's play-order segments: each segment is offset by the summed seconds of the earlier segments (same `tempo` override throughout), takes merged notes starting in `[fromTick, toTick)`, clamps each duration to `toTick` (a tie straddling a repeat barline is clipped, and re-attacks on the next pass), skips rests and spaces, and emits one event per chord member with that note's own id and midi. Dynamics and accents set each event's `velocity` (omitted at the 0.8 default) and staccato/staccatissimo shorten its duration (`playback.md`). `tickAtSeconds(s)` is the timeline's `secondsToWrittenTick` under the same tempo, so the sound and the cursor share one clock mapping: feed it `playback.time()` and pass the result to `handle.setPlaybackTick`.
 
 ## Player
 
@@ -39,7 +39,7 @@ Times are seconds from clip start. `midi` may be fractional; `id` is an MNX note
 
 ## Extension seam
 
-`Instrument { noteOn(midi, when, duration, velocity?), stopAll() }` is DOM-free. `loadSampler` is the sample-player implementation: it fetches and decodes every sample up front (rejecting if any fails), trims leading silence and peak-normalizes at decode time, and `noteOn` plays the nearest sample repitched by `playbackRate`, fading out over 80 ms at note end. Drones or per-voice instruments are new `Instrument` implementations behind their own entry, pinned, with permission to install any dependency. Deferred: seek/slice/loop, count-in, metronome, MIDI export, dynamics-driven velocity, grace notes, tempo ramps.
+`Instrument { noteOn(midi, when, duration, velocity?), stopAll() }` is DOM-free. `loadSampler` is the sample-player implementation: it fetches and decodes every sample up front (rejecting if any fails), trims leading silence and peak-normalizes at decode time, and `noteOn` plays the nearest sample repitched by `playbackRate`, fading out over 80 ms at note end. Drones or per-voice instruments are new `Instrument` implementations behind their own entry, pinned, with permission to install any dependency. Deferred: seek/slice/loop, count-in, metronome, MIDI export, grace notes, tempo ramps, fermata holds.
 
 ## App responsibilities
 

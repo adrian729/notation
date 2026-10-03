@@ -10,6 +10,7 @@ import type {
   Rational,
   Tie,
 } from '@polyhymnia/mnx';
+import { applyDynamics, type DynamicMark } from './dynamics.js';
 import { resolvePlayOrder, type MeasureFlow, type MeasureFlows } from './playorder.js';
 import {
   createContext,
@@ -108,7 +109,12 @@ export function buildTimeline(doc: MnxDocument, options: TimelineOptions = {}): 
 
   const measures = readMeasures(source, globals, docParts, scope, ctx);
   const known = new Set<NoteId>();
-  const { entries, timelineMeasures } = walkMeasures(measures, divisions, ids, report, known);
+  const walked = walkMeasures(measures, divisions, ids, report, known);
+  const { timelineMeasures } = walked;
+  const entries = applyDynamics(
+    walked.entries,
+    resolveDynamics(globals, docParts, scopedParts, timelineMeasures, divisions),
+  );
   const ties = resolveTies(ctx);
   ids.freeze();
 
@@ -360,6 +366,7 @@ function walkVoice(
         wholeBar: ev.kind === 'fullMeasureRest',
         synthetic: false,
         ...(ev.restPosition !== undefined ? { restPosition: ev.restPosition } : {}),
+        ...(ev.articulations ? { articulations: ev.articulations } : {}),
         notes: ev.notes,
       });
     }
@@ -495,6 +502,53 @@ function adjacent(ctx: ReadContext, from: ReadNote, target: ReadNote): boolean {
   const a = ctx.noteOrder.get(from);
   const b = ctx.noteOrder.get(target);
   return a !== undefined && b !== undefined && a.voice === b.voice && b.order === a.order + 1;
+}
+
+function resolveDynamics(
+  globals: readonly unknown[],
+  docParts: readonly unknown[],
+  parts: readonly number[],
+  measures: readonly TimelineMeasure[],
+  divisions: number,
+): DynamicMark[] {
+  const indexById = new Map<string, number>();
+  globals.forEach((raw, index) => {
+    const id = asObject(raw)?.id;
+    if (typeof id === 'string') indexById.set(id, index);
+  });
+  const tickIn = (measureIndex: number | undefined, position: unknown): number | undefined => {
+    const measure = measureIndex === undefined ? undefined : measures[measureIndex];
+    const fraction = fractionOf(asObject(position)?.fraction);
+    if (!measure || !fraction) return undefined;
+    return Math.min(measure.endTick, measure.startTick + R.toTicks(fraction, divisions));
+  };
+  const marks: DynamicMark[] = [];
+  for (const part of parts) {
+    asArray(asObject(docParts[part])?.measures).forEach((rawMeasure, measureIndex) => {
+      for (const raw of asArray(asObject(rawMeasure)?.dynamics)) {
+        const dynamic = asObject(raw);
+        const type = dynamic?.type;
+        if (!dynamic || (type !== 'immediate' && type !== 'accent' && type !== 'gradual')) continue;
+        const tick = tickIn(measureIndex, dynamic.position);
+        if (tick === undefined) continue;
+        const end = asObject(dynamic.end);
+        const endMeasure = typeof end?.measure === 'string' ? indexById.get(end.measure) : undefined;
+        const endTick = tickIn(endMeasure, end?.position);
+        const wedge =
+          dynamic.wedgeType === 'increasing' || dynamic.wedgeType === 'decreasing' ? dynamic.wedgeType : undefined;
+        marks.push({
+          part,
+          ...(typeof dynamic.staff === 'number' ? { staff: dynamic.staff } : {}),
+          tick,
+          type,
+          ...(typeof dynamic.value === 'string' ? { value: dynamic.value } : {}),
+          ...(typeof dynamic.residualValue === 'string' ? { residualValue: dynamic.residualValue } : {}),
+          ...(type === 'gradual' && wedge && endTick !== undefined && endTick > tick ? { wedge, endTick } : {}),
+        });
+      }
+    });
+  }
+  return marks;
 }
 
 function resolveTempo(

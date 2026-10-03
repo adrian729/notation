@@ -283,4 +283,61 @@ describe('performance', () => {
     expect(round(played.durationSeconds)).toBe(8 * beat);
     expect(round(played.tickAtSeconds(4.5 * beat))).toBe(Q / 2);
   });
+
+  it('scales length by staccato, and loudness by dynamics, hairpin ramps and accents', () => {
+    const marked = (step: string, markings: Json = {}, base = 'quarter'): Json => ({
+      ...n(step, 4, {}, base),
+      markings,
+    });
+    const doc = score(
+      [4, 4],
+      [
+        [
+          [
+            seq([
+              n('C'),
+              marked('D', { staccato: {} }),
+              marked('E', { accent: {} }),
+              marked('F', { staccatissimo: {} }),
+            ]),
+          ],
+          [seq([n('G'), n('A'), n('B'), n('C', 5)])],
+          [seq([marked('D', { strongAccent: {} }, 'half'), marked('E', { tenuto: {} }, 'half')])],
+        ],
+      ],
+      [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+    );
+    const measures = doc.parts[0]!.measures as unknown as Json[];
+    measures[0]!.dynamics = [{ type: 'immediate', value: 'p', position: { fraction: [0, 1] } }];
+    measures[1]!.dynamics = [
+      {
+        type: 'gradual',
+        wedgeType: 'increasing',
+        position: { fraction: [0, 1] },
+        end: { measure: 'c', position: { fraction: [0, 1] } },
+      },
+    ];
+    measures[2]!.dynamics = [
+      { type: 'immediate', value: 'f', position: { fraction: [0, 1] } },
+      { type: 'accent', value: 'f', residualValue: 'mf', position: { fraction: [1, 2] } },
+    ];
+    const p = 0.25 * 3.2 ** 0.5;
+    const f = 0.8 * 1.25 ** (1 / 3);
+    const ramp = (k: number): number => p + ((f - p) * k) / 4;
+    const played = performance(buildTimeline(doc)).events.map(({ durationSeconds, velocity }) => ({
+      durationSeconds,
+      velocity,
+    }));
+    expect(round(played)).toEqual(
+      round([
+        { durationSeconds: 0.5, velocity: p },
+        { durationSeconds: 0.25, velocity: p },
+        { durationSeconds: 0.5, velocity: p + 0.1 },
+        { durationSeconds: 0.125, velocity: p },
+        ...[0, 1, 2, 3].map((k) => ({ durationSeconds: 0.5, velocity: ramp(k) })),
+        { durationSeconds: 1, velocity: Math.min(1, f + 0.15) },
+        { durationSeconds: 1, velocity: f },
+      ]),
+    );
+  });
 });

@@ -19,6 +19,9 @@ export interface TimelineOptions {
 
 export type EntryKind = 'note' | 'chord' | 'rest' | 'fullMeasureRest' | 'space';
 
+export type ArticulationKind =
+  'staccato' | 'staccatissimo' | 'tenuto' | 'accent' | 'strongAccent' | 'softAccent' | 'stress' | 'unstress';
+
 export interface TupletDisplay {
   bracket?: 'yes' | 'no' | 'auto';
   showNumber?: 'noNumber' | 'inner' | 'both';
@@ -62,6 +65,8 @@ export interface TimelineEntry {
   wholeBar: boolean;
   synthetic: boolean;
   restPosition?: number;
+  articulations?: readonly ArticulationKind[];
+  dynamicLevel?: number;
   notes: readonly TimelineNote[];
 }
 
@@ -147,6 +152,7 @@ export interface PerformanceEvent {
   midi: number;
   startSeconds: number;
   durationSeconds: number;
+  velocity?: number;
 }
 
 export interface Performance {

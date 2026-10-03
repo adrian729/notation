@@ -1,9 +1,21 @@
-import type { Performance, PerformanceEvent, PerformanceOptions, Timeline, TimelineEntry } from './types.js';
+import { DEFAULT_VELOCITY } from './dynamics.js';
+import type {
+  ArticulationKind,
+  Performance,
+  PerformanceEvent,
+  PerformanceOptions,
+  Timeline,
+  TimelineEntry,
+} from './types.js';
 
 interface Sounding {
   head: TimelineEntry;
   durationTicks: number;
+  velocity: number;
 }
+
+const ACCENT_GAIN: Partial<Record<ArticulationKind, number>> = { accent: 0.1, strongAccent: 0.15 };
+const LENGTH_SCALE: Partial<Record<ArticulationKind, number>> = { staccato: 0.5, staccatissimo: 0.25 };
 
 export function performance(timeline: Timeline, options: PerformanceOptions = {}): Performance {
   const { tempo } = options;
@@ -13,12 +25,15 @@ export function performance(timeline: Timeline, options: PerformanceOptions = {}
   let offset = 0;
   for (const segment of timeline.playOrder) {
     const base = seconds(segment.fromTick);
-    for (const { head, durationTicks } of sounding) {
+    for (const { head, durationTicks, velocity } of sounding) {
       if (head.tick < segment.fromTick || head.tick >= segment.toTick) continue;
       const startSeconds = offset + seconds(head.tick) - base;
       const end = seconds(Math.min(head.tick + durationTicks, segment.toTick));
       const durationSeconds = end - seconds(head.tick);
-      for (const note of head.notes) events.push({ id: note.id, midi: note.midi, startSeconds, durationSeconds });
+      const loudness = Math.abs(velocity - DEFAULT_VELOCITY) < 1e-9 ? {} : { velocity };
+      for (const note of head.notes) {
+        events.push({ id: note.id, midi: note.midi, startSeconds, durationSeconds, ...loudness });
+      }
     }
     offset += seconds(segment.toTick) - base;
   }
@@ -61,8 +76,11 @@ function mergeTies(entries: readonly TimelineEntry[]): Sounding[] {
     while (i < ordered.length) {
       let last = i;
       while (last + 1 < ordered.length && tiesInto(ordered[last]!, ordered[last + 1]!)) last += 1;
-      const durationTicks = ordered.slice(i, last + 1).reduce((sum, e) => sum + e.durationTicks, 0);
-      merged.push({ head: ordered[i]!, durationTicks });
+      const chain = ordered.slice(i, last + 1);
+      const end = chain[chain.length - 1]!;
+      const durationTicks =
+        chain.reduce((sum, e) => sum + e.durationTicks, 0) - end.durationTicks * (1 - lengthScale(end));
+      merged.push({ head: ordered[i]!, durationTicks, velocity: velocityOf(ordered[i]!) });
       i = last + 1;
     }
   }
@@ -73,6 +91,15 @@ function mergeTies(entries: readonly TimelineEntry[]): Sounding[] {
       a.head.staff - b.head.staff ||
       a.head.voice - b.head.voice,
   );
+}
+
+function lengthScale(entry: TimelineEntry): number {
+  return Math.min(1, ...(entry.articulations ?? []).map((kind) => LENGTH_SCALE[kind] ?? 1));
+}
+
+function velocityOf(entry: TimelineEntry): number {
+  const gain = Math.max(0, ...(entry.articulations ?? []).map((kind) => ACCENT_GAIN[kind] ?? 0));
+  return Math.min(1, (entry.dynamicLevel ?? DEFAULT_VELOCITY) + gain);
 }
 
 function tiesInto(a: TimelineEntry, b: TimelineEntry): boolean {

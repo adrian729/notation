@@ -13,9 +13,20 @@ import type {
 } from '@polyhymnia/mnx';
 import { pitchToMidi, STEP_LETTERS } from '@polyhymnia/music-theory';
 import { asArray, asObject, type Report } from './report.js';
-import type { EntryKind, TieFlags, TimelineTuplet } from './types.js';
+import type { ArticulationKind, EntryKind, TieFlags, TimelineTuplet } from './types.js';
 
 const SUPPORTED_BASES = new Set<string>(['breve', 'whole', 'half', 'quarter', 'eighth', '16th', '32nd', '64th']);
+
+export const ARTICULATION_KINDS: readonly ArticulationKind[] = [
+  'staccato',
+  'staccatissimo',
+  'tenuto',
+  'accent',
+  'strongAccent',
+  'softAccent',
+  'stress',
+  'unstress',
+];
 
 export interface ReadNote {
   id: NoteId;
@@ -32,6 +43,7 @@ export interface ReadEvent {
   length: Rational;
   tuplet?: TimelineTuplet;
   restPosition?: number;
+  articulations?: readonly ArticulationKind[];
   notes: ReadNote[];
 }
 
@@ -253,7 +265,14 @@ function readEvent(
     return readNote(note, noteId, scope, ctx);
   });
   if (scope.inScope) for (const n of readNotes) ctx.noteOrder.set(n, { voice: key, order });
-  return { ...common, kind: notes.length === 1 ? 'note' : 'chord', notes: readNotes };
+  const markings = asObject(event.markings);
+  const articulations = ARTICULATION_KINDS.filter((kind) => asObject(markings?.[kind]) !== undefined);
+  return {
+    ...common,
+    kind: notes.length === 1 ? 'note' : 'chord',
+    ...(articulations.length > 0 ? { articulations } : {}),
+    notes: readNotes,
+  };
 }
 
 function readNoteValue(

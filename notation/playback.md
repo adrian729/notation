@@ -21,7 +21,10 @@ interface Timeline {
   writtenTickToSeconds(tick: number, tempo?: TempoOverride): number;
   secondsToWrittenTick(seconds: number, tempo?: TempoOverride): number;
 }
-interface TimelineEntry { id; kind; part; staff; voice; measureIndex; tick; durationTicks; notes: readonly { id; pitch; midi; tie: {start; stop} }[]; … }
+interface TimelineEntry { id; kind; part; staff; voice; measureIndex; tick; durationTicks; notes: readonly { id; pitch; midi; tie: {start; stop} }[];
+  articulations?: readonly ArticulationKind[];   // the event's MNX articulation markings, omitted when none
+  dynamicLevel?: number;                         // 0..1 loudness at its onset, omitted at the mf default (0.8); notes and chords only
+  … }
 interface PlaySegment { fromTick: number; toTick: number; playedStartTick: number }   // written ticks, in play order
 ```
 
@@ -35,8 +38,10 @@ Scheduling — `performance(timeline, {tempo?})` from `@polyhymnia/mnx-score` tu
 
 ```ts
 const timeline = handle.getTimeline();
-const { events, tickAtSeconds } = performance(timeline);   // { id, midi, startSeconds, durationSeconds }[]
-const playback = player.play(events.map((e) => ({ id: e.id, midi: e.midi, start: e.startSeconds, duration: e.durationSeconds })));
+const { events, tickAtSeconds } = performance(timeline);   // { id, midi, startSeconds, durationSeconds, velocity? }[]
+const playback = player.play(
+  events.map((e) => ({ id: e.id, midi: e.midi, start: e.startSeconds, duration: e.durationSeconds, velocity: e.velocity })),
+);
 ```
 
 Reporting — audio time → notation time, driven by the *audible* clock:
@@ -49,6 +54,17 @@ function frame() {
 ```
 
 **Latency contract:** the position fed to the component MUST derive from `audioContext.currentTime` (`playback.time()` already subtracts output latency), never the scheduler's lookahead pointer. Web Audio lookahead queues 100–200ms ahead; driving the cursor from "what was last queued" makes it visibly run ahead of the sound. Second 0 = when the first note actually sounds; lead-in is the caller's problem, not the component's.
+
+## Dynamics and articulations
+
+`PerformanceEvent.velocity` is on web-audio's 0..1 gain scale (`audio.md`) and is omitted when it equals web-audio's own default, 0.8 (`mf`), so a score without dynamics or accents plays exactly as before.
+
+- **Levels**: `ppp` = 0.25, `mf` = 0.8, `fff` = 1.0; the steps between are spaced geometrically (equal ratios, so equal steps in dB, the way loudness is heard): `pp` 0.334, `p` 0.447, `mp` 0.598, `f` 0.862, `ff` 0.928; `pppp`..`pppppp` continue the soft ratio (0.187, 0.140, 0.104), `ffff` and up stay at 1.0, `n` is 0.
+- **Where**: the timeline reads `parts[i].measures[j].dynamics` for every part in scope; a dynamic applies from its position to the next one, to every staff of its part, or to its `staff` only. The level is stored per note on `TimelineEntry.dynamicLevel`.
+- **Hairpins** (`gradual`) ramp linearly in velocity from their start (`value`, else the level in force) to the `immediate` dynamic at their `end`, or one level up/down when there is none; the end level then holds.
+- **Accent dynamics** (`sfz`, `fp`, …) play their `value` on notes starting at their position, then `residualValue` if given, else the previous level.
+- **Articulations**: accent adds 0.1, marcato 0.15 (the larger if both), capped at 1. Staccato plays half the written length, staccatissimo a quarter, tenuto the full length; on a tied note the mark on the chain's last note scales that last note's share.
+- Fermatas, `relative` dynamics and the other unsupported marks do not affect playback.
 
 ## Repeats and jumps
 
