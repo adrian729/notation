@@ -256,10 +256,14 @@ dir   = MNX slur.side if given; else by voice in 2-voice (v0 -> +1, v1 -> -1);
         else +1 (arch up) if any stem in the span is down, else -1 (arch down)
 arch  = clamp(BASE_ARCH + span*ARCH_PER_SP, MIN_ARCH, MAX_ARCH)   ~0.9..3.0 sp
 p1 = p0 + (0.25dx, -dir*arch);  p2 = p0 + (0.75dx, -dir*arch)
-clearance: sample the curve at ~8 points; if any point is inside an intervening
-  notehead/stem/beam bbox, arch += penetration + 0.25sp, resample. cap 4 iterations.
+clearance: sample the curve at ~8 points plus each obstacle's left edge, centre and
+  right edge; if the slur's inner edge (curve + slurMidpointThickness) comes within
+  0.25sp of an intervening notehead/stem/beam/inside-slur articulation bbox,
+  raise the arch by the penetration, resample. cap 4 iterations.
 thicken as ties (slurEndpointThickness 0.10 -> slurMidpointThickness 0.22).
 ```
+
+Articulations and slurs (Dorico's default split, Gould's convention): staccato, staccatissimo and tenuto stay inside the slur — the slur arches over them at interior notes, and at an end note with one on the slur's side the endpoint moves over the outermost of them, to the mark's centre ±0.1sp inward and 0.5sp beyond its middle (MuseScore `SlurTieLayout::fixArticulations`), nudged off a staff line like a tie end. Accent, marcato, soft accent, stress and unstress go outside: after the slur is drawn, any of them on the slur's side of a note under it moves outward until it clears the slur by 0.4sp (`articulationMinDistance`), taking the marks stacked beyond it along.
 
 Across a system break: two half-slurs, same endpoint/direction rules as each half; no
 clearance sampling across the break (nothing to sample against) and no diagnostic.
@@ -305,6 +309,38 @@ Placement:
 - **x**: 0.35sp past the note's right edge — the notehead advance plus any chord second-shift and augmentation dots, the same extent the column's rod already measures. The mark extends the note's `rightWidth`, so the next column moves right by exactly the mark's advance width rather than colliding with it.
 - **y**: the top staff line, `y = 0`. Read off the glyph metadata, not assumed: `breathMarkComma` has bBox y 0.008..1.004 and `caesura` -0.004..2.128, so both start at their origin and extend upward only — anchoring on the top line puts all of their ink in the space above the staff, where the convention puts them, and any lower an anchor would drive them through the staff lines.
 
+## Articulations
+
+From MNX `event.markings` (`mnx.md`): staccato, staccatissimo, tenuto, accent, strongAccent (marcato), softAccent, stress, unstress; class `articulation`, `el` = the event's id. Laid out after beams, so every stem has its final length, and before curves, so slurs can avoid them. The algorithm is MuseScore's `ChordLayout::layoutArticulations`/`layoutArticulations2` with its default style values (`styledef.cpp`): `propertyDistanceHead`, `propertyDistanceStem`, `propertyDistance` (staff) and `articulationMinDistance` are all 0.4sp.
+
+- **Side**: MNX `placement` when given; else in a two-voice measure the stem side (above for the up-stemmed voice, Gould); else marcato above (Gould p. 117); else the notehead side, opposite the stem. A stemless note uses the direction its stem would have. The glyph is the `…Above`/`…Below` form for that side; marcato `pointing` overrides the shape.
+- **Order outward**: staccato, tenuto, staccatissimo, accent, marcato, soft accent, stress, unstress — staccato and tenuto nearest the note, the accents beyond them, a fermata beyond everything.
+- **Staccato and tenuto** (close to the note): on the notehead side, centred in the space 1½ spaces from the outer notehead's line (one space from a note in a space), never on a line; outside the staff, 0.4sp past the notehead. On the stem side (explicit placement, or two voices), in the space past the stem tip, or 0.4sp past a tip that ends outside the staff; a beamed stem tip within 0.4sp of that space moves one more space out. A second close mark goes one space further while inside the staff, else 0.4sp beyond the first. When an accent-type mark shares the side, the close marks gather toward the staff edge so the group stays together.
+- **Accent-type marks and staccatissimo**: outside the staff, at least 0.4sp from its edge, and 0.4sp beyond the chord, its stem tip or flag, and any close mark; each further mark 0.4sp beyond the last. An accent directly over a staccato that is itself outside the staff moves 0.2sp closer to it (MuseScore's staccato/accent kern).
+- **x**: centred on the notehead (the head in the normal column of a chord with seconds); on the stem side, staccato, tenuto, accent and marcato sit halfway between the notehead centre and the stem (MuseScore `articulationStemHAlign: AVERAGE`).
+- Rests carry no articulations. `spiccato`, `bowDirection` and single-note `tremolo` stay `mnx-unsupported`.
+
+## Fermatas
+
+From MNX `event.fermata` (notes and rests), `sequence.fullMeasure.fermata` (the whole-bar rest) and `global.measures[i].fermata` (over the measure's end barline); class `fermata`. Placed last among the marks, after slurs, against a skyline of everything already drawn on that staff: noteheads, stems, flags, accidentals, dots, rests, ledger lines, beams, tuplets, slurs, ties and articulations.
+
+- **x**: centred on the notehead (as for articulations), the rest glyph, or the barline group (thin + thick for a final barline).
+- **y**: at least 0.5sp outside the staff (MuseScore `fermataPosAbove/Below`), and 0.4sp clear of the skyline under its width (`fermataMinDistance`).
+- **Side**: MNX `placement` when given; else above, except the lower voice of a two-voice measure and, on a grand staff, the lower staff, which take it below (keyboard convention). A measure fermata is drawn above staff 1, and on a grand staff also below staff 2. `pointing` overrides the arc's direction. A `symbol` other than `normal` draws the normal fermata + `mnx-unsupported`; `duration` is not played (playback ignores fermatas).
+
+## Dynamics and hairpins
+
+From MNX `parts[0].measures[i].dynamics` (`mnx.md`): `immediate` and `accent` draw their text (`accentPrefix` default `s`, `accentSuffix` default `z`, then `residualValue`: `sfz`, `rfz`, `fp`, `sfzp`, …), `gradual` draws its start `value` if any plus a hairpin to its `end`. Glyphs have class `dynamic`, hairpins are `PathShape`s with class `hairpin`; both carry the dynamic's `id`, else the positional `m{measure}.dyn{k}` (k = index in that measure's `dynamics`). Laid out after fermatas, against the same skyline. The values are MuseScore's defaults (`styledef.cpp`, `dynamicslayout.cpp`, `alignmentlayout.cpp`, `TLayout::layoutHairpinSegment`, `SLine::linePos`).
+
+- **Glyphs**: a value with a SMuFL precomposed dynamic (`dynamicPP`, `dynamicMF`, `dynamicFF`, `dynamicSforzato`, `dynamicRinforzando2`, `dynamicFortePiano`, …) uses it, since the font's kerning between letters is not available per glyph run; anything else is spelled with the single letters `p m f r s z n`, longest precomposed piece first.
+- **x**: the glyph's SMuFL `opticalCenter` anchor sits on the notehead centre (MuseScore's "centre on notehead"); a spelled dynamic uses the midpoint of its first and last letters' optical centres. A position between two notes is interpolated by time. Between the staves of a grand staff, a dynamic is shifted clear of the spanning barlines by 0.25sp.
+- **One line per system**: all dynamics and hairpins on the same side of a staff in a system share one line — a dynamic's middle of x-height (`dynamicMezzo`'s bounding box) and a hairpin's centre — set by the most outward of: dynamic baseline 2sp below the staff (1sp above it), hairpin centre 1.75sp below or above (`dynamicsPosBelow/Above`, `hairpinPosBelow/Above`), 0.5sp clearance from the skyline for dynamics (`dynamicsMinDistance`) and 0.7sp for hairpins (`hairpinMinDistance`, measured against the wedge's height where it overlaps).
+- **Placement**: below the staff by default, above for `placement: 'above'`. On a grand staff a dynamic for the whole part or either staff goes between the staves, unless it asks for above staff 1 or below staff 2; the between line is centred in the free space between staff 1's content and staff 2's (MuseScore's `centerElementsBetweenStaves`), and the staff gap grows when the dynamics would not fit with their clearances.
+- **Hairpin geometry**: opening 1.15sp (`hairpinHeight`), line thickness `hairpinThickness` from the font; the closed end is a bevelled point. It starts at the notehead's left edge, or 0.5sp after a dynamic at the same position (`autoplaceHairpinDynamicsDistance`), and ends 1sp before the note at its end position, or 0.5sp before a dynamic there (extended to it when the gap is over 3sp); at least 1sp long.
+- **Across a system break**: split per system. The first part ends 0.25sp before the system's last barline (`lineEndToBarlineDistance`), the continuation starts 1sp after the clef, key and time (`headerToLineStartDistance`) but never after the first note. A crescendo opens to full height at the break and restarts 0.5sp open (`hairpinContHeight`); a diminuendo closes only to 0.5sp at the break and restarts at full height.
+- **Horizontal space**: two dynamics on the same line that would come within 0.5sp of each other widen the columns between them (within a measure or across one barline).
+- Still `mnx-unsupported`: `relative` dynamics, `prefix`/`suffix` text, custom `glyphs`, `visuallyContinues`, cross-staff hairpins (`staffEnd`), `between` on a single staff (drawn below). A hairpin whose `end` measure id does not resolve, or does not come after its start, gets `hairpin-end-unresolved` and is not drawn.
+
 ## Two voices
 
 Exactly 2 per staff — covers everything needed, avoids the 3+-voice collision combinatorics.
@@ -329,7 +365,7 @@ A part with `staves: 2` (or more — only staves 1 and 2 are laid out, + `mnx-un
 
 - **Per staff**: its own clef, clef changes and courtesy clef, up to 2 voices (stem rules above apply per staff), beams, tuplets, accidental state, ties and slurs. Key and time are shared and drawn on both staves. A slur's obstacles come from its own staff only.
 - **Horizontal**: one set of columns per measure for both staves, so simultaneous notes line up. Chrome widths (clef, key, time, courtesy) are the maximum over the staves; a clef column holds every staff's clef change anchored before the same element column.
-- **Vertical**: staff 2 sits `max(6.5, staff 1's content below + staff 2's content above)` sp below staff 1's bottom line; each staff's content margins are measured separately. `SystemBox.h` covers both staves, and `SystemBox.staves` gives each staff's top line.
+- **Vertical**: staff 2 sits `max(6.5, staff 1's content below + staff 2's content above)` sp below staff 1's bottom line, more when dynamics between the staves need it (Dynamics and hairpins, above); each staff's content margins are measured separately. `SystemBox.h` covers both staves, and `SystemBox.staves` gives each staff's top line.
 - **System start**: a thin system line at x = 0 joins the staves, and a `brace` glyph sits 0.35 sp left of it (MuseScore's `akkoladeBarDistance`). The brace is stretched vertically to the system's height but stays narrow: `GlyphRun.scale` sets its width to 0.9 sp (what MuseScore's two-staff brace measures) and `GlyphRun.scaleY` multiplies the vertical size on top. The left margin widens by the brace's width plus the gap.
 - **Cross-staff** notes, events and tuplets are laid out on their sequence's staff; cross-staff beams, ties and slurs are not drawn (`mnx-unsupported`).
 

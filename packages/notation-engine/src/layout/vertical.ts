@@ -139,6 +139,7 @@ export interface VerticalElement {
   duration: Duration;
   noteheads: readonly NoteheadLayout[];
   rest?: RestLayout;
+  dir?: 1 | -1;
   stem?: StemLayout;
   breath?: BreathLayout;
   leftWidth: number;
@@ -400,6 +401,7 @@ function layOut(
   const element: VerticalElement = {
     ...base,
     noteheads,
+    dir,
     ...(stem ? { stem } : {}),
     leftWidth,
     rightWidth: 0,

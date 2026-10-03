@@ -300,9 +300,9 @@ describe('unsupported constructs render what they can and say so', () => {
     const doc = mnx(
       {},
       withPart(
-        { dynamics: [{ type: 'immediate', value: 'f', position: { fraction: [0, 1] } }] },
+        { dynamics: [{ type: 'relative', relativeValue: 'louder', position: { fraction: [0, 1] } }] },
         measure(
-          note('C4', 'q', { slurs: [{ target: 'x' }], markings: { staccato: {} } }),
+          note('C4', 'q', { slurs: [{ target: 'x' }], markings: { spiccato: {} } }),
           note('D4', 'q', { slurs: [{ target: 'x' }] }),
           note('E4', 'h', { lyrics: { lines: { '1': { text: 'la' } } } }),
         ),
@@ -310,10 +310,36 @@ describe('unsupported constructs render what they can and say so', () => {
     );
     expect(() => layoutScore(doc)).not.toThrow();
     expect(unsupported(doc)).toEqual([
-      'Unsupported MNX: dynamics in measure 0; not drawn.',
-      'Unsupported MNX: staccato marking in measure 0; not drawn.',
+      'Unsupported MNX: relative dynamic in measure 0; not drawn.',
+      'Unsupported MNX: spiccato marking in measure 0; not drawn.',
       'Unsupported MNX: lyrics in measure 0; not drawn.',
     ]);
+  });
+});
+
+describe('hairpins', () => {
+  it('draws the start dynamic but no hairpin when the end measure id does not resolve', () => {
+    const doc = mnx(
+      {},
+      withPart(
+        {
+          dynamics: [
+            {
+              type: 'gradual',
+              value: 'p',
+              wedgeType: 'increasing',
+              position: { fraction: [0, 1] },
+              end: { measure: 'missing', position: { fraction: [0, 1] } },
+            },
+          ],
+        },
+        measure(note('C4', 'w')),
+      ),
+    );
+    const layout = layoutScore(doc);
+    expect(layout.diagnostics.map((d) => d.code)).toEqual(['hairpin-end-unresolved']);
+    expect(layout.paths.some((p) => p.cls === 'hairpin')).toBe(false);
+    expect(layout.glyphs.filter((g) => g.cls === 'dynamic')).toHaveLength(1);
   });
 });
 
@@ -631,6 +657,24 @@ describe('silent-drop constructs', () => {
       (d) =>
         Object.assign(d.parts[0]!.measures![0]!.sequences![0]!.content[0]!, {
           markings: { breath: { placement: 'above' } },
+        }),
+    ],
+    [
+      'fermata symbol',
+      (d) => Object.assign(d.parts[0]!.measures![0]!.sequences![0]!.content[0]!, { fermata: { symbol: 'square' } }),
+    ],
+    [
+      'dynamic text and glyphs',
+      (d) =>
+        Object.assign(d.parts[0]!.measures![0]!, {
+          dynamics: [{ type: 'immediate', value: 'p', prefix: 'più', glyphs: [], position: { fraction: [0, 1] } }],
+        }),
+    ],
+    [
+      'dynamic between on a single staff',
+      (d) =>
+        Object.assign(d.parts[0]!.measures![0]!, {
+          dynamics: [{ type: 'immediate', value: 'p', placement: 'between', position: { fraction: [0, 1] } }],
         }),
     ],
     [

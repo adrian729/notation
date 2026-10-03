@@ -92,12 +92,10 @@ export function reportGlobalConstructs(g: MeasureGlobal, measureIndex: number, r
   if (g.jump) reader.unsupported('jump', measureIndex, 'not drawn');
   if (g.segno) reader.unsupported('segno', measureIndex, 'not drawn');
   if (g.fine) reader.unsupported('fine', measureIndex, 'not drawn');
-  if (g.fermata) reader.unsupported('fermata', measureIndex, 'not drawn');
   if (g.number !== undefined) reader.unsupported('measure number override', measureIndex, 'ignored');
 }
 
 export function reportPartConstructs(pm: Partial<PartMeasure>, measureIndex: number, reader: Reader): void {
-  if (asArray(pm.dynamics).length > 0) reader.unsupported('dynamics', measureIndex, 'not drawn');
   if (asArray(pm.ottavas).length > 0) reader.unsupported('ottavas', measureIndex, 'not drawn');
   if (asArray(pm.arpeggios).length > 0) reader.unsupported('arpeggios', measureIndex, 'not drawn');
   if (asArray(pm.nonArpeggios).length > 0) reader.unsupported('non-arpeggios', measureIndex, 'not drawn');

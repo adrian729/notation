@@ -22,7 +22,7 @@ packages/
       temporal.ts             join of timeline entries and normalized records — emits TemporalElement, never reads MnxDocument
       accidentals.ts grouping.ts staff.ts tuplets.ts
       beam-policy/            beamGroups, beatGroupingFor — engine-internal auto-beaming policy (engraving.md)
-      vertical.ts horizontal.ts break.ts justify.ts beams.ts curves.ts emit.ts
+      vertical.ts horizontal.ts break.ts justify.ts beams.ts articulations.ts curves.ts skyline.ts fermatas.ts dynamics.ts margins.ts emit.ts
       index.ts              # layoutScore(doc: MnxDocument, options)
     src/query/               hitTest.ts slots.ts measures.ts preview.ts position.ts
     test/                     fixtures/ (MNX JSON), __golden__/ (golden.test.ts snapshots), __snapshots__/, conformance.test.ts, schema.test.ts, mnx-mapping.test.ts, golden.test.ts, layout.test.ts, pipeline.test.ts, interaction.test.ts, fullness.test.ts, rational.test.ts, key-clef-corpus.test.ts, mnx.ts (test helper)
@@ -62,17 +62,20 @@ Each stage is a pure function `(input, options: NotationOptions) => output`, ind
 | # | Stage | Adds | Detail |
 | --- | --- | --- | --- |
 | 0 | timeline (`mnx-score`) | entries with ids, ticks, durations, midi; ties, measures (pickup, capacity), tempo and play order | rational arithmetic, tuplet scaling, fullness policy (`mnx.md`); built and memoized by `layoutScore`, ids frozen. **The source of musical time.** |
-| 1 | normalize | resolved clef/key/time per measure, engraving-only records (stems, beams, slurs, breaks) | reads only engraving data from MNX and finds elements through `timeline.ids`; inherits forward; produces diagnostics, never throws |
+| 1 | normalize | resolved clef/key/time per measure, engraving-only records (stems, beams, slurs, breaks, articulations, fermatas, dynamics) | reads only engraving data from MNX and finds elements through `timeline.ids`; inherits forward; produces diagnostics, never throws |
 | 2 | temporal | one `TemporalElement` per timeline entry | a join of timeline entries and normalized records; no time arithmetic of its own. |
 | 3 | accidentals | resolved accidental per note | measure-scoped state, key seeding, tie carryover, cautionary rules — `engraving.md` |
 | 4 | grouping | tuplet spans | tie/slur pairing and beam groups both happen in normalize (stage 1), not here — `engraving.md`; vertical (stage 5) only derives each beam group's shared stem direction from the groups normalize already built |
 | 5 | vertical | staff position, stem direction, *provisional* stem length, ledger lines | per-voice stem rules, chord shifting, accidental packing — `engraving.md`. Beamed notes' length is provisional here — stage 9 re-terminates it. |
-| 6 | horizontal | column x, intrinsic widths | spring/rod model — `engraving.md` |
+| 6 | horizontal | column x, intrinsic widths | spring/rod model — `engraving.md`; dynamics that would collide widen the columns between them (`spaceDynamics`) |
 | 7 | break | system assignment | greedy fill to `options.widthSp` |
 | 8 | justify | final x per column | distribute slack per system |
 | 9 | beams | beam geometry, finalizes beamed-note stem length | runs after justify — slope depends on final x; beam ids are minted into a per-layout `timeline.ids.fork()`, stable across re-layouts |
-| 10 | curves | tie/slur paths | also post-justify |
-| 11 | emit | `LayoutResult` | flatten to render-ready primitives, plus `timeline` and `placements` |
+| 10 | articulations | articulation marks per note | after beams, so stems are final; before curves, so slurs can avoid them |
+| 11 | curves | tie/slur paths | also post-justify; slurs arch over inside-slur marks, then accent-type marks at slurred notes move outside the slur (`clearSlurs`) |
+| 12 | fermatas | fermata marks | against a per-staff skyline of everything drawn so far (`skyline.ts`) |
+| 13 | dynamics | dynamic glyphs, hairpin paths, the grand-staff gap | one line per system and side; content margins (`margins.ts`) and staff offsets are computed here, before emit |
+| 14 | emit | `LayoutResult` | flatten to render-ready primitives, plus `timeline` and `placements` |
 
 Play order comes from the timeline's play-order segments (`query/playorder.ts` is gone). Diagnostics merge in a fixed order: timeline (without `id-collision`) → engine → timeline `id-collision`s → beam-fork `id-collision`s (`mnx.md`).
 
@@ -135,6 +138,8 @@ interface MeasureBox {
 **Chords:** one `ElementBox` per member note id (one per notehead), not one per chord event. All members of a chord share `x`/`tick`/`durationTicks`/`systemIndex`/`measureIndex`/`eventId`; each has its own `y`/`staffPosition`/`hitBox`/`label`, `kind:'chord'`. No separate chord-level box — matches the one-`<g>`-per-note accessibility rule (`interaction.md`) and keeps `modifyPitch`/`deleteElements` addressable per pitch without a second ID scheme. `layout.timeline` and `layout.placements` are the timeline-keyed view: join by id to get an entry's ticks and its drawn position; `positionAtTick(layout, tick)` (`@polyhymnia/notation-engine`) uses them with `layout.systems` for the cursor. `NoteId` (`layout/records.ts`) is a plain `string` — the MNX `id` when the document supplies one, else the positional id `mnx.md` documents. `HitResult.part:'notehead'` resolves to the member whose `staffPosition` is nearest the hit point.
 
 Beams are a 4-point `PathShape` (`cls: 'beam'`, `el` = the beam's own id — `mnx.md`), not a rotated `RectShape`: an exact parallelogram whose near edge is the line every re-terminated stem in it touches (`engraving.md` "Beaming").
+
+Marks: articulations and fermatas are `GlyphRun`s with `cls: 'articulation'`/`'fermata'` and `el` = the event's id, emitted right after the event's own glyphs (so a single note's marks join its `<g>`); a measure fermata has `el` = `m{i}.fermata`. Dynamics are `GlyphRun`s with `cls: 'dynamic'`, hairpins `PathShape`s with `cls: 'hairpin'`, both with `el` = the dynamic's id (`mnx.md`). None of them get an `ElementBox`, like slurs and beams.
 
 ## Coordinate system
 

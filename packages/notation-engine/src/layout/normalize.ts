@@ -12,22 +12,32 @@ import type {
   Sequence,
   Slur,
 } from '@polyhymnia/mnx';
-import { positionTick, type Timeline, type TimelineEntry, type TimelineNote } from '@polyhymnia/mnx-score';
+import {
+  positionTick,
+  type ArticulationKind,
+  type Timeline,
+  type TimelineEntry,
+  type TimelineNote,
+} from '@polyhymnia/mnx-score';
 import { stepNumberOf } from '@polyhymnia/music-theory';
 import type { NotationOptions } from '../options.js';
 import {
   DEFAULT_TIME,
   type AccidentalPolicy,
   type Alter,
+  type ArticulationSpec,
   type ClefChange,
   type ClefSpec,
+  type FermataSpec,
   type KeySpec,
+  type NormalizedDynamic,
   type NormalizedMeasure,
   type NormalizedScore,
   type NoteId,
   type StaffPitch,
   type StepNumber,
   type TimeSpec,
+  type VerticalSide,
 } from './records.js';
 import {
   asArray,
@@ -46,12 +56,15 @@ import {
   resolveKey,
 } from './normalize-measure.js';
 import { resolveBeams } from './normalize-beams.js';
+import { readDynamics } from './normalize-dynamics.js';
 import { clefEquals, lastClef } from './staff.js';
 import { declaredStaves, laidOutStaves, timelineFor } from './timeline.js';
 
 const DEFAULT_CLEF: ClefSpec = { kind: 'treble' };
 const DEFAULT_KEY: KeySpec = { fifths: 0 };
 const HANDLED_MARKINGS = new Set(['breath', 'caesura', '_c', '_x', 'id']);
+const SIDES = new Set<unknown>(['above', 'below']);
+const POINTINGS = new Set<unknown>(['up', 'down']);
 
 interface SequenceScope {
   measureIndex: number;
@@ -81,6 +94,7 @@ export function normalize(
     beams: [],
     ties: [],
     slurs: [],
+    dynamics: [],
     diagnostics,
   });
 
@@ -108,6 +122,12 @@ export function normalize(
   const globals = asArray(asObject(source.global)?.measures);
   const partMeasures = asArray(part.measures);
   const staffIndices = Array.from({ length: staffCount }, (_, i) => i);
+  const measureIndexById = new Map<string, number>();
+  globals.forEach((g, i) => {
+    const id = asObject(g)?.id;
+    if (typeof id === 'string') measureIndexById.set(id, i);
+  });
+  const dynamics: NormalizedDynamic[] = [];
 
   const elementTicks = elementTicksByMeasure(timeline);
   const currentClefs: ClefSpec[] = staffIndices.map(() => DEFAULT_CLEF);
@@ -132,7 +152,9 @@ export function normalize(
     });
 
     reportGlobalConstructs(g, index, reader);
+    const fermata = fermataOf(g.fermata, index, reader);
     reportPartConstructs(pm, index, reader);
+    dynamics.push(...readDynamics(asArray(pm.dynamics), index, { timeline, reader, staffCount, measureIndexById }));
     readSequences(asArray(pm.sequences), index, reader, staffCount, declared);
 
     firstKey ??= currentKey;
@@ -145,6 +167,7 @@ export function normalize(
       capacityTicks: timed ? timed.endTick - timed.startTick : 0,
       ...(g.repeatStart ? { barlineStart: 'repeat-start' as const } : {}),
       ...barlineEndOf(g, index, reader),
+      ...(fermata ? { fermata } : {}),
     };
     clefs.forEach((c, s) => {
       measuresByStaff[s]!.push({
@@ -159,7 +182,7 @@ export function normalize(
 
   measuresByStaff.forEach((measures, s) => assignTrailingClefs(measures, currentClefs[s]!));
   resolveSlurs(reader);
-  applySystemBreaks(source, globals, measuresByStaff, reader);
+  applySystemBreaks(source, measureIndexById, measuresByStaff, reader);
   const beams = resolveBeams(source, partMeasures, measuresByStaff[0]!, staffCount, timeline, beamIds, reader, options);
 
   return {
@@ -178,6 +201,7 @@ export function normalize(
     beams,
     ties: timeline.ties.map((tie) => ({ ...tie, measureIndex: timeline.ids.nodeOf(tie.from)?.measureIndex ?? 0 })),
     slurs: reader.resolvedSlurs,
+    dynamics,
     diagnostics,
   };
 }
@@ -311,7 +335,15 @@ function readSequences(
         );
         const full = asObject(sequence.fullMeasure);
         if (full) {
-          if (full.fermata) reader.unsupported('fermata', measureIndex, 'not drawn');
+          const fermata = fermataOf(full.fermata, measureIndex, reader);
+          const id = reader.ids.idAt({
+            measureIndex,
+            sequenceIndex: index,
+            path: [],
+            fullMeasureRest: true,
+            staff: staffIndex + 1,
+          });
+          if (fermata && id !== undefined) reader.events.set(id, { fermata });
           if (full.visualDuration !== undefined) {
             reader.unsupported('full-measure rest visualDuration', measureIndex, 'drawn as a whole-bar rest');
           }
@@ -351,8 +383,12 @@ function readEvent(event: MnxEvent, pos: ElementPosition & { staff: number }, re
   if (id === undefined || !entry) return;
 
   if (entry.dots > 2) reader.unsupported(`${entry.dots} dots`, measureIndex, 'two dots are drawn');
-  reportEventConstructs(event, measureIndex, staff, reader);
-  if (entry.notes.length === 0) return;
+  reportEventConstructs(event, entry.articulations ?? [], measureIndex, staff, reader);
+  const fermata = fermataOf(event.fermata, measureIndex, reader);
+  if (entry.notes.length === 0) {
+    if (fermata) reader.events.set(id, { fermata });
+    return;
+  }
 
   const mnxNotes = asArray(event.notes)
     .map((raw) => asObject(raw) as MnxNote | undefined)
@@ -367,11 +403,47 @@ function readEvent(event: MnxEvent, pos: ElementPosition & { staff: number }, re
   });
   const stem = event.stemDirection === 'up' || event.stemDirection === 'down' ? event.stemDirection : undefined;
   const breath = breathOf(event, measureIndex, reader);
-  reader.events.set(id, { ...(stem ? { stem } : {}), ...(breath ? { breath } : {}) });
+  const articulations = articulationsOf(event, entry.articulations ?? []);
+  reader.events.set(id, {
+    ...(stem ? { stem } : {}),
+    ...(breath ? { breath } : {}),
+    ...(articulations.length > 0 ? { articulations } : {}),
+    ...(fermata ? { fermata } : {}),
+  });
 }
 
-function reportEventConstructs(event: MnxEvent, measureIndex: number, staff: number, reader: Reader): void {
-  if (event.fermata) reader.unsupported('fermata', measureIndex, 'not drawn');
+function articulationsOf(event: MnxEvent, kinds: readonly ArticulationKind[]): ArticulationSpec[] {
+  const markings = asObject(event.markings);
+  return kinds.map((kind) => {
+    const marking = asObject(markings?.[kind]);
+    return { kind, ...sideOf(marking?.placement), ...pointingOf(marking?.pointing) };
+  });
+}
+
+function fermataOf(raw: unknown, measureIndex: number, reader: Reader): FermataSpec | undefined {
+  const fermata = asObject(raw);
+  if (!fermata) return undefined;
+  if (fermata.symbol !== undefined && fermata.symbol !== 'normal') {
+    reader.unsupported(`${String(fermata.symbol)} fermata`, measureIndex, 'drawn as a normal fermata');
+  }
+  return { ...sideOf(fermata.placement), ...pointingOf(fermata.pointing) };
+}
+
+function sideOf(placement: unknown): { placement?: VerticalSide } {
+  return SIDES.has(placement) ? { placement: placement as VerticalSide } : {};
+}
+
+function pointingOf(pointing: unknown): { pointing?: 'up' | 'down' } {
+  return POINTINGS.has(pointing) ? { pointing: pointing as 'up' | 'down' } : {};
+}
+
+function reportEventConstructs(
+  event: MnxEvent,
+  articulations: readonly ArticulationKind[],
+  measureIndex: number,
+  staff: number,
+  reader: Reader,
+): void {
   if (event.lyrics) reader.unsupported('lyrics', measureIndex, 'not drawn');
   if (typeof event.staff === 'number' && event.staff !== staff) {
     reader.unsupported('cross-staff event', measureIndex, `laid out on staff ${staff}`);
@@ -379,7 +451,7 @@ function reportEventConstructs(event: MnxEvent, measureIndex: number, staff: num
   const markings = asObject(event.markings);
   if (!markings) return;
   for (const name of Object.keys(markings)) {
-    if (HANDLED_MARKINGS.has(name)) continue;
+    if (HANDLED_MARKINGS.has(name) || (articulations as readonly string[]).includes(name)) continue;
     reader.unsupported(`${name} marking`, measureIndex, 'not drawn');
   }
 }
@@ -554,7 +626,7 @@ function pitchIndex(p: StaffPitch): number {
 
 function applySystemBreaks(
   source: MnxDocument,
-  globals: readonly unknown[],
+  indexById: ReadonlyMap<string, number>,
   measuresByStaff: readonly NormalizedMeasure[][],
   reader: Reader,
 ): void {
@@ -568,11 +640,6 @@ function applySystemBreaks(
   if (asArray(score.multimeasureRests).length > 0) {
     reader.unsupported('multimeasure rests', undefined, 'each measure is drawn on its own');
   }
-  const indexById = new Map<string, number>();
-  globals.forEach((g, i) => {
-    const id = asObject(g)?.id;
-    if (typeof id === 'string') indexById.set(id, i);
-  });
   const systems = asArray(score.pages).flatMap((page) => asArray(asObject(page)?.systems));
   for (const raw of systems) {
     const measureId = asObject(raw)?.measure;

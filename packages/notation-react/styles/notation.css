@@ -62,7 +62,11 @@
     [data-pn='slur'],
     [data-pn='tie'],
     [data-pn='tuplet-bracket'],
-    [data-pn='tuplet-number']
+    [data-pn='tuplet-number'],
+    [data-pn='articulation'],
+    [data-pn='fermata'],
+    [data-pn='dynamic'],
+    [data-pn='hairpin']
   ) {
   color: var(--pn-lapis-mensural, oklch(0.49 0.2 262));
 }

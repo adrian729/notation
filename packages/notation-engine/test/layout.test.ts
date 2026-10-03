@@ -1546,3 +1546,115 @@ describe('font family', () => {
     }
   });
 });
+
+describe('articulations, fermatas and dynamics', () => {
+  const nameOf = new Map(Object.entries(modernStyle.glyphs).map(([name, code]) => [code, name]));
+  const ink = (g: GlyphRun, top: number): { top: number; bottom: number; center: number } => {
+    const { bBoxNE, bBoxSW } = glyphBBox(nameOf.get(g.cp)!);
+    return {
+      top: g.y - bBoxNE[1] - top,
+      bottom: g.y - bBoxSW[1] - top,
+      center: g.y - (bBoxNE[1] + bBoxSW[1]) / 2 - top,
+    };
+  };
+
+  it('stacks staccato, accent and fermata outward and keeps staccato in a space on the notehead side', () => {
+    const layout = layoutModern(
+      mnx(
+        {},
+        measure(
+          note('B4', 'q', { markings: { staccato: {} } }),
+          note('G4', 'q', { markings: { staccato: {} } }),
+          note('A4', 'h', { markings: { staccato: {}, accent: {} }, fermata: {} }),
+        ),
+      ),
+    );
+    const top = layout.systems[0]!.y;
+    const [onB, onG, onA] = glyphsOf(layout, 'articulation')
+      .filter((g) => nameOf.get(g.cp)!.startsWith('articStaccato'))
+      .map((g) => ink(g, top));
+    const heads = boxes(layout).map((b) => b.y + b.h / 2 - top);
+    expect(onB!.center).toBeLessThan(heads[0]!);
+    expect(onG!.center).toBeGreaterThan(heads[1]!);
+    for (const mark of [onB!, onG!, onA!]) expect(Math.abs((mark.center % 1) - 0.5)).toBeLessThan(1e-9);
+    const accent = ink(
+      glyphsOf(layout, 'articulation').find(
+        (g) => nameOf.get(g.cp) === 'articAccentBelow' || nameOf.get(g.cp) === 'articAccentAbove',
+      )!,
+      top,
+    );
+    const fermata = ink(glyphsOf(layout, 'fermata')[0]!, top);
+    expect(accent.top).toBeGreaterThanOrEqual(onA!.bottom);
+    expect(accent.top).toBeGreaterThanOrEqual(4);
+    expect(fermata.bottom).toBeLessThan(0);
+  });
+
+  it('arches a slur over staccatos and keeps accents outside it', () => {
+    const layout = layoutModern(
+      mnx(
+        {},
+        measure(
+          note('C5', 'q', { slurs: [{ target: 'd' }] }),
+          note('C5', 'q', { markings: { staccato: {}, accent: {} } }),
+          note('C5', 'q', { id: 'd' }),
+          rest('q'),
+        ),
+      ),
+    );
+    const points = [
+      ...layout.paths.find((p) => p.cls === 'slur')!.d.matchAll(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g),
+    ].map((m) => [Number(m[1]), Number(m[2])] as const);
+    const edge = (from: number): ((t: number) => readonly [number, number]) => {
+      const [p0, c1, c2, p3] = points.slice(from, from + 4);
+      return (t) => {
+        const u = 1 - t;
+        const at = (k: 0 | 1): number =>
+          u * u * u * p0![k] + 3 * u * u * t * c1![k] + 3 * u * t * t * c2![k] + t * t * t * p3![k];
+        return [at(0), at(1)];
+      };
+    };
+    const within = (curve: (t: number) => readonly [number, number], mark: GlyphRun): number[] => {
+      const { bBoxNE, bBoxSW } = glyphBBox(nameOf.get(mark.cp)!);
+      return Array.from({ length: 201 }, (_, i) => curve(i / 200))
+        .filter(([x]) => x >= mark.x + bBoxSW[0] && x <= mark.x + bBoxNE[0])
+        .map(([, y]) => y);
+    };
+    const marks = glyphsOf(layout, 'articulation');
+    const staccato = marks.find((g) => nameOf.get(g.cp) === 'articStaccatoAbove')!;
+    const accent = marks.find((g) => nameOf.get(g.cp) === 'articAccentAbove')!;
+    expect(Math.max(...within(edge(4), staccato))).toBeLessThan(staccato.y - glyphBBox('articStaccatoAbove').bBoxNE[1]);
+    expect(Math.min(...within(edge(0), accent))).toBeGreaterThan(accent.y - glyphBBox('articAccentAbove').bBoxSW[1]);
+  });
+
+  it('centres dynamics and hairpins of a grand staff on one line between the staves', () => {
+    const spec = withPart(
+      {
+        dynamics: [
+          { type: 'immediate', value: 'p', position: { fraction: [0, 1] } },
+          {
+            type: 'gradual',
+            wedgeType: 'increasing',
+            position: { fraction: [1, 4] },
+            end: { measure: 'b', position: { fraction: [0, 1] } },
+          },
+        ],
+      },
+      GRAND_MEASURE([{ clef: TREBLE }, { clef: BASS, staff: 2 }], quarters('C5', 'D5', 'E5', 'F5'), [note('C3', 'w')]),
+    );
+    const next = withPart(
+      { dynamics: [{ type: 'immediate', value: 'f', position: { fraction: [0, 1] } }] },
+      GRAND_MEASURE([], [note('C4', 'w')], [note('E4', 'w')], { global: { id: 'b' } }),
+    );
+    const layout = layoutModern(grandDoc({ ...spec, global: { id: 'a' } }, next));
+    const [upper, lower] = layout.systems[0]!.staves!;
+    const dynamics = glyphsOf(layout, 'dynamic');
+    expect(new Set(dynamics.map((g) => g.y)).size).toBe(1);
+    const line = dynamics[0]!.y;
+    expect(line).toBeGreaterThan(upper!.y + upper!.h);
+    expect(line).toBeLessThan(lower!.y);
+    const hairpin = layout.paths.find((p) => p.cls === 'hairpin')!;
+    const ys = [...hairpin.d.matchAll(/,(-?\d+(?:\.\d+)?)/g)].map((m) => Number(m[1]));
+    expect(Math.min(...ys)).toBeGreaterThan(upper!.y + upper!.h);
+    expect(Math.max(...ys)).toBeLessThan(lower!.y);
+  });
+});

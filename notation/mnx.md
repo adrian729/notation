@@ -33,6 +33,9 @@ Reading `parts[0]` only, staves 1–2 (staff 2 only when the part declares `stav
 | `event.slurs[]` | `NormalizedSlur { id, from, to, startNote?, endNote?, side?, measureIndex }`, `id` = `slur.id` ?? `${fromEventId}.slur${k}`. `target` resolves to the tied-to event's laid-out ids; an unresolved `target`/`startNote`/`endNote` → diagnostic `slur-target-unresolved`, the slur is not drawn. `lineType` other than `'solid'` → drawn solid, `mnx-unsupported`; `sideEnd` differing from `side` → the start `side` is used for the whole curve, `mnx-unsupported`. See "Slurs" in `engraving.md` for direction/clearance |
 | `event.stemDirection` | `'up'`/`'down'` override; anything else is the engine's own resolution (`engraving.md`) |
 | `event.markings.breath` | drawn as `'comma'` unless `symbol` is something other than `'comma'`/`'auto'`, then still drawn as a comma + `mnx-unsupported` |
+| `event.markings.staccato`/`staccatissimo`/`tenuto`/`accent`/`strongAccent`/`softAccent`/`stress`/`unstress` | `EventEngraving.articulations[] { kind, placement?, pointing? }` (`placement` `'auto'` = the engine's choice; `pointing` read for `strongAccent`); the timeline carries the kinds on `TimelineEntry.articulations` for playback. Drawn per `engraving.md` "Articulations" |
+| `event.fermata`, `sequence.fullMeasure.fermata`, `global.measures[i].fermata` | `EventEngraving.fermata` / `NormalizedMeasure.fermata` `{ placement?, pointing? }`; a `symbol` other than `'normal'` draws the normal fermata + `mnx-unsupported`; `duration` is ignored (`engraving.md` "Fermatas") |
+| `parts[0].measures[i].dynamics[]` | `NormalizedDynamic { id, measureIndex, tick, staffIndex?, placement, text?, hairpin? }`, `id` = `dynamic.id` ?? `m{i}.dyn{k}`. `position` goes through `positionTick` (`invalid-position` as for clefs). `immediate` → `text` = `value`; `accent` → `accentPrefix` (default `s`) + `value` + `accentSuffix` (default `z`) + `residualValue`; `gradual` → `text` = `value` when given, and `hairpin { wedge, endTick }` from `wedgeType` and `end { measure, position }`, the measure id resolved through `global.measures[].id` — unresolved or not after the start → `hairpin-end-unresolved`, no hairpin. `staff` limits it to one staff (outside the laid-out staves → `mnx-unsupported`, not drawn). The timeline turns the same entries into each note's `dynamicLevel` (`playback.md`). Drawn per `engraving.md` "Dynamics and hairpins" |
 | `event.markings.caesura` | drawn as `'caesura'`; a caesura + a breath on the same event draws only the caesura + `mnx-unsupported`; a non-default `shape`/`marks` still draws a plain caesura + `mnx-unsupported` |
 | `scores[0].pages[].systems[].measure` | forces a system break after the *previous* measure (a system starting at measure `k` → break after `k−1`). No `pages`/`systems` at all → greedy breaking (`engraving.md`). A `measure` id that doesn't resolve → diagnostic `system-measure-unresolved`. More than one entry in `scores[]` → only `scores[0]` is used, + `mnx-unsupported` |
 | first measure whose longest content is shorter than the meter | pickup — no padding, no diagnostic (see "Pickup and fullness rules" below) |
@@ -49,14 +52,15 @@ Note values: `breve`, `whole`, `half`, `quarter`, `eighth`, `16th`, `32nd`, `64t
 - Multiple parts (only `parts[0]` is laid out), a part with `staves > 2` (only staves 1–2), a part's `transposition`/`kit` (percussion kits aren't laid out)
 - A 3rd+ sequence in a measure (`too-many-voices`, listed separately below since it isn't gated through `unsupported()`); a sequence or clef on a staff the part doesn't declare (`staff` above `parts[0].staves`, or below 1)
 - Percussion clefs and other unrecognized clef sign/position pairs (fall back to the nearest of treble/bass/alto); a clef octave outside `-1..1`
-- Grace notes, multi-note tremolo (its time is left blank via a `space`), lyrics, dynamics, ottavas, arpeggios/non-arpeggios, staff configs, measure repeats
+- Grace notes, multi-note tremolo (its time is left blank via a `space`), lyrics, ottavas, arpeggios/non-arpeggios, staff configs, measure repeats
+- `relative` dynamics (not drawn); a dynamic's `prefix`/`suffix` text (not drawn), `glyphs` (drawn from its value), `visuallyContinues` (drawn as a separate dynamic), a cross-staff hairpin (`staffEnd`, drawn on one staff), `placement: 'between'` on a single staff (drawn below), an unknown `value` (not drawn)
 - `slur.lineType` other than `'solid'` (drawn solid); `slur.sideEnd` differing from `slur.side` (the start side is used for the whole curve)
 - `tuplet.showValue` (only the actual count is drawn, per `showNumber`/`options.tuplets.showRatio`)
-- `ending`, `jump`, `segno`, `fine` (honored for playback order via the timeline's play-order segments, but not drawn), `fermata` (global or per-event), multimeasure rests
+- `ending`, `jump`, `segno`, `fine` (honored for playback order via the timeline's play-order segments, but not drawn), multimeasure rests; a fermata `symbol` other than `normal` (drawn as a normal fermata)
 - A measure's `number` override (ignored — measures are numbered positionally)
 - `note.written`/`note.perform` (sounding pitch is drawn instead; perform hints are ignored)
 - Cross-staff notes/events/tuplets (laid out on their sequence's staff); cross-staff beams, ties and slurs (not drawn)
-- Any `event.markings` key besides `breath`/`caesura`/`id`/the internal `_c`/`_x` reserved names
+- Any `event.markings` key besides `breath`/`caesura`, the eight articulations above, `id` and the internal `_c`/`_x` reserved names — that is `spiccato`, `bowDirection` and single-note `tremolo`
 - An accidental `alter` outside `-2..2` (clamped, drawn with the clamped value); a key signature's `fifths` outside `-7..7` (clamped, drawn with the clamped value)
 - A tie's `targetType` other than `nextNote`/absent (`crossVoice`, `arpeggio`, `crossJump` — not drawn)
 - Nested tuplets (flattened to one combined ratio), a tuplet whose `inner`/`outer` note value isn't supported (its content is laid out untupled, or keeps only the outer ratio when nested)
@@ -65,7 +69,7 @@ Note values: `breve`, `whole`, `half`, `quarter`, `eighth`, `16th`, `32nd`, `64t
 - `score.useWritten: true` (sounding pitches are drawn); `mnx.support.useAccidentalDisplay: false` (accidental display settings are applied regardless)
 - `clef.glyph`/`hide`/`showOctave`/`color` (ignored); `accidental-display.force` (ignored); `breath-mark.placement` (default position); `full-measure-rest.visualDuration` (drawn as a whole-bar rest)
 - `part.name`/`shortName`, `score.name`, `global.lyrics` (not drawn)
-- `graceIndex` in tempo and clef positions (grace positioning ignored)
+- `graceIndex` in tempo, clef and dynamic positions (grace positioning ignored)
 - A synthesized positional id that collides with an id already in use (disambiguated with a `~2`, `~3`, … suffix, diagnostic `id-collision`); an explicit id reused on more than one laid-out element (diagnostic `id-collision`, first occurrence wins)
 
 One construct the engine reads but doesn't yet lay out is downstream of `normalize`, not gated through the same `unsupported()` helper, so it gets its own diagnostic code instead of `mnx-unsupported`:
@@ -157,7 +161,7 @@ interface Diagnostic {
 }
 ```
 
-Order in `LayoutResult.diagnostics`: `readMnx` and `invalid-divisions`, timeline structure, content, tempo and play-order unsupported, ties, fullness, time-affecting `mnx-unsupported`; then the engine's (`mnx-unsupported` for drawing, `invalid-key-signature`, `slur-target-unresolved`, `system-measure-unresolved`, `beam-*`, `tie-unplaced`, curves); then every `id-collision` — the timeline's, then the beam fork's.
+Order in `LayoutResult.diagnostics`: `readMnx` and `invalid-divisions`, timeline structure, content, tempo and play-order unsupported, ties, fullness, time-affecting `mnx-unsupported`; then the engine's (`mnx-unsupported` for drawing, `invalid-key-signature`, `invalid-position`, `hairpin-end-unresolved`, `slur-target-unresolved`, `system-measure-unresolved`, `beam-*`, `tie-unplaced`, curves); then every `id-collision` — the timeline's, then the beam fork's.
 
 Codes actually produced today (verify against `mnx-score/src/`, `normalize*.ts`, `vertical.ts`, `curves.ts` and `read.ts`; "Where" is the stage that emits the code: `timeline` = `mnx-score`, the rest are engine stages — this list is exact as of the current pipeline, not aspirational):
 
@@ -176,7 +180,8 @@ Codes actually produced today (verify against `mnx-score/src/`, `normalize*.ts`,
 | `invalid-key-signature` | warning | `normalize` | A measure's `key.fifths` is missing or not a finite number; inherits the previous measure's key |
 | `invalid-duration` | warning | `timeline` | An event's `duration` has no readable `base`; the event is skipped |
 | `invalid-pitch` | warning | `timeline` | A note's `pitch` is missing `step`/`octave`; drawn as C4 |
-| `invalid-position` | warning | `normalize` (from `positionTick`) | A clef's `position.fraction` is unreadable (that clef is dropped) or past the measure's end (clamped to the end) |
+| `invalid-position` | warning | `normalize` (from `positionTick`) | A clef's or dynamic's `position.fraction` (or a hairpin's `end.position`) is unreadable (that clef or dynamic is dropped) or past the measure's end (clamped to the end) |
+| `hairpin-end-unresolved` | warning | `normalize` | A `gradual` dynamic's `end.measure` doesn't resolve to a global measure id, has no valid `wedgeType`, or ends at or before its start; the hairpin is not drawn (its start `value` still is) |
 | `tie-target-unresolved` | warning | `timeline` | `tie.target` doesn't resolve to a laid-out note id; the tie is ignored |
 | `tie-target-not-adjacent` | warning | `timeline` | `tie.target` doesn't resolve to the next event of the same voice; drawn anyway |
 | `slur-target-unresolved` | warning | `normalize` | `slur.target`/`startNote`/`endNote` doesn't resolve to a laid-out note/event id; the slur is not drawn |

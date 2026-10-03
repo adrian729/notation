@@ -1,6 +1,7 @@
 import type { Diagnostic } from '@polyhymnia/mnx';
 import type { EngravingDefaults } from '@polyhymnia/notation-fonts';
 import type { FontContext } from '../font/context.js';
+import type { Mark } from './articulations.js';
 import type { BeamsResult } from './beams.js';
 import { isClefColumn } from './horizontal.js';
 import type { JustifiedScore, JustifiedSystem } from './justify.js';
@@ -28,6 +29,8 @@ const SLUR_ARCH_MAX = 3.0;
 const SLUR_CLEARANCE_PAD = 0.25;
 const SLUR_CLEARANCE_ITERS = 4;
 const SLUR_SAMPLES = 8;
+const SLUR_ARTICULATION_GAP = 0.5;
+const SLUR_ARTICULATION_INSET = 0.1;
 
 export interface CurveShape {
   systemIndex: number;
@@ -35,6 +38,8 @@ export interface CurveShape {
   d: string;
   cls: 'tie' | 'slur';
   el: string;
+  dir: 1 | -1;
+  covers?: readonly NoteId[];
 }
 
 export interface CurvesResult {
@@ -55,9 +60,16 @@ export function curves(
   beamsResult: BeamsResult,
   ties: readonly NormalizedTie[],
   slurs: readonly NormalizedSlur[],
+  marks: readonly Mark[],
   fonts: FontContext,
 ): CurvesResult {
   const e = fonts.engravingDefaults;
+  const marksOf = new Map<NoteId, Mark[]>();
+  for (const mark of marks) {
+    const list = marksOf.get(mark.el);
+    if (list) list.push(mark);
+    else marksOf.set(mark.el, [mark]);
+  }
   const noteMap = buildNoteMap(justified);
   const elementsBySystem = buildElementsBySystem(justified);
   const twoVoiceMeasures = new Set(
@@ -118,7 +130,7 @@ export function curves(
     const to = (dir === -1 && slur.toBottom ? noteMap.get(slur.toBottom) : undefined) ?? to0;
 
     for (const span of spansBetween(from, to, justified)) {
-      shapes.push(slurShape(e, slur.id, span, dir, beamsResult, elementsBySystem));
+      shapes.push(slurShape(e, slur.id, span, dir, beamsResult, elementsBySystem, marksOf));
     }
   }
 
@@ -286,28 +298,35 @@ function firstColumnX(system: JustifiedSystem): number {
   return column ? column.x : 0;
 }
 
-function curveSpan(span: CurveSpan, endpointYOf: (note: PlacedNote) => number): CurveGeometry {
+type Endpoint = (note: PlacedNote, at: 'start' | 'end') => { x: number; y: number };
+
+function noteEdgeX(note: PlacedNote, at: 'start' | 'end'): number {
+  return at === 'start' ? rightEdge(note) + GAP : leftEdge(note) - GAP;
+}
+
+function curveSpan(span: CurveSpan, endpoint: Endpoint): CurveGeometry {
   switch (span.kind) {
     case 'whole': {
       const { from, to } = span;
-      const x0 = rightEdge(from) + GAP;
-      const x3 = Math.max(leftEdge(to) - GAP, x0 + MIN_SPAN);
+      const start = endpoint(from, 'start');
+      const end = endpoint(to, 'end');
+      const x0 = start.x;
+      const x3 = Math.max(end.x, x0 + MIN_SPAN);
       return {
         systemIndex: from.systemIndex,
         staffIndex: from.el.staffIndex,
         x0,
         x3,
-        y0: endpointYOf(from),
-        y3: endpointYOf(to),
+        y0: start.y,
+        y3: end.y,
         lo: from.x,
         hi: to.x,
       };
     }
     case 'start': {
       const { from, system } = span;
-      const x0 = rightEdge(from) + GAP;
+      const { x: x0, y } = endpoint(from, 'start');
       const x3 = Math.max(x0 + MIN_SPAN, Math.min(systemEndX(system), lastColumnX(system) + SYSTEM_END_MARGIN));
-      const y = endpointYOf(from);
       return {
         systemIndex: from.systemIndex,
         staffIndex: from.el.staffIndex,
@@ -321,9 +340,8 @@ function curveSpan(span: CurveSpan, endpointYOf: (note: PlacedNote) => number): 
     }
     case 'end': {
       const { to, system } = span;
-      const x3 = leftEdge(to) - GAP;
+      const { x: x3, y } = endpoint(to, 'end');
       const x0 = Math.min(x3 - MIN_SPAN, Math.max(0, firstColumnX(system) - SYSTEM_START_MARGIN));
-      const y = endpointYOf(to);
       return { systemIndex: to.systemIndex, staffIndex: to.el.staffIndex, x0, x3, y0: y, y3: y, lo: x0, hi: to.x };
     }
   }
@@ -346,12 +364,13 @@ function curveShape(
     systemIndex: g.systemIndex,
     staffIndex: g.staffIndex,
     cls,
+    dir,
     d: curvePath([g.x0, g.y0], [g.x3, g.y3], dir, arch, endT, midT),
   };
 }
 
 function tieShape(e: EngravingDefaults, id: string, span: CurveSpan, dir: 1 | -1): CurveShape {
-  const g = curveSpan(span, (note) => endpointY(note, dir));
+  const g = curveSpan(span, (note, at) => ({ x: noteEdgeX(note, at), y: endpointY(note, dir) }));
   const arch = clearApex(g.y0, g.y3, dir, archFor(g.x3 - g.x0));
   return curveShape(e, id, 'tie', g, dir, arch);
 }
@@ -418,16 +437,31 @@ function slurShape(
   dir: 1 | -1,
   beamsResult: BeamsResult,
   elementsBySystem: ElementsBySystem,
+  marksOf: ReadonlyMap<NoteId, readonly Mark[]>,
 ): CurveShape {
-  const g = curveSpan(span, (note) => slurEndpointY(note, dir, beamsResult.stemOverrides));
+  const g = curveSpan(span, (note, at) => {
+    const point = { x: noteEdgeX(note, at), y: slurEndpointY(note, dir, beamsResult.stemOverrides) };
+    const mark = (marksOf.get(note.el.id) ?? []).filter((m) => m.insideSlurs && m.above === (dir === 1)).pop();
+    if (!mark) return point;
+    const centerY = (mark.box.y0 + mark.box.y1) / 2 - dir * SLUR_ARTICULATION_GAP;
+    const y = dir === 1 ? Math.min(point.y, centerY) : Math.max(point.y, centerY);
+    return {
+      x: (mark.box.x0 + mark.box.x1) / 2 + (at === 'start' ? SLUR_ARTICULATION_INSET : -SLUR_ARTICULATION_INSET),
+      y: nearLine(y) ? y - dir * ENDPOINT_NUDGE : y,
+    };
+  });
   const arch = clearSlur(
     slurArchFor(g.x3 - g.x0),
     [g.x0, g.y0],
     [g.x3, g.y3],
     dir,
-    slurObstacles(g.systemIndex, g.staffIndex, g.lo, g.hi, beamsResult, elementsBySystem),
+    slurObstacles(g.systemIndex, g.staffIndex, g.lo, g.hi, beamsResult, elementsBySystem, marksOf),
+    e.slurMidpointThickness,
   );
-  return curveShape(e, id, 'slur', g, dir, arch);
+  const covers = (elementsBySystem.get(g.systemIndex) ?? [])
+    .filter((pe) => pe.el.staffIndex === g.staffIndex && pe.x >= g.lo && pe.x <= g.hi)
+    .map((pe) => pe.el.id);
+  return { ...curveShape(e, id, 'slur', g, dir, arch), covers };
 }
 
 function clearSlur(
@@ -436,25 +470,43 @@ function clearSlur(
   p3: readonly [number, number],
   dir: 1 | -1,
   obstacles: readonly Obstacle[],
+  thickness: number,
 ): number {
   let current = arch;
+  const samples = [
+    ...Array.from({ length: SLUR_SAMPLES }, (_, i) => (i + 1) / (SLUR_SAMPLES + 1)),
+    ...obstacles.flatMap((ob) => [ob.x0, (ob.x0 + ob.x1) / 2, ob.x1].map((x) => tAtX(p0[0], p3[0], x))),
+  ].filter((t) => t > 0 && t < 1);
   for (let iter = 0; iter < SLUR_CLEARANCE_ITERS; iter += 1) {
     let raise = 0;
-    for (let i = 1; i <= SLUR_SAMPLES; i += 1) {
-      const t = i / (SLUR_SAMPLES + 1);
+    for (const t of samples) {
       const [px, py] = bezierPoint(p0, p3, dir, current, t);
       for (const ob of obstacles) {
         if (px < ob.x0 || px > ob.x1) continue;
-        if (py < ob.y0 || py > ob.y1) continue;
-        const penetration = dir === 1 ? py - ob.y0 : ob.y1 - py;
+        const edge = py + dir * (thickness + SLUR_CLEARANCE_PAD);
+        if (edge < ob.y0 || edge > ob.y1) continue;
+        const penetration = dir === 1 ? edge - ob.y0 : ob.y1 - edge;
         const sensitivity = 3 * (1 - t) * t;
-        raise = Math.max(raise, (penetration + SLUR_CLEARANCE_PAD) / Math.max(sensitivity, 0.1));
+        raise = Math.max(raise, penetration / Math.max(sensitivity, 0.1));
       }
     }
     if (raise <= 0) break;
     current += raise;
   }
   return current;
+}
+
+function tAtX(x0: number, x3: number, x: number): number {
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 30; i += 1) {
+    const t = (lo + hi) / 2;
+    const u = 1 - t;
+    const at = x0 + (x3 - x0) * (3 * u * u * t * 0.25 + 3 * u * t * t * 0.75 + t * t * t);
+    if (at < x) lo = t;
+    else hi = t;
+  }
+  return (lo + hi) / 2;
 }
 
 function bezierPoint(
@@ -482,11 +534,15 @@ function slurObstacles(
   hi: number,
   beamsResult: BeamsResult,
   elementsBySystem: ElementsBySystem,
+  marksOf: ReadonlyMap<NoteId, readonly Mark[]>,
 ): Obstacle[] {
   const obstacles: Obstacle[] = [];
   const bucket = elementsBySystem.get(systemIndex) ?? [];
   for (const pe of bucket) {
     if (pe.el.staffIndex !== staffIndex || pe.x <= lo || pe.x >= hi) continue;
+    for (const { box, insideSlurs } of marksOf.get(pe.el.id) ?? []) {
+      if (insideSlurs) obstacles.push({ x0: box.x0, x1: box.x1, y0: box.y0, y1: box.y1 });
+    }
     for (const head of pe.el.noteheads) {
       obstacles.push({
         x0: pe.x + head.dx,

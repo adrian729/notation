@@ -1,7 +1,7 @@
 import { noteValueLength } from '@polyhymnia/mnx';
 import { STEP_LETTERS } from '@polyhymnia/music-theory';
 import type { Diagnostic, Pitch, NoteId as ModelNoteId, Rational } from '@polyhymnia/mnx';
-import type { Timeline } from '@polyhymnia/mnx-score';
+import type { ArticulationKind, Timeline } from '@polyhymnia/mnx-score';
 
 export type NoteId = ModelNoteId;
 
@@ -137,9 +137,41 @@ export interface ElementNote {
   accidentalPolicy?: AccidentalPolicy;
 }
 
+export type VerticalSide = 'above' | 'below';
+
+export interface ArticulationSpec {
+  kind: ArticulationKind;
+  placement?: VerticalSide;
+  pointing?: 'up' | 'down';
+}
+
+export interface FermataSpec {
+  placement?: VerticalSide;
+  pointing?: 'up' | 'down';
+}
+
 export interface EventEngraving {
   stem?: 'up' | 'down';
   breath?: 'comma' | 'caesura';
+  articulations?: readonly ArticulationSpec[];
+  fermata?: FermataSpec;
+}
+
+export type DynamicPlacement = VerticalSide | 'between' | 'auto';
+
+export interface NormalizedHairpin {
+  wedge: 'increasing' | 'decreasing';
+  endTick: number;
+}
+
+export interface NormalizedDynamic {
+  id: string;
+  measureIndex: number;
+  tick: number;
+  staffIndex?: number;
+  placement: DynamicPlacement;
+  text?: string;
+  hairpin?: NormalizedHairpin;
 }
 
 export interface NoteEngraving {
@@ -158,6 +190,7 @@ export interface NormalizedMeasure {
   capacityTicks: number;
   barlineStart?: 'none' | 'repeat-start';
   barlineEnd?: 'single' | 'double' | 'dashed' | 'final' | 'repeat-end' | 'none';
+  fermata?: FermataSpec;
   systemBreak: boolean;
 }
 
@@ -179,5 +212,6 @@ export interface NormalizedScore {
   beams: readonly NormalizedBeam[];
   ties: readonly NormalizedTie[];
   slurs: readonly NormalizedSlur[];
+  dynamics: readonly NormalizedDynamic[];
   diagnostics: readonly Diagnostic[];
 }

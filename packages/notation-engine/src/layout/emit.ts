@@ -3,10 +3,14 @@ import type { Timeline } from '@polyhymnia/mnx-score';
 import type { EngravingDefaults } from '@polyhymnia/notation-fonts';
 import type { FontContext } from '../font/context.js';
 import { describePitch, type Duration, type DurationBase, type NoteId, type TimeSpec } from './records.js';
+import type { Mark } from './articulations.js';
 import type { BeamsResult } from './beams.js';
 import type { CurvesResult } from './curves.js';
+import type { DynamicsResult } from './dynamics.js';
+import type { StaffMargins } from './margins.js';
+import { PATH_POINT } from './skyline.js';
 import type { TupletsResult } from './tuplets.js';
-import { buildMeasureBox, contentBounds } from '../query/measures.js';
+import { buildMeasureBox, contentBounds, wholeBarRestX } from '../query/measures.js';
 import { measureSlots } from '../query/slots.js';
 import { COURTESY_LEAD, digitsWidth, isClefColumn, layOutKeyGlyphs } from './horizontal.js';
 import type { JustifiedScore, PositionedMeasure } from './justify.js';
@@ -31,10 +35,8 @@ const TOP_MARGIN = 4;
 const BOTTOM_MARGIN = 4;
 const SIDE_MARGIN = 1;
 const SYSTEM_GAP = 8;
-const STAFF_GAP = 6.5;
 const BRACE_GAP = 0.35;
 const BRACE_WIDTH = 0.9;
-const CONTENT_PAD = 0.5;
 
 export interface EmitInput {
   justified: JustifiedScore;
@@ -44,7 +46,9 @@ export interface EmitInput {
   beams: BeamsResult;
   tuplets: TupletsResult;
   curves: CurvesResult;
-  staffCount: number;
+  marks: readonly Mark[];
+  dynamics: DynamicsResult;
+  margins: readonly StaffMargins[];
 }
 
 interface MeasureTime {
@@ -83,20 +87,22 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
   const slots: Slot[] = [];
   const placement = new Map<NoteId, Placement>();
 
-  const staffCount = Math.max(1, input.staffCount);
+  const { margins } = input;
+  const staffOffsets = input.dynamics.staffOffsets;
+  const staffCount = staffOffsets.length;
   const multi = staffCount > 1;
   const width = Math.max(input.justified.width, 1);
-  const margins = contentMargins(fonts, input.justified, input.beams, input.tuplets, input.curves, staffCount);
+  const marksOf = new Map<NoteId, Mark[]>();
+  for (const mark of input.marks) {
+    const list = marksOf.get(mark.el);
+    if (list) list.push(mark);
+    else marksOf.set(mark.el, [mark]);
+  }
   const firstMargins = margins[0]!;
   const lastMargins = margins[staffCount - 1]!;
   const topMargin = Math.max(TOP_MARGIN, firstMargins.above);
   const bottomMargin = Math.max(BOTTOM_MARGIN, lastMargins.below);
   const systemGap = Math.max(SYSTEM_GAP, firstMargins.above + lastMargins.below);
-  const staffOffsets = [0];
-  for (let s = 1; s < staffCount; s += 1) {
-    const gap = Math.max(STAFF_GAP, margins[s - 1]!.below + margins[s]!.above);
-    staffOffsets.push(staffOffsets[s - 1]! + STAFF_HEIGHT + gap);
-  }
   const systemHeight = staffOffsets[staffCount - 1]! + STAFF_HEIGHT;
   const brace = multi ? braceOf(fonts, systemHeight) : null;
   const staffTopsBySystem = new Map<number, readonly number[]>();
@@ -140,9 +146,6 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
       measures.push(buildMeasureBox(measure, bounds, multi));
       for (let s = 0; s < staffCount; s += 1) slots.push(...measureSlots(measure, bounds, s, multi));
 
-      const trailingClef = measure.columns.find((c) => isClefColumn(c) && c.tick >= measure.endTick);
-      const restLeft = bounds.contentX;
-      const restRight = trailingClef ? trailingClef.xStart : bounds.contentRight;
       measure.columns.forEach((column) => {
         if (isClefColumn(column)) {
           for (const { staffIndex, clef } of column.clefs) {
@@ -154,8 +157,7 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
         for (const element of column.elements) {
           emitElement(element, {
             x: column.x,
-            restLeft,
-            restRight,
+            measure,
             staffTop: staffTops[element.staffIndex] ?? systemTop,
             ...(multi ? { staff: element.staffIndex } : {}),
             systemIndex: system.index,
@@ -164,10 +166,14 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
             elements,
             placement,
             stemOverrides: input.beams.stemOverrides,
+            marks: marksOf.get(element.id) ?? [],
             fonts,
           });
         }
       });
+      for (const mark of marksOf.get(`m${measure.index}.fermata`) ?? []) {
+        glyphs.push(markRun(fonts, mark, staffTops[mark.staffIndex] ?? systemTop));
+      }
     }
   }
 
@@ -201,16 +207,29 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
     const staffTop = staffTopOf(curve.systemIndex, curve.staffIndex);
     paths.push({ d: offsetPathY(curve.d, staffTop), cls: curve.cls, el: curve.el });
   }
+  for (const hairpin of input.dynamics.hairpins) {
+    const staffTop = staffTopOf(hairpin.systemIndex, hairpin.staffIndex);
+    paths.push({ d: offsetPathY(hairpin.d, staffTop), cls: 'hairpin', el: hairpin.el });
+  }
+  for (const dynamic of input.dynamics.glyphs) {
+    const staffTop = staffTopOf(dynamic.systemIndex, dynamic.staffIndex);
+    glyphs.push(glyphRun(fonts, dynamic.glyph, dynamic.x, staffTop + dynamic.y, 'dynamic', dynamic.el));
+  }
 
   const height =
     topMargin + Math.max(1, systems.length) * systemHeight + Math.max(0, systems.length - 1) * systemGap + bottomMargin;
 
   const fontNames = tagFonts(glyphs, fonts);
   const leftMargin = SIDE_MARGIN + (brace?.width ?? 0);
+  const markRights = [
+    ...input.marks.map((m) => m.box.x1),
+    ...input.dynamics.glyphs.map((g) => g.x + fonts.bbox(g.glyph).bBoxNE[0]),
+  ];
+  const right = Math.max(width, ...markRights) + SIDE_MARGIN;
 
   return {
     version: 1,
-    viewBox: { x: -leftMargin, y: 0, w: width + 2 * SIDE_MARGIN + (brace?.width ?? 0), h: height },
+    viewBox: { x: -leftMargin, y: 0, w: right + leftMargin, h: height },
     systems,
     glyphs,
     rects,
@@ -462,8 +481,7 @@ function dashes(e: EngravingDefaults, x: number, staffTop: number, bottom: numbe
 
 interface ElementContext {
   x: number;
-  restLeft: number;
-  restRight: number;
+  measure: PositionedMeasure;
   staffTop: number;
   staff?: number;
   systemIndex: number;
@@ -472,6 +490,7 @@ interface ElementContext {
   elements: Record<string, ElementBox>;
   placement: Map<NoteId, Placement>;
   stemOverrides?: ReadonlyMap<NoteId, { yTop: number; yBottom: number }>;
+  marks: readonly Mark[];
   fonts: FontContext;
 }
 
@@ -552,6 +571,7 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
   if (breath) {
     ctx.glyphs.push(glyphRun(ctx.fonts, breath.glyph, ctx.x + breath.dx, staffTop + breath.y, 'breath', element.id));
   }
+  for (const mark of ctx.marks) ctx.glyphs.push(markRun(ctx.fonts, mark, staffTop));
 
   const first = element.noteheads[0];
   if (first) {
@@ -566,12 +586,13 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
 
 function emitRest(element: VerticalElement, ctx: ElementContext): void {
   const rest = element.rest!;
-  const x = rest.wholeBar ? (ctx.restLeft + ctx.restRight) / 2 - rest.width / 2 : ctx.x;
+  const x = rest.wholeBar ? wholeBarRestX(ctx.measure, rest.width) : ctx.x;
   const y = ctx.staffTop + rest.y;
   ctx.glyphs.push(glyphRun(ctx.fonts, rest.glyph, x, y, 'rest', element.id));
   for (const dot of rest.dots) {
     ctx.glyphs.push(glyphRun(ctx.fonts, 'augmentationDot', x + dot.dx, ctx.staffTop + dot.y, 'dot', element.id));
   }
+  for (const mark of ctx.marks) ctx.glyphs.push(markRun(ctx.fonts, mark, ctx.staffTop));
 
   const bbox = ctx.fonts.bbox(rest.glyph);
   const box: Box = {
@@ -652,92 +673,17 @@ function restLabel(element: VerticalElement, wholeBar: boolean): string {
   return `${what}, measure ${element.measureIndex + 1}`;
 }
 
-interface StaffMargins {
-  above: number;
-  below: number;
-}
-
-function contentMargins(
-  fonts: FontContext,
-  justified: JustifiedScore,
-  beamsResult: BeamsResult,
-  tupletsResult: TupletsResult,
-  curvesResult: CurvesResult,
-  staffCount: number,
-): StaffMargins[] {
-  const minY = Array.from({ length: staffCount }, () => 0);
-  const maxY = Array.from({ length: staffCount }, () => STAFF_HEIGHT);
-  const extend = (staffIndex: number, lo: number, hi: number): void => {
-    const s = Math.min(Math.max(0, staffIndex), staffCount - 1);
-    minY[s] = Math.min(minY[s]!, lo);
-    maxY[s] = Math.max(maxY[s]!, hi);
-  };
-
-  for (const system of justified.systems) {
-    for (const measure of system.measures) {
-      for (const column of measure.columns) {
-        for (const el of column.elements) {
-          for (const head of el.noteheads) {
-            for (const y of head.ledgerLines) extend(el.staffIndex, y, y);
-          }
-          if (el.stem?.drawn) {
-            const override = beamsResult.stemOverrides.get(el.id);
-            extend(el.staffIndex, override?.yTop ?? el.stem.yTop, override?.yBottom ?? el.stem.yBottom);
-          }
-          if (el.rest) extend(el.staffIndex, el.rest.y - 1, el.rest.y + 1);
-        }
-      }
-    }
-  }
-
-  for (const poly of beamsResult.polygons) {
-    for (const [, y] of poly.points) extend(poly.staffIndex, y, y);
-  }
-
-  for (const rect of tupletsResult.brackets) extend(rect.staffIndex, rect.y, rect.y + rect.h);
-  for (const numeral of tupletsResult.numerals) {
-    const bbox = fonts.bbox(numeral.name);
-    extend(numeral.staffIndex, numeral.y - bbox.bBoxNE[1], numeral.y - bbox.bBoxSW[1]);
-  }
-
-  for (const curve of curvesResult.shapes) {
-    const [curveMin, curveMax] = pathYExtent(curve.d);
-    extend(curve.staffIndex, curveMin, curveMax);
-  }
-
-  return minY.map((lo, s) => ({
-    above: Math.max(0, -lo) + CONTENT_PAD,
-    below: Math.max(0, maxY[s]! - STAFF_HEIGHT) + CONTENT_PAD,
-  }));
-}
-
-const PATH_POINT = /(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g;
-
-function pathPoints(d: string): { x: string; y: number }[] {
-  return [...d.matchAll(PATH_POINT)].map((match) => ({ x: match[1]!, y: Number(match[2]) }));
-}
-
-function mapPathPoints(d: string, fn: (x: string, y: number) => string): string {
-  return d.replace(PATH_POINT, (_match, x: string, y: string) => fn(x, Number(y)));
-}
-
-function pathYExtent(d: string): [number, number] {
-  let min = Infinity;
-  let max = -Infinity;
-  for (const { y } of pathPoints(d)) {
-    min = Math.min(min, y);
-    max = Math.max(max, y);
-  }
-  return [Number.isFinite(min) ? min : 0, Number.isFinite(max) ? max : 0];
-}
-
 function offsetPathY(d: string, dy: number): string {
   if (dy === 0) return d;
-  return mapPathPoints(d, (x, y) => `${x},${(y + dy).toFixed(3)}`);
+  return d.replace(PATH_POINT, (_match, x: string, y: string) => `${x},${(Number(y) + dy).toFixed(3)}`);
 }
 
 function pathFrom(points: readonly (readonly [number, number])[], staffTop: number): string {
   return points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${(staffTop + y).toFixed(3)}`).join(' ') + ' Z';
+}
+
+function markRun(fonts: FontContext, mark: Mark, staffTop: number): GlyphRun {
+  return glyphRun(fonts, mark.glyph, mark.x, staffTop + mark.y, mark.cls, mark.el);
 }
 
 export function glyphRun(fonts: FontContext, name: string, x: number, y: number, cls: string, el?: NoteId): GlyphRun {

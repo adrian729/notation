@@ -148,9 +148,7 @@ export function horizontal(
       k,
       trailingClefs: changes.clefAtBarline === 'before',
     });
-    const elementWidth = columns.reduce((sum, c) => (isClefColumn(c) ? sum : sum + c.width), 0);
-    const clefWidth = columns.reduce((sum, c) => (isClefColumn(c) ? sum + c.width : sum), 0);
-    const contentWidth = (elementWidth || MIN_MEASURE_CONTENT) + clefWidth;
+    const contentWidth = contentWidthOf(columns);
 
     measures.push({
       index: measure.index,
@@ -484,6 +482,12 @@ export function measureWidth(measure: HorizontalMeasure, atSystemStart: boolean,
   const chrome = atSystemStart ? measure.startChrome : measure.midChrome;
   const courtesy = followedByBreak ? (measure.courtesy?.width ?? 0) : 0;
   return chromeWidth(chrome) + measure.contentWidth + chrome.endBarlineWidth + courtesy;
+}
+
+export function contentWidthOf(columns: readonly HorizontalColumn[]): number {
+  const elementWidth = columns.reduce((sum, c) => (isClefColumn(c) ? sum : sum + c.width), 0);
+  const clefWidth = columns.reduce((sum, c) => (isClefColumn(c) ? sum + c.width : sum), 0);
+  return (elementWidth || MIN_MEASURE_CONTENT) + clefWidth;
 }
 
 export function isClefColumn<T extends HorizontalColumn>(column: T): column is T & { clefs: readonly StaffClef[] } {

@@ -27,7 +27,7 @@ describe('layout on the timeline', () => {
     const doc = mnx(
       {},
       measure(note('C5', '8', { id: 'm0.s0.e1' }), ...Array.from({ length: 7 }, () => note('C5', '8'))),
-      measure(note('C4', 'h', { id: 'm0.s0.e1.beam', markings: { staccato: {} } })),
+      measure(note('C4', 'h', { id: 'm0.s0.e1.beam', markings: { spiccato: {} } })),
     );
     const layout = layoutScore(doc, { divisions: -1 });
 

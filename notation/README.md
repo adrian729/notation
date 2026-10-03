@@ -32,6 +32,9 @@ In scope — full engraving, not a reduced subset:
 | Tuplets | Single-level, bracket + numeral | Done |
 | Barlines | Single/double/dashed/final/repeat | Done |
 | Breath marks | Comma and caesura, attached to a note | Done |
+| Articulations | Staccato, staccatissimo, tenuto, accent, marcato, soft accent, stress, unstress: notehead/stem side, stacking, inside/outside slurs; shorten and accent playback | Done |
+| Fermatas | On notes, rests, whole-bar rests and the measure's end barline; above everything | Done |
+| Dynamics & hairpins | Immediate and accent dynamics (precomposed SMuFL glyphs, optically centred), hairpins split at system breaks, one line per system, between the staves of a grand staff; drive playback velocity | Done |
 | Ties | Within/across barline, chord-wise | Done |
 | Slurs | Single-system, note-to-note | Done |
 | Spacing/justification | Duration-proportional, system-width justified | Done |
@@ -51,8 +54,8 @@ Deferred — explicit, not accidental. Most are additive later, not a redesign, 
 | Cross-staff notes, beams, tuplets, slurs | Medium — the grand staff is in place; each element is laid out on its own staff today |
 | Nested/compound tuplets | Medium — no longer a schema/data-model change: MNX `tuplet` containers already nest natively (`engraving.md`), the engine just flattens them today (`mnx.md`). Purely an engine change: draw the nested brackets instead of combining the ratio |
 | Grace notes, ornaments, glissandi | Medium — needs a new "non-metrical attachment" concept |
-| Dynamics, articulations, pedal | Low-medium — glyphs already in the font subset headroom tier (`font.md`) |
-| Hairpins | Low — drawn shapes (like ties/slurs), not a glyph; no font cost either way |
+| Relative dynamics, dynamic text (`più`, `sub.`), spiccato, bowings, single-note tremolo, pedal | Low-medium — a text layer for the words; the rest are glyphs on the articulation path |
+| Fermata holds in playback | Low — a tempo-map change in the timeline |
 | Lyrics, chord symbols, rehearsal marks | Low, but a new (text) layer |
 | Full percussion notation | Medium |
 | Multi-measure rests, repeats/voltas/jumps | Low |

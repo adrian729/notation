@@ -27,7 +27,7 @@ Integration only — no isolated-function unit tests. Every test enters through 
 
 ~4 weeks total, useful at end of week 1. Phases 2/3 are independent, parallelizable.
 
-**Not on the roadmap** (deferred features, `README.md`): 3+ staves per part, cross-staff beaming, nested tuplets, grace notes, dynamics, articulations, lyrics, chord symbols, multi-page.
+**Not on the roadmap** (deferred features, `README.md`): 3+ staves per part, cross-staff beaming, nested tuplets, grace notes, relative dynamics and dynamic text, lyrics, chord symbols, multi-page.
 
 ## Per-feature LOC estimate (model + engine + react, excl. tests)
 
@@ -86,6 +86,7 @@ Integration only — no isolated-function unit tests. Every test enters through 
 - **Property tests**: cover 3 of 5 planned invariants, single-measure documents only.
 - **`apps/web` tests**: none.
 - **Grand staff**: 2 staves per part at most; cross-staff elements are laid out on their own staff.
+- **Articulations, fermatas, dynamics, hairpins**: done (`engraving.md`), with velocity and staccato length in playback (`playback.md`). Fermatas don't hold in playback; relative dynamics, dynamic text and the remaining markings (spiccato, bowings, tremolo) are `mnx-unsupported`.
 - **Knuth-Plass line breaking**: not done; greedy only, measures indivisible.
 - **`applyIntent` addressing**: one part (default 0), all its staves, the first 2 sequences per staff.
 - **`EditIntent`**: one variant (`setPitches`).

@@ -14,6 +14,12 @@ export function contentBounds(measure: PositionedMeasure): ContentBounds {
   return { contentX, contentRight };
 }
 
+export function wholeBarRestX(measure: PositionedMeasure, restWidth: number): number {
+  const { contentX, contentRight } = contentBounds(measure);
+  const trailingClef = measure.columns.find((c) => isClefColumn(c) && c.tick >= measure.endTick);
+  return (contentX + (trailingClef ? trailingClef.xStart : contentRight)) / 2 - restWidth / 2;
+}
+
 function clefChangesOf(measure: PositionedMeasure, staffIndex: number): MeasureClefChange[] {
   return measure.columns
     .filter(isClefColumn)

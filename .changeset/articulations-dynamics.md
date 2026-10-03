@@ -1,0 +1,7 @@
+---
+'@polyhymnia/mnx-score': minor
+'@polyhymnia/notation-engine': minor
+'@polyhymnia/notation-react': minor
+---
+
+Articulations, fermatas, dynamics and hairpins are drawn and played. Staccato, staccatissimo, tenuto, accent, marcato (honouring `pointing`), soft accent, stress and unstress sit on the notehead side (the stem side in two voices, marcato above), staccato and tenuto in the nearest space, accents outside the staff, in that stacking order; slurs arch over staccato, staccatissimo and tenuto and keep accents outside. Fermatas on notes, rests, whole-bar rests and the measure's end barline go above everything (below the lower voice or the lower staff of a grand staff). Immediate and accent dynamics use SMuFL's precomposed glyphs, optically centred on their note, on one line per system with the hairpins; hairpins split at system breaks with partly open ends, and on a grand staff dynamics go between the staves. New glyph classes `articulation`, `fermata` and `dynamic`, and path class `hairpin`; new diagnostic `hairpin-end-unresolved`; spiccato, bowings, tremolo, relative dynamics and dynamic text stay `mnx-unsupported`. In `mnx-score`, `TimelineEntry` gains optional `articulations` and `dynamicLevel` (omitted at the `mf` default), and `PerformanceEvent` gains an optional `velocity` on a 0..1 scale (`ppp` 0.25, `mf` 0.8 omitted, `fff` 1.0, hairpins ramped, accent +0.1, marcato +0.15); staccato plays half length and staccatissimo a quarter. `<Notation>` colours the new marks as signage in the mensural style.

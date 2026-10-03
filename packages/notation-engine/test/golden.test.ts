@@ -12,6 +12,7 @@ const fixtureNames = [
   'breath',
   'chrome-changes',
   'courtesy-system-break',
+  'fermatas-hairpins',
   'golden-accidentals-stacking',
   'golden-beams-16ths',
   'golden-beams-6-8-vs-3-4',
@@ -37,7 +38,14 @@ const fixtureNames = [
   'tempo',
 ];
 
-const SELECTED_EXAMPLES = ['beams-secondary-beam-breaks', 'clef-changes', 'grand-staff'];
+const SELECTED_EXAMPLES = [
+  'articulations',
+  'beams-secondary-beam-breaks',
+  'clef-changes',
+  'dynamics',
+  'dynamics-accents',
+  'grand-staff',
+];
 
 function loadFixture(name: string): MnxDocument {
   return JSON.parse(readFileSync(`${FIXTURES}${name}.json`, 'utf8')) as MnxDocument;

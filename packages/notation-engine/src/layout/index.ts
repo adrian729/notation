@@ -2,14 +2,19 @@ import { fontContext } from '../font/context.js';
 import type { NotationOptions } from '../options.js';
 import type { Diagnostic, MnxDocument } from '@polyhymnia/mnx';
 import { accidentals } from './accidentals.js';
+import { articulations, clearSlurs } from './articulations.js';
 import { beams } from './beams.js';
 import { breakSystems } from './break.js';
 import { curves } from './curves.js';
+import { dynamics, spaceDynamics } from './dynamics.js';
 import { emit } from './emit.js';
+import { fermatas } from './fermatas.js';
 import { grouping } from './grouping.js';
 import { horizontal } from './horizontal.js';
 import { justify } from './justify.js';
+import { contentMargins, staffOffsetsOf } from './margins.js';
 import { normalize } from './normalize.js';
+import { skyline } from './skyline.js';
 import { temporal } from './temporal.js';
 import { timelineFor } from './timeline.js';
 import { tuplets } from './tuplets.js';
@@ -27,12 +32,37 @@ export function layoutScore(doc: MnxDocument, options?: NotationOptions): Layout
   const resolvedAccidentals = accidentals(normalized, timed, options);
   const groups = grouping(normalized, timed, options);
   const placed = vertical(normalized, timed, resolvedAccidentals, fonts);
-  const spaced = horizontal(normalized, timed, placed, fonts, options);
+  const staffCount = Math.max(1, normalized.staves.length);
+  const spaced = spaceDynamics(
+    horizontal(normalized, timed, placed, fonts, options),
+    normalized.dynamics,
+    staffCount,
+    fonts,
+  );
   const broken = breakSystems(spaced, options);
   const justified = justify(broken, options);
   const beamed = beams(justified, normalized.beams, fonts);
   const tupletShapes = tuplets(justified, groups.tuplets, normalized.beams, beamed, fonts, options);
-  const curveShapes = curves(justified, placed, beamed, normalized.ties, normalized.slurs, fonts);
+  const marks = articulations(justified, beamed, normalized.events, fonts);
+  const curveShapes = curves(justified, placed, beamed, normalized.ties, normalized.slurs, marks, fonts);
+  const settled = clearSlurs(marks, curveShapes);
+  const sky = skyline({ justified, beams: beamed, tuplets: tupletShapes, curves: curveShapes, marks: settled }, fonts);
+  const allMarks = [...settled, ...fermatas(justified, beamed, normalized, sky, fonts)];
+  const marginsInput = {
+    justified,
+    beams: beamed,
+    tuplets: tupletShapes,
+    curves: curveShapes,
+    marks: allMarks,
+    staffCount,
+  };
+  const dynamicShapes = dynamics(
+    justified,
+    normalized.dynamics,
+    sky,
+    staffOffsetsOf(contentMargins(marginsInput, [], fonts)),
+    fonts,
+  );
 
   const diagnostics: Diagnostic[] = [
     ...timeline.diagnostics.filter((d) => !isCollision(d)),
@@ -59,7 +89,9 @@ export function layoutScore(doc: MnxDocument, options?: NotationOptions): Layout
       beams: beamed,
       tuplets: tupletShapes,
       curves: curveShapes,
-      staffCount: normalized.staves.length,
+      marks: allMarks,
+      dynamics: dynamicShapes,
+      margins: contentMargins(marginsInput, dynamicShapes.outer, fonts),
     },
     fonts,
   );
