@@ -34,6 +34,7 @@ export function ScorePlayer({ score }: { score: MnxDocument }) {
       midi: e.midi,
       start: e.startSeconds,
       duration: e.durationSeconds,
+      ...(e.velocity !== undefined ? { velocity: e.velocity } : {}),
     }));
     const playback = sound.playEvents(events);
     playbackRef.current = playback;

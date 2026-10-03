@@ -28,6 +28,7 @@ import ties from './scores/ties.mnx.json';
 import slurs from './scores/slurs.mnx.json';
 import clefChangesCourtesy from './scores/clef-changes-courtesy.mnx.json';
 import grandStaff from './scores/grand-staff.mnx.json';
+import articulationsDynamics from './scores/articulations-dynamics.mnx.json';
 import { ChangesToggle, FontNotation } from './font.js';
 
 const MELODY = melody as MnxDocument;
@@ -43,6 +44,7 @@ const TIES = ties as MnxDocument;
 const SLURS = slurs as MnxDocument;
 const CLEF_CHANGES_COURTESY = clefChangesCourtesy as MnxDocument;
 const GRAND_STAFF = grandStaff as MnxDocument;
+const ARTICULATIONS_DYNAMICS = articulationsDynamics as MnxDocument;
 
 const KEY_EXAMPLES: readonly { label: string; doc: MnxDocument }[] = [
   { label: 'C major — no accidentals', doc: keyCMajor as MnxDocument },
@@ -193,6 +195,19 @@ export function App() {
         caption="F major, 3/4: right-hand melody with a second voice in bar 2, left-hand broken chords and a second voice in bar 3"
       >
         {(onLayout) => <FontNotation score={GRAND_STAFF} onLayout={onLayout} />}
+      </Example>
+
+      <h2>Articulations, fermatas and dynamics</h2>
+      <p className="note">
+        Staccato and tenuto sit in the nearest space on the notehead side and stay inside slurs; accents go outside the
+        staff and outside slurs; a fermata goes over everything. Dynamics share one line per system, optically centred
+        on their notes, with hairpins between them; a hairpin crossing a system break stays partly open.
+      </p>
+      <Example
+        title="Marks and dynamics"
+        caption="p to f under a slurred, articulated bar; fermatas on a note, a rest, a whole-bar rest and the final barline; a diminuendo to pp"
+      >
+        {(onLayout) => <FontNotation score={ARTICULATIONS_DYNAMICS} onLayout={onLayout} />}
       </Example>
 
       <h2>Ties</h2>
