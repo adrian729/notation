@@ -10,7 +10,8 @@
     "dev": "pnpm --filter @polyhymnia/web dev",
     "mnx:update": "pnpm --filter @polyhymnia/mnx mnx:update",
     "font:add": "pnpm --filter @polyhymnia/notation-fonts font:add",
-    "font:verify": "pnpm --filter @polyhymnia/notation-fonts font:verify"
+    "font:verify": "pnpm --filter @polyhymnia/notation-fonts font:verify",
+    "release": "bash scripts/release.sh"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",

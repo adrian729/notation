@@ -50,9 +50,10 @@
 
 # Publishing
 - Packages publish to public npm under `@polyhymnia` (`publishConfig.access: public`, `files` whitelist, own `LICENSE`); `apps/web` stays `private`.
-- Work lands on `development`; `master` is the release branch and only moves by fast-forward from `development`.
-- Record releasable changes with `pnpm changeset`. To release: `pnpm changeset version` on `development`, commit, then fast-forward `master`; the push to `master` runs `release.yml`, which publishes to npm. Agents push or release only when the user asks; never run `changeset publish` or `npm publish` locally.
-- Before a release, `pnpm pack` each package and smoke-install the tarballs in a scratch project.
+- Work lands on `development`; `master` moves only by fast-forward from `development`, and every push to it publishes.
+- Packages version independently. Releasable change → `pnpm changeset` naming only the packages that changed; changesets patch-bumps their dependents itself.
+- Release (only when the user asks) → `pnpm release` from a clean `development`, run to completion without asking: it tests, versions, smoke-installs the packed tarballs, pushes `development`, waits for CI, fast-forwards `master`, waits for `release.yml` and checks npm. It fails → fix the cause on `development`, commit, rerun `pnpm release` (it resumes). Then bump consumers (workspace `AGENTS.md`).
+- Never push `master` by hand, open or merge release PRs, run `changeset version`/`changeset publish`/`npm publish` directly, force-push, or bypass branch protection.
 
 # Dependencies
 - Simple work → write it ourselves even if a library exists. Complex work → dependency, pinned, wrapped for replacement, maintained and tracking the MNX schema.
