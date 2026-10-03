@@ -1,3 +1,4 @@
+import { GRACE_SCALE } from './records.js';
 import type { FontContext } from '../font/context.js';
 import { wholeBarRestX } from '../query/measures.js';
 import type { BeamsResult } from './beams.js';
@@ -82,27 +83,29 @@ export function skyline(input: SkylineInput, fonts: FontContext): Skyline {
   return result;
 }
 
-export function glyphBox(fonts: FontContext, glyph: string, x: number, y: number): InkBox {
+export function glyphBox(fonts: FontContext, glyph: string, x: number, y: number, scale = 1): InkBox {
   const { bBoxNE, bBoxSW } = fonts.bbox(glyph);
-  return { x0: x + bBoxSW[0], x1: x + bBoxNE[0], y0: y - bBoxNE[1], y1: y - bBoxSW[1] };
+  return { x0: x + bBoxSW[0] * scale, x1: x + bBoxNE[0] * scale, y0: y - bBoxNE[1] * scale, y1: y - bBoxSW[1] * scale };
 }
 
 function elementBoxes(el: VerticalElement, x: number, beams: BeamsResult, fonts: FontContext): InkBox[] {
   const boxes: InkBox[] = [];
+  const scale = el.kind === 'grace' ? GRACE_SCALE : 1;
   const { legerLineExtension, legerLineThickness } = fonts.engravingDefaults;
   for (const head of el.noteheads) {
     const headX = x + head.dx;
-    boxes.push(glyphBox(fonts, head.glyph, headX, head.staffPosition));
+    boxes.push(glyphBox(fonts, head.glyph, headX, head.staffPosition, scale));
     for (const y of head.ledgerLines) {
       boxes.push({
-        x0: headX - legerLineExtension,
-        x1: headX + head.width + legerLineExtension,
-        y0: y - legerLineThickness / 2,
-        y1: y + legerLineThickness / 2,
+        x0: headX - legerLineExtension * scale,
+        x1: headX + head.width + legerLineExtension * scale,
+        y0: y - (legerLineThickness * scale) / 2,
+        y1: y + (legerLineThickness * scale) / 2,
       });
     }
-    if (head.accidental) boxes.push(glyphBox(fonts, head.accidental.glyph, x + head.accidental.dx, head.accidental.y));
-    for (const dot of head.dots) boxes.push(glyphBox(fonts, 'augmentationDot', x + dot.dx, dot.y));
+    if (head.accidental)
+      boxes.push(glyphBox(fonts, head.accidental.glyph, x + head.accidental.dx, head.accidental.y, scale));
+    for (const dot of head.dots) boxes.push(glyphBox(fonts, 'augmentationDot', x + dot.dx, dot.y, scale));
   }
   if (el.stem?.drawn) {
     const override = beams.stemOverrides.get(el.id);
@@ -113,11 +116,11 @@ function elementBoxes(el: VerticalElement, x: number, beams: BeamsResult, fonts:
       y0: override?.yTop ?? el.stem.yTop,
       y1: override?.yBottom ?? el.stem.yBottom,
     });
-    if (el.stem.flag) boxes.push(glyphBox(fonts, el.stem.flag.glyph, left, el.stem.flag.y));
+    if (el.stem.flag) boxes.push(glyphBox(fonts, el.stem.flag.glyph, left, el.stem.flag.y, scale));
   }
   if (el.rest) {
     boxes.push(glyphBox(fonts, el.rest.glyph, x, el.rest.y));
-    for (const dot of el.rest.dots) boxes.push(glyphBox(fonts, 'augmentationDot', x + dot.dx, dot.y));
+    for (const dot of el.rest.dots) boxes.push(glyphBox(fonts, 'augmentationDot', x + dot.dx, dot.y, scale));
   }
   if (el.breath) boxes.push(glyphBox(fonts, el.breath.glyph, x + el.breath.dx, el.breath.y));
   return boxes;

@@ -42,9 +42,10 @@ export function accidentals(
       const state = new Map<string, number>();
       const writtenHere = new Map<string, number>();
       const elements = elementIndex.get(elementsByStaffMeasureKey(staff.index, measure.index)) ?? [];
-      const notesAtTick = new Map<number, { pitch: StaffPitch }[]>();
+      const notesAtTick = new Map<string, { pitch: StaffPitch }[]>();
       for (const el of elements) {
-        notesAtTick.set(el.tick, [...(notesAtTick.get(el.tick) ?? []), ...el.notes]);
+        const position = `${el.tick}:${el.graceIndex ?? 0}`;
+        notesAtTick.set(position, [...(notesAtTick.get(position) ?? []), ...el.notes]);
       }
 
       for (const el of elements) {
@@ -67,7 +68,9 @@ export function accidentals(
             written = true;
             parenthesized = parenthesize;
           } else {
-            written = pitch.alter !== effective || sharesPositionWithOtherAlter(notesAtTick.get(el.tick)!, pitch);
+            written =
+              pitch.alter !== effective ||
+              sharesPositionWithOtherAlter(notesAtTick.get(`${el.tick}:${el.graceIndex ?? 0}`)!, pitch);
             if (!written && courtesyPolicy !== 'none' && carriedAlterations.has(slot)) {
               const carried = carriedAlterations.get(slot)!;
               if (carried !== pitch.alter) {

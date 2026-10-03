@@ -60,7 +60,7 @@ export interface Box {
 
 export interface ElementBox {
   id: NoteId;
-  kind: 'note' | 'chord' | 'rest';
+  kind: 'note' | 'chord' | 'rest' | 'grace';
   systemIndex: number;
   measureIndex: number;
   voice: 0 | 1;

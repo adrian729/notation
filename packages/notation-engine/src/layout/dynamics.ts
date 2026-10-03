@@ -173,9 +173,10 @@ export function spaceDynamics(
           measures[b.measure]!.columns.slice(0, b.column).reduce((sum, c) => sum + c.width, 0);
     const available = tail.reduce((sum, c) => sum + c.width, 0) + between;
     const deficit = a.right + DYNAMIC_GAP - b.left - available;
-    const share = tail.reduce((sum, c) => sum + c.width, 0);
+    const share = tail.filter((c) => c.graceIndex === undefined).reduce((sum, c) => sum + c.width, 0);
     if (deficit <= 0 || share <= 0) continue;
     for (const column of tail) {
+      if (column.graceIndex !== undefined) continue;
       const extra = (deficit * column.width) / share;
       column.width += extra;
       column.rodWidth += extra;

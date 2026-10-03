@@ -38,6 +38,9 @@ export interface ReadNote {
 export interface ReadEvent {
   id?: NoteId;
   kind: EntryKind;
+  graceIndex?: number;
+  slash?: boolean;
+  graceType?: 'makeTime' | 'stealFollowing' | 'stealPrevious';
   base: NoteValueBase;
   dots: number;
   length: Rational;
@@ -117,6 +120,13 @@ export function readSequence(sequence: Record<string, any>, scope: SequenceScope
       ...(typeof full.staffPosition === 'number' ? { restPosition: full.staffPosition } : {}),
     });
   }
+  for (let start = 0; start < events.length; start += 1) {
+    if (events[start]!.kind !== 'grace') continue;
+    let end = start;
+    while (end < events.length && events[end]!.kind === 'grace') end += 1;
+    for (let i = start; i < end; i += 1) events[i]!.graceIndex = end - i;
+    start = end - 1;
+  }
   return events;
 }
 
@@ -138,10 +148,25 @@ function readContent(
         readContent(asArray(item.content), scope, ref, out, ctx, itemPath);
         break;
       }
-      case 'grace':
-        scope.eventCount += asArray(item.content).length;
-        unsupported(ctx, scope, 'grace notes', 'not drawn');
+      case 'grace': {
+        const children = asArray(item.content);
+        children.forEach((raw, index) => {
+          const child = asObject(raw);
+          if (!child) return;
+          const event = readEvent(child as MnxEvent, scope, undefined, ctx, [...itemPath, index], true);
+          if (event)
+            out.push({
+              ...event,
+              kind: 'grace',
+              length: R.ZERO,
+              graceIndex: children.length - index,
+              slash: item.slash !== false,
+              graceType:
+                item.graceType === 'stealPrevious' || item.graceType === 'makeTime' ? item.graceType : 'stealFollowing',
+            });
+        });
         break;
+      }
       case 'space': {
         const length = fractionOf(item.duration);
         if (length) out.push({ kind: 'space', base: 'whole', dots: 0, length, notes: [] });
@@ -209,6 +234,7 @@ function readEvent(
   tuplet: TimelineTuplet | undefined,
   ctx: ReadContext,
   path: readonly number[],
+  grace = false,
 ): ReadEvent | undefined {
   const { measureIndex, sequenceIndex } = scope;
   const index = scope.eventCount;
@@ -225,7 +251,7 @@ function readEvent(
   const length = scaled(value.length, tuplet);
   const key = voiceKey(scope.part, scope.staff, scope.ordinal);
   const order = ctx.eventOrder.get(key) ?? 0;
-  ctx.eventOrder.set(key, order + 1);
+  ctx.eventOrder.set(key, order + (grace ? 0 : 1));
 
   const notes = asArray(event.notes)
     .map((raw) => asObject(raw) as MnxNote | undefined)

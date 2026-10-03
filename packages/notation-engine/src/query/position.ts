@@ -35,6 +35,7 @@ export function positionAtTick(layout: LayoutResult, tick: number): TickPosition
 function onsetsOf(layout: LayoutResult): Onset[] {
   const byTick = new Map<number, Onset>();
   for (const entry of layout.timeline.entries) {
+    if (entry.kind === 'grace') continue;
     const place = layout.placements.entries[entry.id];
     if (!place) continue;
     const end = entry.tick + entry.durationTicks;

@@ -1,3 +1,4 @@
+import { GRACE_SCALE } from './records.js';
 import type { Diagnostic } from '@polyhymnia/mnx';
 import type { Timeline } from '@polyhymnia/mnx-score';
 import type { EngravingDefaults } from '@polyhymnia/notation-fonts';
@@ -166,6 +167,7 @@ export function emit(input: EmitInput, fonts: FontContext): LayoutResult {
             elements,
             placement,
             stemOverrides: input.beams.stemOverrides,
+            suppressedGraceSlashes: input.beams.suppressedGraceSlashes,
             marks: marksOf.get(element.id) ?? [],
             fonts,
           });
@@ -490,6 +492,7 @@ interface ElementContext {
   elements: Record<string, ElementBox>;
   placement: Map<NoteId, Placement>;
   stemOverrides?: ReadonlyMap<NoteId, { yTop: number; yBottom: number }>;
+  suppressedGraceSlashes: ReadonlySet<NoteId>;
   marks: readonly Mark[];
   fonts: FontContext;
 }
@@ -500,6 +503,8 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
     return;
   }
   const { staffTop } = ctx;
+  const scale = element.kind === 'grace' ? GRACE_SCALE : 1;
+  const glyphStart = ctx.glyphs.length;
 
   for (const head of element.noteheads) {
     const headX = ctx.x + head.dx;
@@ -512,7 +517,7 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
           glyphRun(
             ctx.fonts,
             'accidentalParensLeft',
-            accX - ctx.fonts.advanceWidth('accidentalParensLeft'),
+            accX - ctx.fonts.advanceWidth('accidentalParensLeft') * scale,
             accY,
             'accidental',
             head.id,
@@ -529,10 +534,10 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
     for (const y of head.ledgerLines) {
       ctx.rects.push(
         centeredRect(
-          headX - legerLineExtension,
+          headX - legerLineExtension * scale,
           staffTop + y,
-          head.width + 2 * legerLineExtension,
-          legerLineThickness,
+          head.width + 2 * legerLineExtension * scale,
+          legerLineThickness * scale,
           'ledger-line',
           head.id,
         ),
@@ -564,6 +569,26 @@ function emitElement(element: VerticalElement, ctx: ElementContext): void {
     });
     if (stem.flag) {
       ctx.glyphs.push(glyphRun(ctx.fonts, stem.flag.glyph, stemX(ctx.x, stem), staffTop + stem.flag.y, 'flag', owner));
+    }
+  }
+
+  if (element.kind === 'grace' && element.source.slash && stem?.drawn && !ctx.suppressedGraceSlashes.has(element.id)) {
+    const tip = ctx.stemOverrides?.get(element.id)?.yTop ?? stem.yTop;
+    ctx.glyphs.push(
+      glyphRun(
+        ctx.fonts,
+        'graceNoteSlashStemUp',
+        stemX(ctx.x, stem) - 0.5 * scale,
+        staffTop + tip + (stem.flag ? 1.33 : 0.8) * scale,
+        'grace',
+        element.id,
+      ),
+    );
+  }
+  if (scale !== 1) {
+    for (const glyph of ctx.glyphs.slice(glyphStart)) {
+      glyph.scale = scale;
+      glyph.cls = 'grace';
     }
   }
 
@@ -620,15 +645,16 @@ function emitRest(element: VerticalElement, ctx: ElementContext): void {
 }
 
 function noteBox(element: VerticalElement, head: NoteheadLayout, headX: number, ctx: ElementContext): ElementBox {
+  const scale = element.kind === 'grace' ? GRACE_SCALE : 1;
   const box: Box = {
     x: headX,
-    y: ctx.staffTop + head.staffPosition - 0.5,
+    y: ctx.staffTop + head.staffPosition - 0.5 * scale,
     w: head.width,
-    h: 1,
+    h: scale,
   };
   return {
     id: head.id,
-    kind: element.kind === 'chord' ? 'chord' : 'note',
+    kind: element.kind === 'grace' ? 'grace' : element.kind === 'chord' ? 'chord' : 'note',
     systemIndex: ctx.systemIndex,
     measureIndex: element.measureIndex,
     voice: element.voice,

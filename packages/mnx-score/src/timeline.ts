@@ -332,7 +332,7 @@ function walkVoice(
 
   for (const ev of voice.events) {
     const length = ev.kind === 'fullMeasureRest' ? wholeBarLength : ev.length;
-    if (R.compare(length, R.ZERO) <= 0) {
+    if (ev.kind !== 'grace' && R.compare(length, R.ZERO) <= 0) {
       report.fullness.push({
         severity: 'warning',
         code: 'zero-length-element',
@@ -356,6 +356,7 @@ function walkVoice(
       push({
         id: ev.id,
         kind: ev.kind,
+        ...(ev.kind === 'grace' ? { graceIndex: ev.graceIndex, slash: ev.slash, graceType: ev.graceType } : {}),
         tick: ticks(R.add(measureStart, onset)),
         measureTick: ticks(onset),
         duration: effective,

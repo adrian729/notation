@@ -28,12 +28,14 @@ function missing(event: string): ApplyResult['diagnostics'] {
   ];
 }
 
-function unsupported(event: string): ApplyResult['diagnostics'] {
+function unsupported(event: string, grace = false): ApplyResult['diagnostics'] {
   return [
     {
       severity: 'warning',
       code: 'intent-target-unsupported',
-      message: `setPitches target ${JSON.stringify(event)} is a whole-bar rest, not a real event; give rhythm as real rest events instead.`,
+      message: grace
+        ? `setPitches target ${JSON.stringify(event)} is a grace event; editing grace notes is unsupported.`
+        : `setPitches target ${JSON.stringify(event)} is a whole-bar rest, not a real event; give rhythm as real rest events instead.`,
     },
   ];
 }
@@ -103,6 +105,7 @@ function setPitches(doc: MnxDocument, eventId: string, pitches: readonly Pitch[]
   const ids = elementIds(doc, scopeOf(doc, partIndex));
   const found = ids.nodeOf(eventId);
   if (!found || found.element.kind !== 'event') {
+    if (found?.element.kind === 'grace') return { doc, changed: [], diagnostics: unsupported(eventId, true) };
     if (found?.element.kind === 'fullMeasureRest') return { doc, changed: [], diagnostics: unsupported(eventId) };
     return { doc, changed: [], diagnostics: missing(eventId) };
   }

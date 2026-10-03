@@ -220,11 +220,16 @@ describe('buildTimeline', () => {
       'mnx-unsupported',
       'tie-target-unresolved',
       'measure-underfull',
-      'mnx-unsupported',
       'id-collision',
     ]);
     expect(timeline.diagnostics[4]!.message).toMatch(/tempo beat unit/);
-    expect(timeline.diagnostics[7]!.message).toMatch(/grace notes/);
+    expect(timeline.entries.find((e) => e.kind === 'grace')).toMatchObject({
+      id: 'm0.s0.e0',
+      tick: 0,
+      durationTicks: 0,
+      graceIndex: 1,
+      slash: true,
+    });
   });
 });
 
@@ -339,5 +344,77 @@ describe('performance', () => {
         { durationSeconds: 1, velocity: f },
       ]),
     );
+  });
+});
+
+describe('grace playback', () => {
+  it.each([
+    ['stealFollowing', 0.5, 0.56, 1, 2],
+    ['stealPrevious', 0.44, 0.5, 1, 2],
+    ['makeTime', 0.5, 0.56, 1.06, 2.06],
+  ] as const)(
+    'performs %s while keeping the cursor in written time',
+    (graceType, graceStart, mainStart, laterStart, total) => {
+      const doc = score(
+        [4, 4],
+        [
+          [
+            [
+              seq([
+                n('C'),
+                { type: 'grace', graceType, content: [n('D', 4, {}, 'eighth')] },
+                n('E'),
+                n('F', 4, {}, 'half'),
+              ]),
+            ],
+          ],
+        ],
+      );
+      const timeline = buildTimeline(doc);
+      expect(timeline.entries.map((e) => [e.tick, e.durationTicks])).toEqual([
+        [0, Q],
+        [Q, 0],
+        [Q, Q],
+        [2 * Q, 2 * Q],
+      ]);
+      expect(timeline.diagnostics).toEqual([]);
+      const result = performance(timeline, { tempo: { bpm: 120 } });
+      const starts = new Map(result.events.map((e) => [e.midi, e.startSeconds]));
+      expect(starts.get(62)).toBeCloseTo(graceStart);
+      expect(starts.get(64)).toBeCloseTo(mainStart);
+      expect(starts.get(65)).toBeCloseTo(laterStart);
+      expect(result.durationSeconds).toBeCloseTo(total);
+      const grace = result.events.find((e) => e.midi === 62)!;
+      expect(grace.durationSeconds).toBeCloseTo(0.06);
+      const donor = result.events.find((e) => e.midi === (graceType === 'stealPrevious' ? 60 : 64))!;
+      expect(donor.durationSeconds).toBeCloseTo(graceType === 'makeTime' ? 0.5 : 0.44);
+      expect(result.tickAtSeconds(laterStart)).toBeCloseTo(2 * Q);
+      if (graceType === 'makeTime') expect(result.tickAtSeconds(0.53)).toBe(Q);
+    },
+  );
+
+  it('preserves a tie across grace notes and shares a bounded grace window', () => {
+    const doc = score(
+      [4, 4],
+      [
+        [
+          [
+            seq([
+              n('C', 4, { id: 'start', ties: [{ target: 'end' }] }),
+              { type: 'grace', content: [n('D', 4, {}, '16th'), n('E', 4, {}, '16th')] },
+              n('C', 4, { id: 'end' }),
+              n('F', 4, {}, 'half'),
+            ]),
+          ],
+        ],
+      ],
+    );
+    const result = performance(buildTimeline(doc), { tempo: { bpm: 120 } });
+    expect(result.events.filter((e) => e.midi === 60)).toHaveLength(1);
+    expect(result.events.find((e) => e.midi === 60)?.durationSeconds).toBe(1);
+    expect(result.events.filter((e) => e.midi === 62 || e.midi === 64).map((e) => e.durationSeconds)).toEqual([
+      0.06, 0.06,
+    ]);
+    expect(result.events.every((e) => e.durationSeconds >= 0)).toBe(true);
   });
 });

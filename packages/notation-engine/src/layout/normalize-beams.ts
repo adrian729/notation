@@ -20,7 +20,7 @@ const BEAM_LEVEL: Partial<Record<DurationBase, number>> = { eighth: 1, '16th': 2
 
 interface BeamElement {
   id: NoteId;
-  kind: 'note' | 'chord' | 'rest';
+  kind: 'note' | 'chord' | 'rest' | 'grace';
   base: DurationBase;
   dots: Dots;
   length: Rational;
@@ -201,11 +201,11 @@ function resolveExplicitBeam(
   if (inRange.length < 2) return invalidBeam(measureIndex, reader);
 
   const groupElements = inRange.map(({ loc }) => voiceEvents[loc.index] as BeamElement);
-  const realNotes = groupElements.filter((el) => el.kind === 'note' || el.kind === 'chord');
+  const grace = groupElements.some((el) => el.kind === 'grace');
+  if (grace && groupElements.some((el) => el.kind !== 'grace')) return invalidBeam(measureIndex, reader);
+  const realNotes = groupElements.filter((el) => el.kind !== 'rest');
   if (realNotes.length < 2) return invalidBeam(measureIndex, reader);
-  const unbeamable = groupElements.some(
-    (el) => (el.kind === 'note' || el.kind === 'chord') && BEAM_LEVEL[el.base] === undefined,
-  );
+  const unbeamable = groupElements.some((el) => el.kind !== 'rest' && BEAM_LEVEL[el.base] === undefined);
   if (unbeamable) return invalidBeam(measureIndex, reader);
 
   const order = inRange.map(({ id, loc }) => ({ id, idx: loc.index })).sort((a, b2) => a.idx - b2.idx);
@@ -217,6 +217,7 @@ function resolveExplicitBeam(
   for (let i = minIdx; i <= maxIdx; i += 1) {
     const el = voiceEvents[i];
     if (!el || el.kind === 'space') return invalidBeam(measureIndex, reader);
+    if (el.kind === 'grace' && !grace) continue;
     if (el.kind !== 'rest' && !groupIds.has(el.id)) return invalidBeam(measureIndex, reader);
     span.push(el.id);
   }
@@ -348,11 +349,20 @@ function autoBeamVoice(
   warnedMeters: Set<string>,
 ): NormalizedBeam[] {
   const measureIndex = measure.index;
-  const beamable: BeamableEvent[] = events.map((e, i) =>
-    e.kind === 'space'
-      ? { id: `#${i}`, kind: 'space', dots: 0, length: e.length }
-      : { id: e.id, kind: e.kind, base: e.base, dots: e.dots, length: e.length, tupletId: e.tuplet?.id },
-  );
+  const beamable: BeamableEvent[] = events
+    .filter((e) => e.kind !== 'grace')
+    .map((e, i) =>
+      e.kind === 'space'
+        ? { id: `#${i}`, kind: 'space', dots: 0, length: e.length }
+        : {
+            id: e.id,
+            kind: e.kind as 'note' | 'chord' | 'rest',
+            base: e.base,
+            dots: e.dots,
+            length: e.length,
+            tupletId: e.tuplet?.id,
+          },
+    );
   const contentLength = beamable.reduce((sum, e) => R.add(sum, e.length), R.ZERO);
   const offset =
     measure.pickup && measureIndex === 0

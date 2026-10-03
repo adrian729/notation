@@ -15,7 +15,9 @@ import { MIDDLE_LINE } from './staff.js';
 
 export interface TemporalElement {
   id: NoteId;
-  kind: 'note' | 'chord' | 'rest';
+  kind: 'note' | 'chord' | 'rest' | 'grace';
+  graceIndex?: number;
+  slash?: boolean;
   base: DurationBase;
   dots: 0 | 1 | 2;
   tuplet?: TupletRef;
@@ -63,7 +65,7 @@ export function indexElementsByStaffMeasure(score: TemporalScore): ReadonlyMap<s
     bucket.push(el);
   }
   for (const bucket of byMeasure.values()) {
-    bucket.sort((a, b) => a.tick - b.tick || a.voice - b.voice);
+    bucket.sort((a, b) => a.tick - b.tick || (b.graceIndex ?? 0) - (a.graceIndex ?? 0) || a.voice - b.voice);
   }
   return byMeasure;
 }
@@ -91,7 +93,8 @@ function element(entry: TimelineEntry, normalized: NormalizedScore): TemporalEle
   const engraving = normalized.events.get(entry.id);
   return {
     id: entry.id,
-    kind: entry.kind === 'note' || entry.kind === 'chord' ? entry.kind : 'rest',
+    kind: entry.kind === 'note' || entry.kind === 'chord' || entry.kind === 'grace' ? entry.kind : 'rest',
+    ...(entry.kind === 'grace' ? { graceIndex: entry.graceIndex, slash: entry.slash } : {}),
     base: entry.base as DurationBase,
     dots: Math.min(entry.dots, 2) as Dots,
     ...(entry.tuplet ? { tuplet: entry.tuplet } : {}),

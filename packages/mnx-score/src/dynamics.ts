@@ -110,7 +110,7 @@ export function applyDynamics(entries: readonly TimelineEntry[], marks: readonly
   if (marks.length === 0) return [...entries];
   const ordered = [...marks].sort((a, b) => a.tick - b.tick);
   return entries.map((entry) => {
-    if (entry.kind !== 'note' && entry.kind !== 'chord') return entry;
+    if (entry.kind !== 'note' && entry.kind !== 'chord' && entry.kind !== 'grace') return entry;
     const applicable = ordered.filter(
       (m) => m.part === entry.part && (m.staff === undefined || m.staff === entry.staff),
     );

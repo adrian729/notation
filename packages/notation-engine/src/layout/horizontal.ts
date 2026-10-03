@@ -29,6 +29,7 @@ export interface HorizontalColumn {
   tick: number;
   measureTick: number;
   spanTicks: number;
+  graceIndex?: number;
   elements: readonly VerticalElement[];
   leftWidth: number;
   rightWidth: number;
@@ -192,23 +193,30 @@ function buildColumns(
   fonts: FontContext,
   ctx: ColumnContext,
 ): HorizontalColumn[] {
-  const byTick = new Map<number, VerticalElement[]>();
+  const byTick = new Map<string, VerticalElement[]>();
   for (const el of elements) {
-    const bucket = byTick.get(el.tick);
+    const position = `${el.tick}:${el.source.graceIndex ?? 0}`;
+    const bucket = byTick.get(position);
     if (bucket) bucket.push(el);
-    else byTick.set(el.tick, [el]);
+    else byTick.set(position, [el]);
   }
-  const ticks = [...byTick.keys()].sort((a, b) => a - b);
+  const ticks = [...byTick.keys()].sort((a, b) => {
+    const [at, ai] = a.split(':').map(Number);
+    const [bt, bi] = b.split(':').map(Number);
+    return at! - bt! || bi! - ai!;
+  });
 
-  const elementColumns = ticks.map((tick, i): HorizontalColumn => {
-    const members = byTick.get(tick)!;
-    const next = ticks[i + 1] ?? ctx.endTick;
-    const spanTicks = Math.max(1, next - tick);
+  const elementColumns = ticks.map((position, i): HorizontalColumn => {
+    const members = byTick.get(position)!;
+    const tick = members[0]!.tick;
+    const graceIndex = members[0]!.source.graceIndex;
+    const next = Number(ticks[i + 1]?.split(':')[0] ?? ctx.endTick);
+    const spanTicks = graceIndex === undefined ? Math.max(1, next - tick) : 0;
     const leftWidth = members.reduce((max, e) => Math.max(max, e.leftWidth), 0);
     const rightWidth = members.reduce((max, e) => Math.max(max, e.rightWidth), 0);
     const rodWidth = leftWidth + rightWidth + ROD_PADDING;
     const idealWidth = ctx.base * (spanTicks / ctx.divisions) ** ctx.k;
-    const nextLeftWidth = byTick.get(ticks[i + 1] ?? -1)?.reduce((max, e) => Math.max(max, e.leftWidth), 0) ?? 0;
+    const nextLeftWidth = byTick.get(ticks[i + 1] ?? '')?.reduce((max, e) => Math.max(max, e.leftWidth), 0) ?? 0;
     const springWidth = idealWidth + Math.max(0, leftWidth - nextLeftWidth);
     return {
       staffIndex: ctx.staffIndex,
@@ -216,13 +224,14 @@ function buildColumns(
       tick,
       measureTick: members[0]!.measureTick,
       spanTicks,
+      ...(graceIndex !== undefined ? { graceIndex } : {}),
       elements: members,
       leftWidth,
       rightWidth,
       rodWidth,
       idealWidth,
       width: Math.max(rodWidth, springWidth),
-      stretch: idealWidth + EPS_STRETCH,
+      stretch: graceIndex === undefined ? idealWidth + EPS_STRETCH : 0,
     };
   });
 

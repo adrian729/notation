@@ -53,7 +53,7 @@ Deferred — explicit, not accidental. Most are additive later, not a redesign, 
 | 3+ staves per part | Medium — the grand staff's per-staff geometry generalizes; organ-style layout needs staff groups |
 | Cross-staff notes, beams, tuplets, slurs | Medium — the grand staff is in place; each element is laid out on its own staff today |
 | Nested/compound tuplets | Medium — no longer a schema/data-model change: MNX `tuplet` containers already nest natively (`engraving.md`), the engine just flattens them today (`mnx.md`). Purely an engine change: draw the nested brackets instead of combining the ratio |
-| Grace notes, ornaments, glissandi | Medium — needs a new "non-metrical attachment" concept |
+| Ornaments, glissandi | Medium — attachment geometry and playback |
 | Relative dynamics, dynamic text (`più`, `sub.`), spiccato, bowings, single-note tremolo, pedal | Low-medium — a text layer for the words; the rest are glyphs on the articulation path |
 | Fermata holds in playback | Low — a tempo-map change in the timeline |
 | Lyrics, chord symbols, rehearsal marks | Low, but a new (text) layer |

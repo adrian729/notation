@@ -17,7 +17,7 @@ export interface TimelineOptions {
   divisions?: number;
 }
 
-export type EntryKind = 'note' | 'chord' | 'rest' | 'fullMeasureRest' | 'space';
+export type EntryKind = 'note' | 'chord' | 'rest' | 'fullMeasureRest' | 'space' | 'grace';
 
 export type ArticulationKind =
   'staccato' | 'staccatissimo' | 'tenuto' | 'accent' | 'strongAccent' | 'softAccent' | 'stress' | 'unstress';
@@ -50,6 +50,9 @@ export interface TimelineNote {
 export interface TimelineEntry {
   id: NoteId;
   kind: EntryKind;
+  graceIndex?: number;
+  slash?: boolean;
+  graceType?: 'makeTime' | 'stealFollowing' | 'stealPrevious';
   part: number;
   staff: number;
   voice: number;

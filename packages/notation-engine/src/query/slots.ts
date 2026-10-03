@@ -16,11 +16,13 @@ export function measureSlots(
   tagStaff: boolean,
 ): readonly Slot[] {
   const slots: Slot[] = [];
-  const columns = measure.columns.filter((column) =>
-    isClefColumn(column)
-      ? column.clefs.some((c) => c.staffIndex === staffIndex)
-      : column.elements.some((e) => e.staffIndex === staffIndex),
-  );
+  const columns = measure.columns
+    .filter((column) => column.graceIndex === undefined)
+    .filter((column) =>
+      isClefColumn(column)
+        ? column.clefs.some((c) => c.staffIndex === staffIndex)
+        : column.elements.some((e) => e.staffIndex === staffIndex),
+    );
   const staff = tagStaff ? { staff: staffIndex } : {};
 
   for (let i = 0; i < columns.length; i += 1) {

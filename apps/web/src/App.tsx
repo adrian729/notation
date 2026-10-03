@@ -29,6 +29,7 @@ import slurs from './scores/slurs.mnx.json';
 import clefChangesCourtesy from './scores/clef-changes-courtesy.mnx.json';
 import grandStaff from './scores/grand-staff.mnx.json';
 import articulationsDynamics from './scores/articulations-dynamics.mnx.json';
+import graceNotes from './scores/grace-notes.mnx.json';
 import { ChangesToggle, FontNotation } from './font.js';
 
 const MELODY = melody as MnxDocument;
@@ -45,6 +46,7 @@ const SLURS = slurs as MnxDocument;
 const CLEF_CHANGES_COURTESY = clefChangesCourtesy as MnxDocument;
 const GRAND_STAFF = grandStaff as MnxDocument;
 const ARTICULATIONS_DYNAMICS = articulationsDynamics as MnxDocument;
+const GRACE_NOTES = graceNotes as MnxDocument;
 
 const KEY_EXAMPLES: readonly { label: string; doc: MnxDocument }[] = [
   { label: 'C major — no accidentals', doc: keyCMajor as MnxDocument },
@@ -208,6 +210,14 @@ export function App() {
         caption="p to f under a slurred, articulated bar; fermatas on a note, a rest, a whole-bar rest and the final barline; a diminuendo to pp"
       >
         {(onLayout) => <FontNotation score={ARTICULATIONS_DYNAMICS} onLayout={onLayout} />}
+      </Example>
+
+      <h2>Grace notes</h2>
+      <Example
+        title="Beamed grace groups"
+        caption="Small slashed notes lead into the main notes; playback borrows a short amount of time from each following note"
+      >
+        {(onLayout) => <FontNotation score={GRACE_NOTES} onLayout={onLayout} />}
       </Example>
 
       <h2>Ties</h2>

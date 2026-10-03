@@ -52,7 +52,7 @@ Note values: `breve`, `whole`, `half`, `quarter`, `eighth`, `16th`, `32nd`, `64t
 - Multiple parts (only `parts[0]` is laid out), a part with `staves > 2` (only staves 1–2), a part's `transposition`/`kit` (percussion kits aren't laid out)
 - A 3rd+ sequence in a measure (`too-many-voices`, listed separately below since it isn't gated through `unsupported()`); a sequence or clef on a staff the part doesn't declare (`staff` above `parts[0].staves`, or below 1)
 - Percussion clefs and other unrecognized clef sign/position pairs (fall back to the nearest of treble/bass/alto); a clef octave outside `-1..1`
-- Grace notes, multi-note tremolo (its time is left blank via a `space`), lyrics, ottavas, arpeggios/non-arpeggios, staff configs, measure repeats
+- Multi-note tremolo (its time is left blank via a `space`), lyrics, ottavas, arpeggios/non-arpeggios, staff configs, measure repeats
 - `relative` dynamics (not drawn); a dynamic's `prefix`/`suffix` text (not drawn), `glyphs` (drawn from its value), `visuallyContinues` (drawn as a separate dynamic), a cross-staff hairpin (`staffEnd`, drawn on one staff), `placement: 'between'` on a single staff (drawn below), an unknown `value` (not drawn)
 - `slur.lineType` other than `'solid'` (drawn solid); `slur.sideEnd` differing from `slur.side` (the start side is used for the whole curve)
 - `tuplet.showValue` (only the actual count is drawn, per `showNumber`/`options.tuplets.showRatio`)
@@ -124,7 +124,7 @@ Positional id shapes (measure `m`, sequence `s`, event index `k` within its voic
 | A synthetic padding rest (underfull measure; timeline entry with `synthetic: true`) | `m{measure}.v{ordinal}.pad{k}` — `ordinal` counts voices per part and staff within the measure; outside the default scope the `p{n}.st{k}.` prefix applies |
 | A beam | the MNX `beams[].id`, or `{firstElementId}.beam` |
 
-`k` is advanced by every event *and* by every child of a `grace` or `tremolo` container, even though those children are never themselves laid out or given an id — so an unlabeled event after a grace group or a tremolo gets the index it would have had if those children had been ordinary events.
+`k` is advanced by every event *and* by every child of a `grace` or `tremolo` container, with grace children using those reserved ids and tremolo children remaining unaddressable — so an unlabeled event after a grace group or a tremolo gets the index it would have had if those children had been ordinary events.
 
 Every explicit `id` in the document is scanned up front, so a positional id is never silently assigned to two different elements: if a synthesized candidate collides with an id already in use (explicit or previously synthesized), it gets a deterministic `~2`, `~3`, … suffix instead, plus diagnostic `id-collision`. Two elements that explicitly share the same `id` also get `id-collision`; the first occurrence keeps the id, the rest are unaddressable by it. All `id-collision` diagnostics — first the frozen timeline's (element, tuplet, event and padding ids), then those from the beam fork — are appended after every other diagnostic, so they always land at the end of `LayoutResult.diagnostics`.
 
@@ -169,7 +169,7 @@ Codes actually produced today (verify against `mnx-score/src/`, `normalize*.ts`,
 | --- | --- | --- | --- |
 | `mnx-invalid` | error | `readMnx` | The document isn't an object, or has no `mnx` key |
 | `mnx-unsupported-version` | error | `readMnx` | `mnx.version` isn't the version this build supports |
-| `mnx-unsupported` | warning | `timeline`, `normalize` | A recognized-but-unsupported construct, one per construct per measure (or per document): time-affecting ones (tempo, play order, note value, tuplet ratio, nested tuplets, grace, tremolo, kit notes, unknown content) from `timeline`, drawing-only ones from `normalize` — see "Unsupported MNX" above |
+| `mnx-unsupported` | warning | `timeline`, `normalize` | A recognized-but-unsupported construct, one per construct per measure (or per document): time-affecting ones (tempo, play order, note value, tuplet ratio, nested tuplets, tremolo, kit notes, unknown content) from `timeline`, drawing-only ones from `normalize` — see "Unsupported MNX" above |
 | `no-parts` | warning | `timeline` | No `parts[0]`; nothing to lay out |
 | `no-measures` | warning | `timeline` | `global.measures` is empty |
 | `measure-count-mismatch` | warning | `timeline` | `parts[0].measures.length !== global.measures.length`; lays out `global`'s count |
@@ -220,3 +220,10 @@ which re-downloads the schema and examples at that commit, regenerates the types
 - **Conformance test** (`notation-engine/test/conformance.test.ts`): runs all 52 vendored official examples through `layoutScore()`. Every one must lay out without throwing; each is asserted against an exact expected diagnostic-code list (`EXPECTED_CODES` in that file) — most produce `[]` or `['mnx-unsupported']`, a few hit `no-measures`/`system-measure-unresolved`/`measure-underfull`/`measure-count-mismatch`/`beam-invalid` for constructs described above. This is what actually proves the mapping table in this file, not the table itself — re-run it after any `normalize.ts`/`temporal.ts` change.
 - **MNX↔engine mapping test** (`notation-engine/test/mnx-mapping.test.ts`): targeted cases for individual mapping rules (clef resolution, tie resolution, tuplet ratios, barline types, beam resolution/auto-beaming, …).
 - **Pipeline test** (`notation-engine/test/pipeline.test.ts`) keeps its malformed-input cases as malformed MNX — feeding `normalize`/`temporal` documents missing fields, invalid divisions, too many voices, etc., and asserting the diagnostic degrade path rather than a throw.
+
+
+## Grace notes
+
+Each child event of a `grace` container becomes a zero-duration timeline entry with `kind: 'grace'` at the following main event's tick. It uses its reserved `m.s.e{k}` id, or its explicit id; following event ids are unchanged. `graceIndex` counts backwards from the main event: the closest grace is 1. `slash` defaults to true. The timeline also carries `graceType` for playback; when omitted, the performance policy uses `stealFollowing`.
+
+Grace events and their notes are addressable and hittable. Answer-entry editing rejects a grace event with `intent-target-unsupported`; insertion slots remain attached to ordinary events. Grace-position targeting for clefs, dynamics and tempos remains unsupported.

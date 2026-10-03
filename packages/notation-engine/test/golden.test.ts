@@ -45,6 +45,9 @@ const SELECTED_EXAMPLES = [
   'dynamics',
   'dynamics-accents',
   'grand-staff',
+  'grace-note',
+  'grace-notes-beamed',
+  'beams-inner-grace-notes',
 ];
 
 function loadFixture(name: string): MnxDocument {

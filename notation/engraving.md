@@ -384,3 +384,10 @@ Rationale that used to live in code comments. The code carries none, so decision
 - **Stretch capacity.** During `justify` it is duration-proportional only, never reduced by the column's own rod requirement: a rod is a floor on natural width, not a penalty on how much slack a column earns. Using `springWidth − rodWidth` starved accidental-bearing columns of their share and compressed the gap after them unevenly.
 - **Dashed barlines** take one line's worth of horizontal space, like `single`; they are broken vertically, not horizontally.
 - **Spacing constants without a spec value** (invented, tune against the gallery): accidental gap 0.16, accidental column gap 0.12, stacking pad 0.2, dot gap 0.2, dot spacing 0.1, breath-mark gap 0.35 (all sp).
+
+
+## Grace notes
+
+Grace columns sort by tick, then descending `graceIndex`, before their main event. They have fixed width and no stretch, including when dynamic text adds spacing. Accidentals resolve in each grace column before the main column. Clef changes precede the whole group.
+
+Grace noteheads, accidentals, flags and dots use `GlyphRun.scale: 0.6` and class `grace`. Stems point up and use scaled lengths and thickness; ledger lines and beam thickness scale too. Explicit grace beams are separate from main beams, which skip intervening grace events. Slashed beamed groups draw one slash on their first stem; unbeamed grace notes draw their own slash. Each note keeps its id, cue-sized hitbox and placement. Insertion slots and the written-time cursor use ordinary columns.

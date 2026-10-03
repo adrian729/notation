@@ -368,6 +368,9 @@ function readContent(content: readonly unknown[], scope: SequenceScope, reader: 
         }
         readContent(asArray(item.content), scope, reader, itemPath);
         break;
+      case 'grace':
+        readContent(asArray(item.content), scope, reader, itemPath);
+        break;
       case undefined:
       case 'event':
         readEvent(item as MnxEvent, { ...scope, path: itemPath }, reader);

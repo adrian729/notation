@@ -42,9 +42,11 @@ describe('elementIds', () => {
     expect(ids.idAt(pos([], { fullMeasureRest: true }))).toBe('m0.s0.full');
   });
 
-  it('advances the event counter past grace notes before an unlabeled event', () => {
+  it('addresses grace children without moving the following event id', () => {
     const doc = mnx(measure(grace(note(C4, '16')), note(D4, 'q')));
     const ids = elementIds(doc);
+    expect(ids.idAt(pos([0, 0]))).toBe('m0.s0.e0');
+    expect(ids.nodeOf('m0.s0.e0')?.element.kind).toBe('grace');
     expect(ids.idAt(pos([1]))).toBe('m0.s0.e1');
   });
 

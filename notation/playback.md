@@ -23,7 +23,7 @@ interface Timeline {
 }
 interface TimelineEntry { id; kind; part; staff; voice; measureIndex; tick; durationTicks; notes: readonly { id; pitch; midi; tie: {start; stop} }[];
   articulations?: readonly ArticulationKind[];   // the event's MNX articulation markings, omitted when none
-  dynamicLevel?: number;                         // 0..1 loudness at its onset, omitted at the mf default (0.8); notes and chords only
+  dynamicLevel?: number;                         // 0..1 loudness at its onset, omitted at the mf default (0.8); notes, chords and grace notes
   … }
 interface PlaySegment { fromTick: number; toTick: number; playedStartTick: number }   // written ticks, in play order
 ```
@@ -110,3 +110,10 @@ The app owns time and calls `handle.setPlaybackTick(tick)` each frame (from its 
 ## Presentation
 
 CSS only. The component emits `<g data-pn="cursor" data-pn-cursor><rect/></g>` spanning the system's staff height (0.3 sp wide, `visibility="hidden"` until positioned); `packages/notation-react/styles/notation.css` gives it `--pn-cursor` / `--pn-cursor-opacity`, and the app can restyle via `[data-pn-cursor]`. `mode:'notes'` only sets `data-pn-playing` — styling is entirely the app's call (`architecture.md` theming contract).
+
+
+## Grace playback
+
+Grace notes occupy no written ticks. Slashed notes use a 60 ms target length each; unslashed notes use their notated values at the current tempo. `stealFollowing` (the default performance policy) delays and shortens the following event in the same voice. `stealPrevious` shortens the previous event and places the group before the main onset, falling back to the following event at the start of playback. The borrowed window is capped at half the donor's remaining duration and shared proportionally across the group.
+
+`makeTime` inserts a window before the main onset and shifts later playback in all voices. Simultaneous groups share that window. `durationSeconds` includes it, and `tickAtSeconds` holds at the main written tick during the insertion. Grace notes between tied events preserve the tie; a group inside a sustained tie sounds over that sustained note. Grace events inherit dynamic levels and accents. Written-time highlighting and cursor positions continue to target ordinary events.

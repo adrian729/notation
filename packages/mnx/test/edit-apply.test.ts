@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { applyIntent } from '../src/edit/apply.js';
 import { elementIds } from '../src/mnx/element-ids.js';
-import { C4, chord, D4, E4, G4, measure, mnx, note, rest, tuplet } from './support.js';
+import { C4, chord, D4, E4, G4, grace, measure, mnx, note, rest, tuplet } from './support.js';
 
 const PACKAGE_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const schema = JSON.parse(readFileSync(path.join(PACKAGE_ROOT, 'schema', 'mnx-schema.json'), 'utf8'));
@@ -20,6 +20,16 @@ function expectValid(doc: unknown): void {
 const ev = (path: number[]) => ({ measureIndex: 0, sequenceIndex: 0, path });
 
 describe('applyIntent setPitches', () => {
+  it('returns a grace-specific unsupported result without changing the document', () => {
+    const doc = mnx(measure(grace(note(C4, '8')), note(D4, 'q')));
+    const result = applyIntent(doc, { type: 'setPitches', event: 'm0.s0.e0', pitches: [E4] });
+    expect(result.doc).toBe(doc);
+    expect(result.changed).toEqual([]);
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ code: 'intent-target-unsupported', message: expect.stringContaining('grace') }),
+    ]);
+  });
+
   it('turns a rest into a note, keeping the element id', () => {
     const doc = mnx(measure(rest('q')));
     const before = elementIds(doc).idAt(ev([0]));

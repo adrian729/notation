@@ -23,7 +23,7 @@ Not expensive individually, but each waits on a piece of machinery this codebase
 | D.C. / D.S. / al Fine / Fine | The same text layer, plus real navigation logic | Beyond drawing the text, "al Fine" implies the player/renderer understands score-level jumps — a bigger feature than the glyph. |
 | Simile marks (%, repeat-previous-measure) | The same text layer | Otherwise close in spirit to the already-deferred "repeats/voltas/jumps" row. |
 | Ghost notes (parenthesized notehead) | `README.md`'s deferred "Full percussion notation" | Not named there individually; recorded here so it isn't forgotten when that work starts. |
-| Tremolo (slash marks through/between stems) | `README.md`'s deferred "Grace notes, ornaments, glissandi" row | Same reasoning as ghost notes — bucketed but not named. |
+| Tremolo (slash marks through/between stems) | `README.md`'s deferred "Ornaments, glissandi" row | Same reasoning as ghost notes — bucketed but not named. |
 
 ## Deliberately outside an ear-training app's domain
 

@@ -217,10 +217,11 @@ describe('events and notes', () => {
 });
 
 describe('unsupported constructs render what they can and say so', () => {
-  it('skips grace notes', () => {
+  it('lays out grace notes at the following note tick', () => {
     const doc = mnx({}, measure({ type: 'grace', content: [note('B4', '8')] }, note('C5', 'w')));
-    expect(temporal(normalize(doc)).elements.map((e) => e.id)).toEqual(['m0.s0.e1']);
-    expect(unsupported(doc)).toEqual(['Unsupported MNX: grace notes in measure 0; not drawn.']);
+    expect(temporal(normalize(doc)).elements.map((e) => e.id)).toEqual(['m0.s0.e0', 'm0.s0.e1']);
+    expect(unsupported(doc)).toEqual([]);
+    expect(layoutScore(doc).elements['m0.s0.e0']).toMatchObject({ kind: 'grace', tick: 0, durationTicks: 0 });
   });
 
   it('lays out only the first part, and staff 1 unless the part declares more staves', () => {

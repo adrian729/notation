@@ -27,7 +27,7 @@ Integration only — no isolated-function unit tests. Every test enters through 
 
 ~4 weeks total, useful at end of week 1. Phases 2/3 are independent, parallelizable.
 
-**Not on the roadmap** (deferred features, `README.md`): 3+ staves per part, cross-staff beaming, nested tuplets, grace notes, relative dynamics and dynamic text, lyrics, chord symbols, multi-page.
+**Not on the roadmap** (deferred features, `README.md`): 3+ staves per part, cross-staff beaming, nested tuplets, relative dynamics and dynamic text, lyrics, chord symbols, multi-page.
 
 ## Per-feature LOC estimate (model + engine + react, excl. tests)
 
@@ -90,3 +90,5 @@ Integration only — no isolated-function unit tests. Every test enters through 
 - **Knuth-Plass line breaking**: not done; greedy only, measures indivisible.
 - **`applyIntent` addressing**: one part (default 0), all its staves, the first 2 sequences per staff.
 - **`EditIntent`**: one variant (`setPitches`).
+
+- **Grace notes**: done, including cue-size engraving, explicit grace beams, stable ids and the three playback timing modes (`engraving.md`, `playback.md`). Editing grace notes and targeting grace positions remain deferred.

@@ -1,3 +1,4 @@
+import { noteValueLength, Rational as R } from '@polyhymnia/mnx';
 import { DEFAULT_VELOCITY } from './dynamics.js';
 import type {
   ArticulationKind,
@@ -17,51 +18,141 @@ interface Sounding {
 const ACCENT_GAIN: Partial<Record<ArticulationKind, number>> = { accent: 0.1, strongAccent: 0.15 };
 const LENGTH_SCALE: Partial<Record<ArticulationKind, number>> = { staccato: 0.5, staccatissimo: 0.25 };
 
+interface PlaybackSpan {
+  start: number;
+  end: number;
+  from: number;
+  to: number;
+  hold?: boolean;
+}
+
 export function performance(timeline: Timeline, options: PerformanceOptions = {}): Performance {
-  const { tempo } = options;
-  const seconds = (tick: number): number => timeline.writtenTickToSeconds(tick, tempo);
-  const sounding = mergeTies(timeline.entries).filter((s) => s.head.kind === 'note' || s.head.kind === 'chord');
+  const seconds = (tick: number): number => timeline.writtenTickToSeconds(tick, options.tempo);
+  const sounding = mergeTies(timeline.entries);
   const events: PerformanceEvent[] = [];
+  const spans: PlaybackSpan[] = [];
   let offset = 0;
   for (const segment of timeline.playOrder) {
     const base = seconds(segment.fromTick);
-    for (const { head, durationTicks, velocity } of sounding) {
-      if (head.tick < segment.fromTick || head.tick >= segment.toTick) continue;
-      const startSeconds = offset + seconds(head.tick) - base;
-      const end = seconds(Math.min(head.tick + durationTicks, segment.toTick));
-      const durationSeconds = end - seconds(head.tick);
-      const loudness = Math.abs(velocity - DEFAULT_VELOCITY) < 1e-9 ? {} : { velocity };
-      for (const note of head.notes) {
-        events.push({ id: note.id, midi: note.midi, startSeconds, durationSeconds, ...loudness });
+    const groups = new Map<string, TimelineEntry[]>();
+    for (const entry of timeline.entries) {
+      if (entry.kind !== 'grace' || entry.tick < segment.fromTick || entry.tick >= segment.toTick) continue;
+      const key = `${entry.part}:${entry.staff}:${entry.voice}:${entry.tick}`;
+      const group = groups.get(key) ?? [];
+      group.push(entry);
+      groups.set(key, group);
+    }
+    const lengthOf = (entry: TimelineEntry): number =>
+      entry.slash !== false
+        ? 0.06
+        : seconds(
+            entry.tick + R.toTicks(noteValueLength({ base: entry.base, dots: entry.dots })!, timeline.divisions),
+          ) - seconds(entry.tick);
+    const added = new Map<number, number>();
+    for (const group of groups.values()) {
+      if (group[0]!.graceType !== 'makeTime') continue;
+      added.set(
+        group[0]!.tick,
+        Math.max(
+          added.get(group[0]!.tick) ?? 0,
+          group.reduce((sum, e) => sum + lengthOf(e), 0),
+        ),
+      );
+    }
+    const additions = [...added].sort(([a], [b]) => a - b);
+    const at = (tick: number, include = true): number =>
+      offset +
+      seconds(tick) -
+      base +
+      additions.reduce(
+        (sum, [position, length]) => sum + (position < tick || (include && position === tick) ? length : 0),
+        0,
+      );
+    const local = sounding
+      .filter(({ head }) => head.tick >= segment.fromTick && head.tick < segment.toTick)
+      .map((sound) => ({
+        ...sound,
+        start: at(sound.head.tick),
+        end: at(Math.min(sound.head.tick + sound.durationTicks, segment.toTick), false),
+      }));
+    for (const group of groups.values()) {
+      group.sort((a, b) => (b.graceIndex ?? 0) - (a.graceIndex ?? 0));
+      const head = group[0]!;
+      const sameVoice = (e: TimelineEntry): boolean =>
+        e.part === head.part && e.staff === head.staff && e.voice === head.voice;
+      const following = local.find(
+        (s) => sameVoice(s.head) && (s.head.tick >= head.tick || s.head.tick + s.durationTicks > head.tick),
+      );
+      const previous = local.filter((s) => sameVoice(s.head) && s.head.tick < head.tick).at(-1);
+      let length = group.reduce((sum, e) => sum + lengthOf(e), 0);
+      let start = at(head.tick);
+      if (head.graceType === 'makeTime') {
+        start = at(head.tick, false);
+      } else if (head.graceType === 'stealPrevious' && previous) {
+        length = Math.min(length, Math.max(0, Math.min(previous.end, at(head.tick, false)) - previous.start) / 2);
+        start = Math.max(previous.start, at(head.tick, false) - length);
+        previous.end = Math.min(previous.end, start);
+      } else {
+        start = following ? Math.max(at(head.tick), following.start) : start;
+        length = following ? Math.min(length, Math.max(0, following.end - start) / 2) : 0;
+        if (following && following.head.tick >= head.tick) {
+          following.start += length;
+        }
+      }
+      const total = group.reduce((sum, e) => sum + lengthOf(e), 0);
+      for (const entry of group) {
+        const duration = total > 0 ? (length * lengthOf(entry)) / total : 0;
+        for (const note of entry.notes) {
+          const velocity = velocityOf(entry);
+          events.push({
+            id: note.id,
+            midi: note.midi,
+            startSeconds: start,
+            durationSeconds: duration,
+            ...(Math.abs(velocity - DEFAULT_VELOCITY) < 1e-9 ? {} : { velocity }),
+          });
+        }
+        start += duration;
       }
     }
-    offset += seconds(segment.toTick) - base;
+    for (const { head, start, end, velocity } of local) {
+      const loudness = Math.abs(velocity - DEFAULT_VELOCITY) < 1e-9 ? {} : { velocity };
+      for (const note of head.notes) {
+        events.push({
+          id: note.id,
+          midi: note.midi,
+          startSeconds: start,
+          durationSeconds: Math.max(0, end - start),
+          ...loudness,
+        });
+      }
+    }
+    let cursor = segment.fromTick;
+    for (const [tick, length] of additions) {
+      spans.push({ start: at(cursor), end: at(tick, false), from: cursor, to: tick });
+      spans.push({ start: at(tick, false), end: at(tick), from: tick, to: tick, hold: true });
+      cursor = tick;
+    }
+    spans.push({ start: at(cursor), end: at(segment.toTick, false), from: cursor, to: segment.toTick });
+    offset = at(segment.toTick, false);
   }
   events.sort((a, b) => a.startSeconds - b.startSeconds);
   return {
     events,
     durationSeconds: offset,
-    tickAtSeconds: (s) => writtenTickAtSeconds(timeline, s, options),
+    tickAtSeconds: (value) => {
+      const s = Math.max(0, value);
+      const span = spans.find((span) => s < span.end);
+      if (!span) return spans.at(-1)?.to ?? timeline.secondsToWrittenTick(s, options.tempo);
+      return span.hold ? span.from : timeline.secondsToWrittenTick(seconds(span.from) + s - span.start, options.tempo);
+    },
   };
-}
-
-function writtenTickAtSeconds(timeline: Timeline, seconds: number, { tempo }: PerformanceOptions): number {
-  const segments = timeline.playOrder;
-  if (segments.length === 0) return timeline.secondsToWrittenTick(seconds, tempo);
-  const toSeconds = (tick: number): number => timeline.writtenTickToSeconds(tick, tempo);
-  let remaining = Math.max(0, seconds);
-  for (const segment of segments) {
-    const length = toSeconds(segment.toTick) - toSeconds(segment.fromTick);
-    if (remaining < length) return timeline.secondsToWrittenTick(toSeconds(segment.fromTick) + remaining, tempo);
-    remaining -= length;
-  }
-  return segments[segments.length - 1]!.toTick;
 }
 
 function mergeTies(entries: readonly TimelineEntry[]): Sounding[] {
   const voices = new Map<string, TimelineEntry[]>();
   for (const entry of entries) {
-    if (entry.kind === 'space') continue;
+    if (entry.kind === 'space' || entry.kind === 'grace') continue;
     const key = `${entry.part}:${entry.staff}:${entry.voice}`;
     let list = voices.get(key);
     if (!list) {

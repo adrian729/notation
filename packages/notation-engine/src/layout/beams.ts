@@ -1,3 +1,4 @@
+import { GRACE_SCALE } from './records.js';
 import type { Diagnostic } from '@polyhymnia/mnx';
 import type { FontContext } from '../font/context.js';
 import type { JustifiedScore } from './justify.js';
@@ -21,6 +22,7 @@ export interface BeamPolygon {
 export interface BeamsResult {
   polygons: readonly BeamPolygon[];
   stemOverrides: ReadonlyMap<NoteId, { yTop: number; yBottom: number }>;
+  suppressedGraceSlashes: ReadonlySet<NoteId>;
   diagnostics: readonly Diagnostic[];
 }
 
@@ -43,9 +45,6 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
   }
 
   const e = fonts.engravingDefaults;
-  const thickness = e.beamThickness;
-  const stack = e.beamThickness + e.beamSpacing;
-  const stemW = e.stemThickness;
   const twoVoiceMeasures = new Set<string>();
   for (const p of placedById.values()) {
     if (p.el.voice === 1) twoVoiceMeasures.add(`${p.el.staffIndex}:${p.el.measureIndex}`);
@@ -54,6 +53,7 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
   const polygons: BeamPolygon[] = [];
   const stemOverrides = new Map<NoteId, { yTop: number; yBottom: number }>();
   const diagnostics: Diagnostic[] = [];
+  const suppressedGraceSlashes = new Set<NoteId>();
 
   for (const group of groups) {
     const noteOrder = group.elements
@@ -61,6 +61,11 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
       .filter((p): p is Placed => p !== undefined && p.el.kind !== 'rest' && p.el.stem !== undefined);
     if (noteOrder.length < 2) continue;
 
+    const scale = noteOrder[0]!.el.kind === 'grace' ? GRACE_SCALE : 1;
+    const thickness = e.beamThickness * scale;
+    const stack = (e.beamThickness + e.beamSpacing) * scale;
+    const stemW = e.stemThickness * scale;
+    if (scale !== 1) for (const p of noteOrder.slice(1)) suppressedGraceSlashes.add(p.el.id);
     const dir = noteOrder[0]!.el.stem!.dir;
     const tip = (p: Placed): number => (dir === 1 ? p.el.stem!.yTop : p.el.stem!.yBottom);
     const attach = (p: Placed): number => (dir === 1 ? p.el.stem!.yBottom : p.el.stem!.yTop);
@@ -91,9 +96,9 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
       const level = levelOf.get(p.el.id) ?? 1;
       const innerY = beamYAt(x(p)) + dir * (level - 1) * stack;
       const stemLen = dir === 1 ? attach(p) - innerY : innerY - attach(p);
-      if (stemLen < MIN_STEM) shift = Math.max(shift, MIN_STEM - stemLen);
+      if (stemLen < MIN_STEM * scale) shift = Math.max(shift, MIN_STEM * scale - stemLen);
 
-      if (!twoVoiceMeasures.has(`${group.staffIndex}:${group.measureIndex}`)) {
+      if (scale === 1 && !twoVoiceMeasures.has(`${group.staffIndex}:${group.measureIndex}`)) {
         const primaryY = beamYAt(x(p));
         const reach = dir === 1 ? primaryY - MIDDLE_LINE : MIDDLE_LINE - primaryY;
         if (reach > EPS) shift = Math.max(shift, reach);
@@ -153,7 +158,7 @@ export function beams(justified: JustifiedScore, groups: readonly NormalizedBeam
     }
   }
 
-  return { polygons, stemOverrides, diagnostics };
+  return { polygons, stemOverrides, suppressedGraceSlashes, diagnostics };
 }
 
 function levelsOf(group: NormalizedBeam, order: readonly NoteId[]): Map<NoteId, number> {

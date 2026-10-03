@@ -1,3 +1,4 @@
+import { GRACE_SCALE } from './records.js';
 import type { Diagnostic } from '@polyhymnia/mnx';
 import { mensuralStyle, type GlyphStyle } from '@polyhymnia/notation-fonts';
 import type { FontContext } from '../font/context.js';
@@ -128,7 +129,7 @@ export interface RestLayout {
 
 export interface VerticalElement {
   id: NoteId;
-  kind: 'note' | 'chord' | 'rest';
+  kind: 'note' | 'chord' | 'rest' | 'grace';
   source: TemporalElement;
   staffIndex: number;
   measureIndex: number;
@@ -174,8 +175,9 @@ export function vertical(
         layOut(row, measure, resolved, shared, upVoice.get(key) ?? 0, elementBeam.get(row.id), styled),
       );
       if (shared) {
-        resolveSharedTicks(fonts, laidOut);
-        resolveSharedRests(fonts, laidOut, upVoice.get(key) ?? 0);
+        const main = laidOut.filter((el) => el.kind !== 'grace');
+        resolveSharedTicks(fonts, main);
+        resolveSharedRests(fonts, main, upVoice.get(key) ?? 0);
       }
       elements.push(...laidOut);
     }
@@ -221,7 +223,7 @@ function computeUpVoice(
   const clefOf = clefLookup(normalized);
   const totals = new Map<string, [number, number, number, number]>();
   for (const el of score.elements) {
-    if (el.kind === 'rest') continue;
+    if (el.kind === 'rest' || el.kind === 'grace') continue;
     const key = measureKey(el.staffIndex, el.measureIndex);
     if (!twoVoice.has(key)) continue;
     const clef = clefOf(el);
@@ -274,7 +276,9 @@ function beamDirectionsByElement(
     const overrides = notes.map((el) => el.stem).filter((s): s is 'up' | 'down' => s === 'up' || s === 'down');
 
     let dir: 1 | -1;
-    if (overrides.length > 0) {
+    if (notes[0]!.kind === 'grace') {
+      dir = 1;
+    } else if (overrides.length > 0) {
       const first = overrides[0]!;
       if (overrides.some((o) => o !== first)) {
         diagnostics.push({
@@ -324,6 +328,7 @@ function layOut(
   beamInfo: BeamMembership | undefined,
   styled: StyledFonts,
 ): VerticalElement {
+  if (row.kind === 'grace') styled = { ...styled, fonts: graceFonts(styled.fonts) };
   const { fonts } = styled;
   const duration: Duration = {
     base: row.base,
@@ -363,11 +368,14 @@ function layOut(
     staffPosition: staffPositionOf(note.pitch, clef),
   }));
 
-  const dir = beamInfo
-    ? beamInfo.dir
-    : shared && row.stem !== 'up' && row.stem !== 'down'
-      ? voiceDirection(row.voice, upVoice)
-      : stemDirection(heads, row.stem);
+  const dir =
+    row.kind === 'grace'
+      ? 1
+      : beamInfo
+        ? beamInfo.dir
+        : shared && row.stem !== 'up' && row.stem !== 'down'
+          ? voiceDirection(row.voice, upVoice)
+          : stemDirection(heads, row.stem);
   const shifts = clusterShifts(heads, width, dir);
 
   const noteheads: NoteheadLayout[] = heads.map((head, i) => {
@@ -397,7 +405,15 @@ function layOut(
   });
 
   const leftWidth = packAccidentals(fonts, noteheads);
-  const stem = layOutStem(duration, dir, noteheads, row.stem, beamInfo !== undefined, styled);
+  const stem = layOutStem(
+    duration,
+    dir,
+    noteheads,
+    row.kind === 'grace' ? 'up' : row.stem,
+    beamInfo !== undefined,
+    styled,
+    row.kind === 'grace' ? GRACE_SCALE : 1,
+  );
   const element: VerticalElement = {
     ...base,
     noteheads,
@@ -423,7 +439,14 @@ function placeRight(fonts: FontContext, element: VerticalElement, extent: number
   const noteRight = extent + dotsWidth(fonts, dots);
   const breath = layOutBreath(element.source.breath, noteRight);
   if (breath) element.breath = breath;
-  element.rightWidth = noteRight + (breath ? BREATH_GAP + fonts.advanceWidth(breath.glyph) : 0);
+  let right = noteRight;
+  if (element.kind === 'grace' && element.stem?.drawn) {
+    const stem = element.stem;
+    if (stem.flag) right = Math.max(right, stem.flag.dx + fonts.bbox(stem.flag.glyph).bBoxNE[0]);
+    if (element.source.slash)
+      right = Math.max(right, stem.dx - 0.5 * GRACE_SCALE + fonts.bbox('graceNoteSlashStemUp').bBoxNE[0]);
+  }
+  element.rightWidth = right + (breath ? BREATH_GAP + fonts.advanceWidth(breath.glyph) : 0);
 }
 
 function resolveSharedTicks(fonts: FontContext, elements: readonly VerticalElement[]): void {
@@ -651,6 +674,7 @@ function layOutStem(
   stemOverride: TemporalElement['stem'],
   beamed: boolean,
   styled: StyledFonts,
+  scale = 1,
 ): StemLayout | undefined {
   if (STEMLESS.has(duration.base) || noteheads.length === 0) return undefined;
   const glyph = noteheads[0]!.glyph;
@@ -661,8 +685,8 @@ function layOutStem(
   const attachX = anchor ? anchor[0] : dir === 1 ? noteheads[0]!.width : 0;
   const attachY = anchor ? -anchor[1] : 0;
 
-  const yTop = dir === 1 ? top - STEM_LENGTH : top + attachY;
-  const yBottom = dir === 1 ? bottom + attachY : bottom + STEM_LENGTH;
+  const yTop = dir === 1 ? top - STEM_LENGTH * scale : top + attachY;
+  const yBottom = dir === 1 ? bottom + attachY : bottom + STEM_LENGTH * scale;
   const dx = dir === 1 ? attachX - thickness : attachX;
   const drawn = stemOverride !== 'none';
 
@@ -709,6 +733,28 @@ function stemAnchor(
       : [halfWidth - thickness / 2, bBoxSW[1] + bury(-bBoxSW[1])];
   }
   return fonts.anchor(glyph, dir === 1 ? 'stemUpSE' : 'stemDownNW');
+}
+
+function graceFonts(fonts: FontContext): FontContext {
+  return {
+    ...fonts,
+    engravingDefaults: {
+      ...fonts.engravingDefaults,
+      stemThickness: fonts.engravingDefaults.stemThickness * GRACE_SCALE,
+    },
+    advanceWidth: (name) => fonts.advanceWidth(name) * GRACE_SCALE,
+    bbox: (name) => {
+      const box = fonts.bbox(name);
+      return {
+        bBoxNE: [box.bBoxNE[0] * GRACE_SCALE, box.bBoxNE[1] * GRACE_SCALE],
+        bBoxSW: [box.bBoxSW[0] * GRACE_SCALE, box.bBoxSW[1] * GRACE_SCALE],
+      };
+    },
+    anchor: (name, anchor) => {
+      const point = fonts.anchor(name, anchor);
+      return point ? [point[0] * GRACE_SCALE, point[1] * GRACE_SCALE] : undefined;
+    },
+  };
 }
 
 interface StylePolicy {

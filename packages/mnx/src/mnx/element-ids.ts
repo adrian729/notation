@@ -15,6 +15,7 @@ export interface ElementPosition {
 
 export type ElementNode =
   | { kind: 'event'; node: Event }
+  | { kind: 'grace'; node: Event }
   | { kind: 'chordNote'; node: Note }
   | { kind: 'tuplet'; node: Tuplet }
   | { kind: 'fullMeasureRest'; node: FullMeasureRest };
@@ -246,7 +247,7 @@ export function elementIds(doc: MnxDocument, scope: ElementScope = {}): ElementI
     }
   }
 
-  function walkContent(content: readonly unknown[], scope: Scope, path: readonly number[]): void {
+  function walkContent(content: readonly unknown[], scope: Scope, path: readonly number[], grace = false): void {
     content.forEach((raw, localIndex) => {
       const item = asObject(raw);
       if (!item) return;
@@ -267,7 +268,7 @@ export function elementIds(doc: MnxDocument, scope: ElementScope = {}): ElementI
           break;
         }
         case 'grace':
-          scope.eventCount += asArray(item.content).length;
+          walkContent(asArray(item.content), scope, itemPath, true);
           break;
         case 'tremolo':
           scope.eventCount += asArray(item.content).length;
@@ -284,7 +285,7 @@ export function elementIds(doc: MnxDocument, scope: ElementScope = {}): ElementI
             sequenceIndex: scope.sequenceIndex,
             path: itemPath,
           };
-          register({ kind: 'event', node: item as unknown as Event }, pos, scope, id);
+          register({ kind: grace ? 'grace' : 'event', node: item as unknown as Event }, pos, scope, id);
           const notes = asArray(item.notes)
             .map((n) => asObject(n))
             .filter((n): n is Record<string, any> => n !== undefined);
