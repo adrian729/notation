@@ -1,6 +1,6 @@
 {
   "name": "@polyhymnia/notation-engine",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Renderer-agnostic music engraving for MNX: layout, glyph positions, hit-testing and playback cursor positions. No DOM.",
   "keywords": [
     "mnx",
