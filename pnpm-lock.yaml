@@ -27,8 +27,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/mnx-score
       '@polyhymnia/music-theory':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.2.0
+        version: 0.2.0
       '@polyhymnia/notation-engine':
         specifier: workspace:*
         version: link:../../packages/notation-engine
@@ -39,8 +39,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/notation-react
       '@polyhymnia/web-audio':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.3.0
+        version: 0.3.0
       react:
         specifier: ^19.0.0
         version: 19.3.0
@@ -97,8 +97,8 @@ importers:
         specifier: workspace:*
         version: link:../mnx
       '@polyhymnia/music-theory':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.2.0
+        version: 0.2.0
     devDependencies:
       '@types/node':
         specifier: ^26.6.3
@@ -119,8 +119,8 @@ importers:
         specifier: workspace:*
         version: link:../mnx-score
       '@polyhymnia/music-theory':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.2.0
+        version: 0.2.0
       '@polyhymnia/notation-fonts':
         specifier: workspace:*
         version: link:../notation-fonts
@@ -424,12 +424,12 @@ packages:
     resolution: {integrity: sha512-pOr5+q1fLYKwFN3LAJuGZEnfXDcQ73zqgDHMtGy+K+uIoUqyY+6MeDCWFwfu+4EFuq76I5EPFofoNAI+Bmmq4A==}
     engines: {node: '>=22.13'}
 
-  '@polyhymnia/music-theory@0.1.0':
-    resolution: {integrity: sha512-YD3aWqquYCw7r1WD4slqrjlSiaM8bnMW4Uojl6uiq0t/XDp51WQzzbxDA4EruN/c+GNxmN8/jnZh9I5KKLv/Ig==}
+  '@polyhymnia/music-theory@0.2.0':
+    resolution: {integrity: sha512-5kXTeE4tes6HuwZqpgvOMEHFiGwcJFCvGBlAVO2OFd+ijPVYfFR7dk1Q8HGuGFdtutsptv58JfGbPdVpP8uYPA==}
     engines: {node: '>=20'}
 
-  '@polyhymnia/web-audio@0.1.0':
-    resolution: {integrity: sha512-vL1n4sqwipRxr+BRQN4ZtKA8haNs6d5VxW2GNXwXXpb8eTwiKFO1BS4r2n1a5byU66jixvhFHllAGa4uiBVl4A==}
+  '@polyhymnia/web-audio@0.3.0':
+    resolution: {integrity: sha512-seVotzOqD9sCSeP3pdNwYB3Khu1eY5/xXGBit3xXbqMt1wjPfYZxm6MK12kDrn/7KFiPeCUb3hPZvMMD4Jj+bA==}
     engines: {node: '>=20'}
 
   '@rolldown/binding-android-arm-eabi@1.2.12':
@@ -1729,9 +1729,9 @@ snapshots:
 
   '@pnpm/deps.graph-sequencer@1100.0.1': {}
 
-  '@polyhymnia/music-theory@0.1.0': {}
+  '@polyhymnia/music-theory@0.2.0': {}
 
-  '@polyhymnia/web-audio@0.1.0': {}
+  '@polyhymnia/web-audio@0.3.0': {}
 
   '@rolldown/binding-android-arm-eabi@1.2.12':
     optional: true
