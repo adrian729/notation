@@ -1,5 +1,13 @@
 # @polyhymnia/notation-engine
 
+## 0.4.1
+
+### Patch Changes
+
+- 9f1cbd1: Update music-theory to 0.2.0; the playground also uses web-audio 0.3.0 for microphone-compatible host audio-session policy.
+- Updated dependencies [9f1cbd1]
+  - @polyhymnia/mnx-score@0.3.1
+
 ## 0.4.0
 
 ### Minor Changes

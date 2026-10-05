@@ -1,5 +1,13 @@
 # @polyhymnia/notation-react
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [9f1cbd1]
+  - @polyhymnia/mnx-score@0.3.1
+  - @polyhymnia/notation-engine@0.4.1
+
 ## 0.4.0
 
 ### Minor Changes

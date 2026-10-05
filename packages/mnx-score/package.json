@@ -1,6 +1,6 @@
 {
   "name": "@polyhymnia/mnx-score",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Musical timeline over MNX documents: ticks, stable ids, pitch to MIDI, ties, tempo, play order and performance events.",
   "keywords": [
     "mnx",
