@@ -6,7 +6,7 @@
 
 - `@polyhymnia/web-audio` (pure, no DOM, no Web Audio): `NoteEvent`, `Clip`, `midiToFrequency`, `melodic`, `harmonic`, `shift`, `concat`, `transpose`, and type `Instrument`.
 - `@polyhymnia/web-audio/webaudio` (DOM lib): `synthInstrument`, `createPlayer`, `createAudioContext`, `unlockAudio`, `createSharedPlayer`, `defaultInstrument`, and types `Player`, `Playback`, `PlayResult`.
-- `@polyhymnia/web-audio/sampler` (DOM lib): `loadSampler(ctx, { out, samples: { midi, url }[] })` resolves to an `Instrument`, and type `Sample`.
+- `@polyhymnia/web-audio/sampler` (DOM lib): `createSampler(ctx, { out, samples: { midi, url }[], fallback? })` returns a `Sampler` (an `Instrument` plus `warm(signal?)`, `prepare(midis)` and `canPlay(midis)`) that loads samples as notes need them; `loadSampler(ctx, { out, samples })` resolves to one with every sample loaded. Types `Sample`, `Sampler`, `SamplerOptions`.
 
 ## Events and clips
 
@@ -39,7 +39,7 @@ Times are seconds from clip start. `midi` may be fractional; `id` is an MNX note
 
 ## Extension seam
 
-`Instrument { noteOn(midi, when, duration, velocity?), stopAll() }` is DOM-free. `loadSampler` is the sample-player implementation: it fetches and decodes every sample up front (rejecting if any fails), trims leading silence and peak-normalizes at decode time, and `noteOn` plays the nearest sample repitched by `playbackRate`, fading out over 80 ms at note end. Drones or per-voice instruments are new `Instrument` implementations behind their own entry, pinned, with permission to install any dependency. Deferred: seek/slice/loop, count-in, metronome, MIDI export, tempo ramps, fermata holds.
+`Instrument { noteOn(midi, when, duration, velocity?), stopAll() }` is DOM-free. `createSampler` is the sample-player implementation. It loads nothing up front. `warm()` loads in the background, one sample at a time at low network priority, coarse to fine: one per octave (resolving then, when every note can play), then one every third semitone. `prepare(midis)` fetches and decodes the samples those notes play from (once each; a failed load rejects and is retried next time), trimming leading silence and peak-normalizing at decode time; `canPlay(midis)` tells whether notes can play now, from their own sample or a borrowed one. `noteOn` never waits: it plays the note's nearest sample repitched by `playbackRate`, fading out over 80 ms at note end (earlier if the sample would run out first); until that sample is loaded it borrows the nearest loaded one within a tritone, or plays on `fallback`, and starts loading its own. `loadSampler` prepares every sample before resolving (rejecting if any fails). Drones or per-voice instruments are new `Instrument` implementations behind their own entry, pinned, with permission to install any dependency. Deferred: seek/slice/loop, count-in, metronome, MIDI export, tempo ramps, fermata holds.
 
 ## App responsibilities
 
