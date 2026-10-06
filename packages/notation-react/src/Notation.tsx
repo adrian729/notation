@@ -32,7 +32,7 @@ import type {
 import type { MnxDocument, NoteId } from '@polyhymnia/mnx';
 import { InteractionChild, clientToLayoutPoint, hitIdentity, resolveHitOptions } from './Interaction.js';
 import type { NotationInteractionProps, NotationIntent } from './Interaction.js';
-import { memoLayout } from './layoutMemo.js';
+import { cachedLayout } from './layoutMemo.js';
 import { MarksChild } from './Marks.js';
 import type { NotationMarksProps } from './Marks.js';
 
@@ -76,7 +76,7 @@ const GLYPH_FONT_SIZE = 4;
 const CURSOR_WIDTH = 0.3;
 
 export function Notation({ score, options, children, className, style, onLayout, ref }: NotationProps): JSX.Element {
-  const layout = useMemo(() => memoLayout(score, options), [score, options]);
+  const layout = useMemo(() => cachedLayout(score, options), [score, options]);
   const customFonts = customFontsOf(options?.font);
   const glyphStyle: GlyphStyleName = options?.style ?? DEFAULT_STYLE;
   const fontFamily = customFonts?.[0]?.name ?? DEFAULT_FONTS[glyphStyle].name;
@@ -517,14 +517,26 @@ function setSelection(refs: Map<string, SVGGElement>, selection: NotationMarksPr
   }
 }
 
+// Bumped whenever an element mounts or unmounts, so marks are reapplied to new DOM nodes.
+const refVersions = new WeakMap<Map<string, SVGGElement>, number>();
+
 function elementRef(refs: Map<string, SVGGElement>, id: string) {
   return (el: SVGGElement | null): void => {
     if (el) refs.set(id, el);
     else refs.delete(id);
+    refVersions.set(refs, (refVersions.get(refs) ?? 0) + 1);
   };
 }
 
+// What each score last marked as playing. A playback clock calls in every frame, but the
+// sounding notes change only a few times a second: unchanged frames touch nothing.
+const playingMarks = new WeakMap<Map<string, SVGGElement>, { layout: LayoutResult; version: number; ids: string }>();
+
 function setPlaying(refs: Map<string, SVGGElement>, ids: ReadonlySet<string>, layout: LayoutResult): void {
+  const marked = { layout, version: refVersions.get(refs) ?? 0, ids: [...ids].sort().join('\0') };
+  const last = playingMarks.get(refs);
+  if (last && last.layout === marked.layout && last.version === marked.version && last.ids === marked.ids) return;
+  playingMarks.set(refs, marked);
   for (const [id, el] of refs) {
     const owner = layout.elements[id]?.eventId;
     const playing =

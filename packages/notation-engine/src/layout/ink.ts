@@ -9,6 +9,31 @@ function phaseOf(seed: string): number {
 
 const positive = (n: number | undefined): number => (n && Number.isFinite(n) && n > 0 ? n : 0);
 
+const SCALE = 1e5;
+
+/** `Number(n.toFixed(5))` without formatting a string per coordinate. Below 2^31 the scaled
+ * product is off by at most 2.4e-7, so only a value within 1e-6 of a tie can round differently;
+ * those, and larger values, go through toFixed, which rounds the exact value.
+ */
+function round5(n: number): number {
+  const scaled = Math.abs(n) * SCALE;
+  const whole = Math.floor(scaled);
+  const fraction = scaled - whole;
+  if (!(scaled < 2 ** 31) || Math.abs(fraction - 0.5) < 1e-6) return Number(n.toFixed(5));
+  const rounded = (fraction > 0.5 ? whole + 1 : whole) / SCALE;
+  return n < 0 ? -rounded : rounded;
+}
+
+/** Closed outline through the points, coordinates rounded to 5 decimals. */
+function outlinePath(points: readonly (readonly [number, number])[]): string {
+  let path = 'M';
+  for (let i = 0; i < points.length; i += 1) {
+    const [x, y] = points[i]!;
+    path += `${i === 0 ? ' ' : ' L '}${round5(x)} ${round5(y)}`;
+  }
+  return `${path} Z`;
+}
+
 // One shallow pen sweep, with unequal shoulders, rather than periodic jitter.
 // Both endpoints stay attached. The reference shafts deviate in their course,
 // not by becoming wider; this displacement is independent of pen thickness.
@@ -55,7 +80,7 @@ export function inkRules(
     const points: [number, number][] = [];
     for (let i = 0; i <= count; i += 1) points.push(edge(i, false));
     for (let i = count; i >= 0; i -= 1) points.push(edge(i, true));
-    const outline = `M ${points.map((p) => p.map((n) => Number(n.toFixed(5))).join(' ')).join(' L ')} Z`;
+    const outline = outlinePath(points);
     if (!penned || !displacement) return { ...rect, outline };
     const xs = points.map((p) => p[0]);
     const ys = points.map((p) => p[1]);
@@ -110,7 +135,7 @@ export function inkStem(
     ...rect,
     x,
     w: Math.max(rect.x + rect.w, ...xs) - x,
-    outline: `M ${points.map((p) => p.map((n) => Number(n.toFixed(5))).join(' ')).join(' L ')} Z`,
+    outline: outlinePath(points),
   };
 }
 

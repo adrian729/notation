@@ -7,6 +7,7 @@ import type { Event, MnxDocument, NoteValue, Pitch } from '@polyhymnia/mnx';
 import { Notation } from '../src/Notation.js';
 import type { NotationHandle } from '../src/Notation.js';
 import type { PlaybackView } from '../src/Notation.js';
+import { cachedLayout } from '../src/index.js';
 
 afterEach(cleanup);
 
@@ -63,6 +64,14 @@ function simpleScore(): MnxDocument {
 }
 
 describe('<Notation>', () => {
+  it('draws the layout cachedLayout returns for the same score and options', () => {
+    const score = simpleScore();
+    const options = { widthSp: 40 };
+    const ref = createRef<NotationHandle>();
+    render(<Notation ref={ref} score={score} options={options} />);
+    expect(ref.current!.getLayout()).toBe(cachedLayout(score, options));
+  });
+
   it('renders one <svg> with the sp-unit viewBox layout reports', () => {
     const doc = simpleScore();
     const layout = layoutScore(doc);

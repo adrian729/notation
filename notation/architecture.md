@@ -218,6 +218,8 @@ export function Notation({ score, options, children, className, ...rest }: Notat
 }
 ```
 
+In the package, the layout comes from `cachedLayout(score, options)`, a cache per score and options object that the package exports: an app that needs the same layout to size or label a score computes it once, not twice.
+
 Constraint that holds for all future work: **nothing in `notation-react` creates, removes, or reparents a DOM node outside React's reconciler.** `layoutScore` is pure, so StrictMode double-invocation produces identical output. Contrast: every imperative engine (VexFlow/abcjs/OSMD/alphaTab) has a DOM-ownership bug class here; this component structurally doesn't. Same property makes it SSR-safe: `layoutScore` needs no DOM, no `window`, no font.
 
 The one exception is the playback cursor's per-frame attribute write (`x`/`y`/`height` on React-owned nodes, no node creation) — not a violation, see `playback.md` for why.
