@@ -1,5 +1,17 @@
 # @polyhymnia/notation-react
 
+## 0.5.0
+
+### Minor Changes
+
+- ef3d209: Export `cachedLayout(score, options)`, the layout `<Notation>` draws for that score and options object. Apps that need the layout too, to size or label a score, reuse it instead of laying the score out again.
+
+### Patch Changes
+
+- ef3d209: Playback highlighting touches the score only when the sounding notes change, instead of revisiting every note on every frame of a playback clock.
+- Updated dependencies [ef3d209]
+  - @polyhymnia/notation-engine@0.4.2
+
 ## 0.4.1
 
 ### Patch Changes

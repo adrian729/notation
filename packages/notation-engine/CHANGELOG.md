@@ -1,5 +1,11 @@
 # @polyhymnia/notation-engine
 
+## 0.4.2
+
+### Patch Changes
+
+- ef3d209: Lay out scores about 1.6× faster: pen-stroke outlines round their coordinates without formatting a string per number. The output is identical, including exact ties, which still round like `toFixed`.
+
 ## 0.4.1
 
 ### Patch Changes

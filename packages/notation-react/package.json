@@ -1,6 +1,6 @@
 {
   "name": "@polyhymnia/notation-react",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "React SVG renderer for MNX scores laid out by @polyhymnia/notation-engine, with interaction, marks and playback highlighting.",
   "keywords": [
     "mnx",
