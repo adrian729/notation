@@ -17,18 +17,18 @@
     "@polyhymnia/notation-engine": "workspace:*",
     "@polyhymnia/notation-fonts": "workspace:*",
     "@polyhymnia/notation-react": "workspace:*",
-    "@polyhymnia/web-audio": "^0.3.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "@polyhymnia/web-audio": "^0.4.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
     "typescript": "^7.0.2",
-    "vite": "^8.3.1",
-    "vitest": "^5.0.2"
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
   },
   "license": "MIT"
 }
